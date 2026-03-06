@@ -1,0 +1,386 @@
+﻿{
+    "version":  "1.0",
+    "matrix":  [
+                   {
+                       "business_rules_count":  8,
+                       "feature_id":  "F-001",
+                       "feature_title":  "Digital Order Management",
+                       "acceptance_criteria_count":  7,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-002",
+                                       "S-003"
+                                   ],
+                       "roles":  [
+                                     "waiter-cashier",
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-001",
+                                     "UF-006",
+                                     "UF-008",
+                                     "UF-009"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  9,
+                       "feature_id":  "F-002",
+                       "feature_title":  "Kitchen Display System",
+                       "acceptance_criteria_count":  9,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-006",
+                                       "S-002"
+                                   ],
+                       "roles":  [
+                                     "chef",
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-001",
+                                     "UF-008"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  17,
+                       "feature_id":  "F-003",
+                       "feature_title":  "Cashier \u0026 Payment Processing",
+                       "acceptance_criteria_count":  8,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-004"
+                                   ],
+                       "roles":  [
+                                     "waiter-cashier",
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-001",
+                                     "UF-007",
+                                     "UF-010"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  4,
+                       "feature_id":  "F-004",
+                       "feature_title":  "Inventory / Stock Management",
+                       "acceptance_criteria_count":  4,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-011"
+                                   ],
+                       "roles":  [
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-001",
+                                     "UF-003",
+                                     "UF-006",
+                                     "UF-007"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  3,
+                       "feature_id":  "F-005",
+                       "feature_title":  "Menu Management",
+                       "acceptance_criteria_count":  4,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-003",
+                                       "S-009"
+                                   ],
+                       "roles":  [
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-002",
+                                     "UF-007"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  3,
+                       "feature_id":  "F-006",
+                       "feature_title":  "Recipe Guide / Cooking Instructions",
+                       "acceptance_criteria_count":  4,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-007",
+                                       "S-010"
+                                   ],
+                       "roles":  [
+                                     "chef",
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-001",
+                                     "UF-002"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  3,
+                       "feature_id":  "F-007",
+                       "feature_title":  "Daily Sales Report \u0026 Dashboard",
+                       "acceptance_criteria_count":  4,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-008"
+                                   ],
+                       "roles":  [
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-003"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  4,
+                       "feature_id":  "F-008",
+                       "feature_title":  "Checklist-based Access Control",
+                       "acceptance_criteria_count":  4,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-013"
+                                   ],
+                       "roles":  [
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-004"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  6,
+                       "feature_id":  "F-009",
+                       "feature_title":  "Multi-role Authentication / Login",
+                       "acceptance_criteria_count":  5,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-001",
+                                       "S-013",
+                                       "S-016"
+                                   ],
+                       "roles":  [
+                                     "owner",
+                                     "waiter-cashier",
+                                     "chef"
+                                 ],
+                       "flows":  [
+                                     "UF-004",
+                                     "UF-005"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  18,
+                       "feature_id":  "F-015",
+                       "feature_title":  "Cash Register Shift Management (Open/Close Kasir)",
+                       "acceptance_criteria_count":  15,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-014",
+                                       "S-015",
+                                       "S-016"
+                                   ],
+                       "roles":  [
+                                     "waiter-cashier",
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-007"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  6,
+                       "feature_id":  "F-016",
+                       "feature_title":  "POS System Settings (Tax/PPN Configuration)",
+                       "acceptance_criteria_count":  6,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-017",
+                                       "S-004",
+                                       "S-012"
+                                   ],
+                       "roles":  [
+                                     "owner"
+                                 ],
+                       "flows":  [
+
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  9,
+                       "feature_id":  "F-017",
+                       "feature_title":  "Void / Cancel Order \u0026 Transaction",
+                       "acceptance_criteria_count":  6,
+                       "priority":  "must",
+                       "screens":  [
+                                       "S-002",
+                                       "S-004",
+                                       "S-012",
+                                       "S-015"
+                                   ],
+                       "roles":  [
+                                     "waiter-cashier",
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-010"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  0,
+                       "feature_id":  "F-010",
+                       "feature_title":  "Table Management",
+                       "acceptance_criteria_count":  4,
+                       "priority":  "should",
+                       "screens":  [
+                                       "S-005"
+                                   ],
+                       "roles":  [
+                                     "waiter-cashier",
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-001"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  0,
+                       "feature_id":  "F-011",
+                       "feature_title":  "Transaction History",
+                       "acceptance_criteria_count":  7,
+                       "priority":  "should",
+                       "screens":  [
+                                       "S-012"
+                                   ],
+                       "roles":  [
+                                     "owner",
+                                     "waiter-cashier"
+                                 ],
+                       "flows":  [
+
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  0,
+                       "feature_id":  "F-012",
+                       "feature_title":  "Low Stock Notification",
+                       "acceptance_criteria_count":  4,
+                       "priority":  "should",
+                       "screens":  [
+                                       "S-008",
+                                       "S-011"
+                                   ],
+                       "roles":  [
+                                     "owner"
+                                 ],
+                       "flows":  [
+                                     "UF-003"
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  9,
+                       "feature_id":  "F-018",
+                       "feature_title":  "Discount / Promo Management",
+                       "acceptance_criteria_count":  9,
+                       "priority":  "should",
+                       "screens":  [
+                                       "S-003",
+                                       "S-004",
+                                       "S-017",
+                                       "S-012"
+                                   ],
+                       "roles":  [
+                                     "owner",
+                                     "waiter-cashier"
+                                 ],
+                       "flows":  [
+
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  0,
+                       "feature_id":  "F-013",
+                       "feature_title":  "Report Export to Excel",
+                       "acceptance_criteria_count":  5,
+                       "priority":  "should",
+                       "screens":  [
+                                       "S-012"
+                                   ],
+                       "roles":  [
+                                     "owner"
+                                 ],
+                       "flows":  [
+
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  0,
+                       "feature_id":  "F-014",
+                       "feature_title":  "Menu Categorization",
+                       "acceptance_criteria_count":  3,
+                       "priority":  "could",
+                       "screens":  [
+                                       "S-009"
+                                   ],
+                       "roles":  [
+                                     "owner",
+                                     "waiter-cashier"
+                                 ],
+                       "flows":  [
+
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  0,
+                       "feature_id":  "F-W01",
+                       "feature_title":  "Online Customer Ordering",
+                       "acceptance_criteria_count":  0,
+                       "priority":  null,
+                       "screens":  [
+
+                                   ],
+                       "roles":  [
+
+                                 ],
+                       "flows":  [
+
+                                 ]
+                   },
+                   {
+                       "business_rules_count":  0,
+                       "feature_id":  "F-W02",
+                       "feature_title":  "Multi-branch Support",
+                       "acceptance_criteria_count":  0,
+                       "priority":  null,
+                       "screens":  [
+
+                                   ],
+                       "roles":  [
+
+                                 ],
+                       "flows":  [
+
+                                 ]
+                   }
+               ],
+    "validation_checks":  {
+                              "no_circular_dependencies":  true,
+                              "all_screens_have_features":  true,
+                              "all_must_features_have_acceptance_criteria":  true,
+                              "all_must_features_have_screens":  true,
+                              "all_must_features_have_flows":  true,
+                              "all_roles_have_permissions":  true
+                          },
+    "created_at":  "2026-02-19T12:57:57Z",
+    "coverage":  {
+                     "features_without_screens":  0,
+                     "features_without_flows":  1,
+                     "screens_with_features":  17,
+                     "features_with_flows":  11,
+                     "orphan_screens":  0,
+                     "features_with_screens":  12
+                 },
+    "notes":  [
+                  "F-016 (POS System Settings) has no dedicated flow - it is a configuration screen, not a workflow. Covered by general admin operations."
+              ]
+}

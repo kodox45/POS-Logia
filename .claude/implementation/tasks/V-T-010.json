@@ -1,0 +1,189 @@
+{
+  "id": "V-T-010",
+  "subject": "Validate: Build inventory, transaction history, user management, and settings pages",
+  "owner": "validator-frontend",
+  "builder_task_id": "T-010",
+  "layer": 2,
+  "wave": 2,
+  "goal": "Validate builder output for Build inventory, transaction history, user management, and settings pages",
+  "write_scope": [
+    ".claude/implementation/validation-frontend.json"
+  ],
+  "acceptance": {
+    "F-004": [
+      "Owner can view all inventory items with current stock levels",
+      "Stock auto-decreases when orders are placed based on recipe ingredients",
+      "Owner can manually add stock (restocking)",
+      "System shows stock movement history (in/out log)"
+    ],
+    "F-012": [
+      "System shows a warning badge when any item is below threshold",
+      "Owner can set minimum threshold per inventory item",
+      "Low stock items are highlighted in the inventory view",
+      "Dashboard shows count of low-stock items"
+    ],
+    "F-011": [
+      "Transaction table shows: date/time, ID, table, Shift ID, PIC Kasir, subtotal, PPN, total, payment method",
+      "Transactions can be filtered by: date range, transaction ID, PIC Kasir, Shift ID, payment method, total range",
+      "All filters are combinable and have a reset button",
+      "Summary stats update with active filters",
+      "Each transaction shows full detail modal with PPN breakdown and Print Struk button",
+      "Filtered data can be exported to Excel (.xlsx)",
+      "Transaction data cannot be deleted by non-owner users"
+    ],
+    "F-013": [
+      "Export button on Transaction History generates Excel file",
+      "Export includes all visible columns",
+      "Export respects currently active filters",
+      "Loading indicator shown during export generation"
+    ],
+    "F-008": [
+      "Owner can view a list of all users with their current permissions",
+      "Owner can toggle each permission on/off via checkboxes",
+      "Changes apply immediately without requiring user to re-login",
+      "Default permissions are pre-set based on role but fully customizable"
+    ],
+    "F-016": [
+      "Owner can access POS Settings from admin panel or Dashboard Hub",
+      "Owner can toggle PPN on/off",
+      "Owner can set PPN rate percentage",
+      "Printed receipt includes PPN breakdown"
+    ],
+    "F-018": [
+      "Owner can create/edit/deactivate discount rules in settings",
+      "Active promos shown as banner cards on order creation screen",
+      "Discount picker shows all active discounts with calculated amount",
+      "Payment shows: Subtotal -> Diskon -> Subtotal setelah diskon -> PPN -> Grand Total",
+      "Receipt includes discount line"
+    ]
+  },
+  "business_rules": [
+    {
+      "rule": "Stock deduction is triggered automatically when an order is confirmed",
+      "type": "constraint",
+      "source": "F-004"
+    },
+    {
+      "rule": "Only authorized users can manually adjust stock (restock or correction)",
+      "type": "constraint",
+      "source": "F-004"
+    },
+    {
+      "rule": "Only Owner can access the access control panel",
+      "type": "constraint",
+      "source": "F-008"
+    },
+    {
+      "rule": "Permission changes take effect immediately",
+      "type": "constraint",
+      "source": "F-008"
+    },
+    {
+      "rule": "Core permissions cannot be removed",
+      "type": "constraint",
+      "source": "F-008"
+    },
+    {
+      "rule": "PPN rate is configurable by owner in system settings",
+      "type": "constraint",
+      "source": "F-016"
+    },
+    {
+      "rule": "Changes to PPN rate apply to new transactions only, not retroactively",
+      "type": "constraint",
+      "source": "F-016"
+    },
+    {
+      "rule": "Discount applied BEFORE PPN calculation: Grand Total = (Subtotal - Discount) + PPN",
+      "type": "calculation",
+      "formula": "(Subtotal - Discount) + ppnAmount",
+      "source": "F-018"
+    },
+    {
+      "rule": "Only one discount per order (prevent stacking)",
+      "type": "constraint",
+      "source": "F-018"
+    }
+  ],
+  "cross_domain_contracts": [],
+  "_foundation_files": [
+    {
+      "path": "src/pages/admin/InventoryManagementPage.tsx",
+      "category": "page-stub",
+      "lines": 9,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/pages/admin/TransactionHistoryPage.tsx",
+      "category": "page-stub",
+      "lines": 9,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/pages/admin/UserManagementPage.tsx",
+      "category": "page-stub",
+      "lines": 9,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/pages/admin/SystemSettingsPage.tsx",
+      "category": "page-stub",
+      "lines": 9,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/types/entities.ts",
+      "category": "types",
+      "lines": 413,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/enums.ts",
+      "category": "types",
+      "lines": 100,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/index.ts",
+      "category": "types",
+      "lines": 2,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  },
+  "validation_targets": {
+    "builder_write_scope": [
+      "src/pages/admin/InventoryManagementPage.tsx",
+      "src/pages/admin/TransactionHistoryPage.tsx",
+      "src/pages/admin/UserManagementPage.tsx",
+      "src/pages/admin/SystemSettingsPage.tsx",
+      "src/components/inventory/",
+      "src/components/user-management/",
+      "src/components/settings/"
+    ],
+    "domain_packages": [
+      ".claude/implementation/domains/inventory.json",
+      ".claude/implementation/domains/payment.json",
+      ".claude/implementation/domains/user-management.json",
+      ".claude/implementation/domains/settings.json"
+    ]
+  }
+}

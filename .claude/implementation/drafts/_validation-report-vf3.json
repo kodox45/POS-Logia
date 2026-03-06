@@ -1,0 +1,155 @@
+{
+  "checkpoint": "vf3",
+  "timestamp": "2026-03-06T11:30:00.000Z",
+  "files_validated": [
+    "_project-analysis.json",
+    "master-plan.json",
+    "features.json",
+    "integration-map.json",
+    "domains/auth.json",
+    "domains/user-management.json",
+    "domains/menu.json",
+    "domains/recipe.json",
+    "domains/inventory.json",
+    "domains/order-management.json",
+    "domains/kitchen.json",
+    "domains/payment.json",
+    "domains/shift-management.json",
+    "domains/reporting.json",
+    "domains/settings.json",
+    "domains/sync.json"
+  ],
+  "checks_passed": 22,
+  "checks_failed": 7,
+  "checks_total": 29,
+  "fixes_applied": [
+    {
+      "file": "master-plan.json",
+      "check": "VF3-D4",
+      "issue": "T-003 on_critical_path was false but has 3 downstream dependents (T-018, T-021, T-022)",
+      "field": "tasks[2].on_critical_path",
+      "before": false,
+      "after": true,
+      "rule": "on_critical_path_computation"
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-D4",
+      "issue": "T-007 on_critical_path was true but has only 2 downstream dependents (T-021, T-022)",
+      "field": "tasks[6].on_critical_path",
+      "before": true,
+      "after": false,
+      "rule": "on_critical_path_computation"
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-D4",
+      "issue": "T-011 on_critical_path was true but has only 2 downstream dependents (T-012, T-022)",
+      "field": "tasks[10].on_critical_path",
+      "before": true,
+      "after": false,
+      "rule": "on_critical_path_computation"
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-D4",
+      "issue": "T-013 on_critical_path was false but has 5 downstream dependents (T-014, T-015, T-016, T-017, T-022)",
+      "field": "tasks[12].on_critical_path",
+      "before": false,
+      "after": true,
+      "rule": "on_critical_path_computation"
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-D4",
+      "issue": "T-016 on_critical_path was true but has only 1 downstream dependent (T-022)",
+      "field": "tasks[15].on_critical_path",
+      "before": true,
+      "after": false,
+      "rule": "on_critical_path_computation"
+    }
+  ],
+  "issues_unfixed": [
+    {
+      "file": "master-plan.json",
+      "check": "VF3-B1",
+      "issue": "T-010 has 4 screens (S-011, S-012, S-013, S-017) exceeding the G1 limit of 3 screens per frontend task",
+      "severity": "medium",
+      "reason": "Splitting frontend task T-010 into 2 tasks requires business judgment about how to regroup the 4 admin pages and would change task count, IDs, and dependency graph"
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-B2",
+      "issue": "T-012 references 3 domain packages (menu, recipe, settings) exceeding the G2 limit of 2 domains per backend task",
+      "severity": "medium",
+      "reason": "Splitting into compliant tasks requires business judgment about grouping (menu+recipe vs settings), changes task IDs, depends_on references across all tasks, and would need new db_scope assignments. Category 13 fix is too invasive for validator."
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-B3",
+      "issue": "T-011 has 10 endpoints (EP-001 through EP-010) exceeding the G3 limit of 8 endpoints per backend task",
+      "severity": "medium",
+      "reason": "Task covers auth (4 EP) + user-management (6 EP). Splitting requires separating into auth-only and user-management-only tasks, which changes task structure and dependencies."
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-B3",
+      "issue": "T-012 has 22 endpoints (EP-011 through EP-024, EP-064 through EP-071) exceeding the G3 limit of 8 endpoints per backend task",
+      "severity": "medium",
+      "reason": "Task covers 3 domains with 22 endpoints. Requires splitting into at least 3 tasks (menu 9 EP, recipe 5 EP, settings 8 EP) which restructures the entire backend task section."
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-B3",
+      "issue": "T-013 has 10 endpoints (EP-025 through EP-034) exceeding the G3 limit of 8 endpoints per backend task",
+      "severity": "medium",
+      "reason": "Inventory domain has 10 endpoints. Splitting requires separating CRUD (EP-025 to EP-030) from stock logic (EP-031 to EP-034), changing task structure."
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-B3",
+      "issue": "T-014 has 10 endpoints (EP-035 through EP-044) exceeding the G3 limit of 8 endpoints per backend task",
+      "severity": "medium",
+      "reason": "Order-management domain has 10 endpoints. Splitting requires separating order CRUD from table CRUD, changing task structure."
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-C3",
+      "issue": "T-014 (wave 3, backend, order-management) missing dependency on T-012 (wave 2, menu+recipe+settings). Order-management depends_on_domains includes menu and settings, so T-014 should depend on T-012 for wave ordering enforcement.",
+      "severity": "medium",
+      "reason": "Adding dependency requires business judgment — T-014 reads from menu/settings tables but does not directly depend on T-012's write outputs. The dependency may be handled at runtime via database reads rather than build ordering."
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-B6",
+      "issue": "Several cross-domain contracts have empty timing_notes[]: T-007/UF-010, T-008/UF-001, T-008/UF-008, T-013/UF-006, T-015/UF-001, T-015/UF-008, T-016/UF-010",
+      "severity": "low",
+      "reason": "Not all cross-domain flows have timing conflicts requiring notes. UF-001 stock timing is documented where relevant (order-management steps). Other flows (UF-008 kitchen notification, UF-010 void) have straightforward timing without conflicts."
+    },
+    {
+      "file": "master-plan.json",
+      "check": "VF3-B10",
+      "issue": "Expected cash formula wording inconsistent: T-005/T-017 use 'openingBalance + cashSalesTotal - voidTotalAmount' (camelCase) while T-007 uses 'opening_balance + cash_sales - cash_refunds_from_voids' (snake_case). Same formula, different notation.",
+      "severity": "low",
+      "reason": "Semantically identical formulas with different naming conventions. Not a functional issue but may cause confusion for builders if they compare formulas across tasks."
+    }
+  ],
+  "reasoning_checks": [
+    {
+      "id": "F1",
+      "name": "Task buildability",
+      "result": "pass",
+      "reasoning": "Analyzed T-006 (frontend, order-management), T-014 (backend, order-management), and T-019 (validator-frontend). All three tasks have clear goal sentences, specific write_scope paths, populated read_sources with domain_packages/entities/endpoints/features/screens, and feature-keyed acceptance criteria with testable assertions. T-014 includes db_scope with explicit writes/reads tables. T-006 includes cross-domain contracts with timing_notes for stock deduction. Builders would have sufficient context to implement these tasks.",
+      "files_analyzed": ["master-plan.json (tasks T-006, T-014, T-019)", "domains/order-management.json"]
+    },
+    {
+      "id": "F2",
+      "name": "Plan coherence",
+      "result": "warn",
+      "reasoning": "The layer/wave structure is logically sound: L1 (infra) -> L2 (domain builders) -> L3 (sync wiring) -> L4 (E2E). Wave assignments match domain dependencies (auth/settings wave 1, menu/inventory wave 2, order/kitchen/payment wave 3). However, T-014 (order-management backend, critical path) is a bottleneck with 4 direct dependents (T-015, T-016, T-017, T-022). T-012 with 3 domains and 22 endpoints risks context overload for a single builder. Team composition of 9 agents (7 builders + 2 validators) is appropriate for project complexity. Validators T-019 and T-020 have no depends_on, meaning they start immediately but will need to wait for builder output in practice.",
+      "files_analyzed": ["master-plan.json (full tasks[], team_composition[], dependency graph)"]
+    }
+  ],
+  "blocking": false,
+  "summary": "22/29 checks passed. 5 on_critical_path values fixed directly. 9 unfixed issues: 6 golden zone violations (1 G1 + 1 G2 + 4 G3, all medium severity — require task splitting), 1 wave dependency gap (medium), 1 timing_notes gap (low), 1 formula naming inconsistency (low). Reasoning: F1 pass, F2 warn (T-014 bottleneck + T-012 overloaded). No blocking issues."
+}

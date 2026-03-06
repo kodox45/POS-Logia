@@ -1,0 +1,53 @@
+{
+  "operation": "proposal",
+  "version": "5.0",
+  "status": {
+    "current": "completed",
+    "started_at": "2026-03-04T10:00:00Z",
+    "updated_at": "2026-03-04T11:05:00Z",
+    "completed_at": "2026-03-04T11:05:00Z",
+    "error_at": null
+  },
+  "progress": {
+    "percentage": 100,
+    "step": "Complete",
+    "message": "Proposal generated successfully -- 7 files written"
+  },
+  "output": {
+    "summary": ".claude/proposal/technical-proposal.md",
+    "detailed": ".claude/proposal/technical-proposal.json",
+    "artifacts": [
+      ".claude/proposal/entities.json",
+      ".claude/proposal/api-design.json",
+      ".claude/proposal/tech-stack.json",
+      ".claude/proposal/architecture.json",
+      ".claude/proposal/integration-map.json",
+      ".claude/proposal/technical-proposal.json",
+      ".claude/proposal/technical-proposal.md"
+    ],
+    "statistics": {
+      "entities": 19,
+      "endpoints": 74,
+      "decisions": 22,
+      "features_covered": 18,
+      "features_total": 18,
+      "coverage_percentage": 100,
+      "blocking_gaps": 0,
+      "validation_checks_total": 61,
+      "validation_checks_passed": 56,
+      "validation_fixes_applied": 6
+    }
+  },
+  "error": null,
+  "iteration": 1,
+  "awaiting": null,
+  "approval": {
+    "status": "approved",
+    "approved_at": "2026-03-04T14:00:00Z",
+    "file": ".claude/approval/approval-response.json"
+  },
+  "next_action": {
+    "actor": "cc",
+    "action": "Run foundation builder via /foundation-builder slash command"
+  }
+}

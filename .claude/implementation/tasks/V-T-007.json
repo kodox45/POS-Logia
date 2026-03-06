@@ -1,0 +1,156 @@
+{
+  "id": "V-T-007",
+  "subject": "Validate: Build payment and void transaction pages",
+  "owner": "validator-frontend",
+  "builder_task_id": "T-007",
+  "layer": 2,
+  "wave": 3,
+  "goal": "Validate builder output for Build payment and void transaction pages",
+  "write_scope": [
+    ".claude/implementation/validation-frontend.json"
+  ],
+  "acceptance": {
+    "F-003": [
+      "Payment screen shows subtotal, PPN %, PPN amount, and grand total",
+      "Cashier can select payment method and input amount received",
+      "Change is calculated against grand total (inclusive PPN)",
+      "After payment: success popup with checkmark, summary, and Print Struk button",
+      "Cashier can print receipt from success popup",
+      "Cashier can tap Selesai to return to order list",
+      "Completed payment updates order status to paid"
+    ],
+    "F-017": [
+      "Cashier can void a paid transaction (requires PIN)",
+      "Void reason selection is mandatory",
+      "Voided amounts are reflected in shift expected cash calculation"
+    ]
+  },
+  "business_rules": [
+    {
+      "rule": "PPN calculation",
+      "type": "calculation",
+      "formula": "(subtotal - discount) * (ppnRate / 100)",
+      "source": "F-003"
+    },
+    {
+      "rule": "Grand total calculation",
+      "type": "calculation",
+      "formula": "(subtotal - discount) + ppnAmount",
+      "source": "F-003"
+    },
+    {
+      "rule": "Payment cannot be processed if amount paid is less than grand total",
+      "type": "constraint",
+      "source": "F-003"
+    },
+    {
+      "rule": "Transaction stores SPECIFIC payment method name, NOT generic Digital",
+      "type": "constraint",
+      "source": "F-003"
+    },
+    {
+      "rule": "Cashier MUST open a shift before processing any payment",
+      "type": "constraint",
+      "source": "F-015"
+    },
+    {
+      "rule": "PIN verification required before any void operation",
+      "type": "constraint",
+      "source": "F-017"
+    },
+    {
+      "rule": "Void reason is MANDATORY",
+      "type": "constraint",
+      "source": "F-017"
+    },
+    {
+      "rule": "Expected cash formula updated on void",
+      "type": "calculation",
+      "formula": "opening_balance + cash_sales - cash_refunds_from_voids",
+      "source": "F-017"
+    }
+  ],
+  "cross_domain_contracts": [
+    {
+      "flow_id": "UF-001",
+      "your_steps": [
+        11
+      ],
+      "context": "Order has been served, waiter initiates payment.",
+      "timing_notes": [
+        "Stock deduction at order submission (D-001, D-030, D-064)"
+      ],
+      "next_domain": "order status updated to paid, table released, shift totals updated"
+    },
+    {
+      "flow_id": "UF-010",
+      "your_steps": [
+        3
+      ],
+      "context": "Cashier finds paid order, verifies PIN, processes void.",
+      "timing_notes": [],
+      "next_domain": "order voided, shift expected cash reduced, stock reversed"
+    }
+  ],
+  "_foundation_files": [
+    {
+      "path": "src/stores/usePaymentStore.ts",
+      "category": "state",
+      "lines": 76,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/pages/pos/PaymentPage.tsx",
+      "category": "page-stub",
+      "lines": 9,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/types/entities.ts",
+      "category": "types",
+      "lines": 413,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/enums.ts",
+      "category": "types",
+      "lines": 100,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/index.ts",
+      "category": "types",
+      "lines": 2,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  },
+  "validation_targets": {
+    "builder_write_scope": [
+      "src/pages/pos/PaymentPage.tsx",
+      "src/components/payment/",
+      "src/stores/usePaymentStore.ts"
+    ],
+    "domain_packages": [
+      ".claude/implementation/domains/payment.json"
+    ]
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "id": "T-020",
+  "subject": "Validate all backend endpoints and business logic",
+  "owner": "validator-backend",
+  "builder_role": null,
+  "layer": 2,
+  "wave": 1,
+  "goal": "Validate all backend endpoints and business logic. Phase A: validate database schema and server setup. Phase B: validate builder output against API specifications for all 74 endpoints.",
+  "domain_packages": [],
+  "write_scope": [
+    "tests/api/",
+    ".claude/implementation/validation-backend.json"
+  ],
+  "read_sources": {
+    "primary": ".claude/implementation/foundation-manifest.json",
+    "ba_files": [
+      ".ba/requirements/features.json",
+      ".ba/requirements/nfr.json"
+    ],
+    "entities": [],
+    "endpoints": {},
+    "features": [
+      "F-001",
+      "F-002",
+      "F-003",
+      "F-004",
+      "F-005",
+      "F-006",
+      "F-007",
+      "F-008",
+      "F-009",
+      "F-010",
+      "F-011",
+      "F-012",
+      "F-013",
+      "F-014",
+      "F-015",
+      "F-016",
+      "F-017",
+      "F-018"
+    ],
+    "screens": [],
+    "flows": [
+      "UF-001",
+      "UF-006",
+      "UF-007",
+      "UF-008",
+      "UF-010"
+    ],
+    "components": []
+  },
+  "cross_domain_contracts": [],
+  "business_rules": [],
+  "state_dependencies": null,
+  "db_scope": null,
+  "acceptance": {
+    "validation": [
+      "All 74 endpoints respond with correct status codes",
+      "Business rules enforced on create/update operations",
+      "State machine transitions validated for Order, Table, Shift, Transaction",
+      "Cross-domain side effects (stock deduction, table release) verified",
+      "Auth middleware blocks unauthorized access"
+    ]
+  },
+  "depends_on": [],
+  "on_critical_path": false,
+  "_foundation_files": [
+    {
+      "path": ".claude/implementation/validation-backend.json",
+      "category": "new",
+      "lines": 0,
+      "action": "CREATE_NEW"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  }
+}

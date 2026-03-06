@@ -1,0 +1,623 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:25:00Z",
+  "features": {
+    "must_have": [
+      {
+        "id": "F-001",
+        "title": "Digital Order Management",
+        "priority": "must",
+        "description": "Waiters create and manage customer orders digitally via tablet/smartphone. Orders are sent directly to the kitchen display in real-time.",
+        "user_story": {
+          "role": "waiter-cashier",
+          "action": "input customer orders on a tablet and send them to the kitchen instantly",
+          "benefit": "eliminate handwritten miscommunication and create a digital record of every order"
+        },
+        "roles_allowed": ["waiter-cashier", "owner"],
+        "fields": [
+          { "name": "table_number", "required": true, "note": "Selected from table list or manual input" },
+          { "name": "menu_items", "required": true, "note": "Array of selected menu items with quantity" },
+          { "name": "special_notes", "required": false, "note": "Special requests or modifications" },
+          { "name": "order_status", "required": true, "note": "pending | cooking | ready | served | paid | cancelled | voided" },
+          { "name": "is_additional", "required": false, "note": "Boolean — true if this is an additional order to existing table order" }
+        ],
+        "business_rules": [
+          "Order must have at least one menu item",
+          "Order status updates must be real-time across all devices",
+          "Each order is linked to a specific table",
+          "If a table already has an active (unpaid) order, cashier can ADD items to that existing order instead of creating a new one",
+          "Additional items are appended to the same order with 'Tambahan' label",
+          "Additional items are sent to kitchen as new items with same order ID",
+          "Order total recalculated automatically after adding items",
+          "Order can be cancelled before payment (status → cancelled)"
+        ],
+        "acceptance_criteria": [
+          "Waiter can create a new order by selecting menu items and assigning to a table",
+          "If table already has active order, waiter sees option to 'Tambah Pesanan' instead of creating new order",
+          "Additional items are appended to existing order and sent to kitchen",
+          "Order total updates automatically after adding items",
+          "Order appears on Kitchen Display within 2 seconds of submission",
+          "Order total is auto-calculated based on menu item prices and quantities",
+          "Special notes are visible to the chef on Kitchen Display"
+        ],
+        "screen_refs": ["S-002", "S-003"]
+      },      {
+        "id": "F-002",
+        "title": "Kitchen Display System",
+        "priority": "must",
+        "description": "Real-time kitchen display with detailed order→cook→ready→serve flow. Chef marks items as cooking/ready, waiter gets notification when food is ready to serve. Clear status tracking between kitchen and cashier.",
+        "user_story": {
+          "role": "chef",
+          "action": "view incoming orders on a dedicated kitchen screen, mark them as cooking or ready, and notify waiter",
+          "benefit": "receive orders clearly without verbal miscommunication and ensure timely food delivery"
+        },
+        "roles_allowed": ["chef", "owner"],
+        "fields": [
+          { "name": "order_id", "required": true, "note": "Reference to the order" },
+          { "name": "items_to_cook", "required": true, "note": "List of items with quantities" },
+          { "name": "special_notes", "required": false, "note": "Customer special requests" },
+          { "name": "order_time", "required": true, "note": "When the order was placed" },
+          { "name": "cooking_status", "required": true, "note": "pending | cooking | ready | served" },
+          { "name": "cooking_started_at", "required": false, "note": "Timestamp when chef started cooking" },
+          { "name": "ready_at", "required": false, "note": "Timestamp when marked as ready" },
+          { "name": "elapsed_time", "required": false, "note": "Live timer showing how long since order placed" }
+        ],
+        "business_rules": [
+          "New orders appear at the top of the queue with audio/visual alert",
+          "Chef taps to change status: pending → cooking → ready",
+          "When chef marks 'ready': notification sent to waiter/cashier POS screen immediately",
+          "Waiter sees notification badge with table number and 'Pesanan Siap!' message",
+          "Waiter taps notification to confirm 'Sudah Diantar' → status changes to 'served'",
+          "Elapsed time shown on each order card (how long since ordered)",
+          "Orders exceeding target time (e.g., 15 min) are highlighted in red as late",
+          "Additional items (tambahan) from same table appear as new items in the SAME order card",
+          "Kitchen display auto-removes served orders after confirmation"
+        ],
+        "acceptance_criteria": [
+          "Kitchen display shows all pending and cooking orders in queue format",
+          "Chef can update order status with a single tap",
+          "Recipe/cooking guide is accessible from each order item",
+          "When order is marked 'ready', waiter gets real-time notification on POS screen",
+          "Notification shows table number and items that are ready",
+          "Waiter can mark order as 'served' from notification",
+          "Elapsed time counter visible on each order",
+          "Late orders (>15 min) visually highlighted",
+          "Completed orders move to done section"
+        ],
+        "screen_refs": ["S-006", "S-002"]
+      },      {
+        "id": "F-003",
+        "title": "Cashier & Payment Processing",
+        "priority": "must",
+        "description": "Automatic bill calculation with PPN tax, payment processing, success popup with print receipt, and receipt reprint from transaction history.",
+        "user_story": {
+          "role": "waiter-cashier",
+          "action": "generate an accurate bill with PPN for a table and process payment with receipt",
+          "benefit": "eliminate manual calculation errors, comply with tax requirements, and provide professional receipts"
+        },
+        "roles_allowed": ["waiter-cashier", "owner"],
+        "fields": [
+          { "name": "order_ref", "required": true, "note": "Reference to completed order" },
+          { "name": "subtotal", "required": true, "note": "Auto-calculated from order items" },
+          { "name": "ppn_rate", "required": true, "note": "PPN percentage from system settings (F-016)" },
+          { "name": "ppn_amount", "required": true, "note": "Auto-calculated: subtotal * ppn_rate / 100" },
+          { "name": "grand_total", "required": true, "note": "subtotal + ppn_amount" },
+          { "name": "payment_method", "required": true, "note": "tunai | qris | gopay | ovo | dana | shopeepay | transfer_bank — stores SPECIFIC method, not generic category" },
+          { "name": "digital_payment_ref", "required": false, "note": "Reference number for digital payments (QRIS transaction ID, e-wallet ref, transfer ref)" },
+          { "name": "transfer_proof_photo", "required": false, "note": "Photo/image of transfer proof uploaded by cashier (for transfer_bank payments)" },
+          { "name": "amount_paid", "required": true, "note": "Amount given by customer (for cash) or confirmed amount (for digital)" },
+          { "name": "change", "required": true, "note": "Auto-calculated for cash. Always 0 for digital payments." }
+        ],
+        "business_rules": [
+          "Bill shows subtotal, discount (if any), PPN amount, and grand total separately",
+          "PPN rate is pulled from system settings (F-016)",
+          "Discount applied before PPN: (Subtotal - Discount) × PPN rate",
+          "Payment cannot be processed if amount paid is less than grand total",
+          "CASH: Numpad input for amount received, auto-calculate change",
+          "QRIS: Show static QR code image (uploaded by owner in settings). Cashier confirms payment received manually.",
+          "E-WALLET (GoPay/OVO/Dana/ShopeePay): Cashier selects provider, system shows QR code for that specific provider (uploaded by owner in settings). Cashier confirms payment received, optionally inputs reference number",
+          "TRANSFER BANK: Cashier confirms transfer received, optionally inputs reference number, can upload photo of transfer proof (bukti transfer)",
+          "For digital payments: no change calculation needed (exact amount)",
+          "Transaction stores SPECIFIC payment method name (e.g., 'GoPay', 'OVO', 'Transfer BCA') — NOT generic 'Digital'",
+          "Success popup displays the specific payment method used (e.g., 'GoPay', not 'Digital')",
+          "Transaction history shows specific method name in table column",
+          "After successful payment, a success popup appears with transaction summary",
+          "Success popup includes Print Struk button and Selesai button",
+          "Receipt includes itemized list, subtotal, PPN breakdown, and grand total",
+          "Transaction is recorded in sales history with full PPN info",
+          "Any past transaction receipt can be reprinted from Transaction History (S-012)"
+        ],
+        "acceptance_criteria": [
+          "Payment screen shows subtotal, PPN %, PPN amount, and grand total",
+          "Cashier can select payment method and input amount received",
+          "Change is calculated against grand total (inclusive PPN)",
+          "After payment: success popup with checkmark, summary, and Print Struk button",
+          "Cashier can print receipt from success popup",
+          "Cashier can tap Selesai to return to order list",
+          "Past transactions can be viewed in detail and receipt reprinted from S-012",
+          "Completed payment updates order status to paid"
+        ],
+        "screen_refs": ["S-004"]
+      },      {
+        "id": "F-004",
+        "title": "Inventory / Stock Management",
+        "priority": "must",
+        "description": "Track all ingredient and supply stock levels. Stock automatically decreases when orders are placed based on recipe ingredient requirements.",
+        "user_story": {
+          "role": "owner",
+          "action": "monitor real-time stock levels and see automatic deductions when orders are processed",
+          "benefit": "prevent inventory loss, know exactly what is in stock, and identify discrepancies"
+        },
+        "roles_allowed": ["owner"],
+        "fields": [
+          { "name": "item_name", "required": true, "note": "Name of inventory item" },
+          { "name": "quantity", "required": true, "note": "Current stock amount" },
+          { "name": "unit", "required": true, "note": "kg | liter | piece | pack etc." },
+          { "name": "minimum_threshold", "required": false, "note": "Low stock warning level" }
+        ],
+        "business_rules": [
+          "Stock deduction is triggered automatically when an order is confirmed",
+          "Deduction amounts are based on recipe ingredient definitions",
+          "Stock cannot go below zero — system warns if insufficient",
+          "Only authorized users can manually adjust stock (restock or correction)"
+        ],
+        "acceptance_criteria": [
+          "Owner can view all inventory items with current stock levels",
+          "Stock auto-decreases when orders are placed based on recipe ingredients",
+          "Owner can manually add stock (restocking)",
+          "System shows stock movement history (in/out log)"
+        ],
+        "screen_refs": ["S-011"]
+      },
+      {
+        "id": "F-005",
+        "title": "Menu Management",
+        "priority": "must",
+        "description": "Create, edit, and organize menu items with pricing, categories, and availability status.",
+        "user_story": {
+          "role": "owner",
+          "action": "manage all menu items including prices, categories, and availability from one place",
+          "benefit": "keep menu up-to-date and control what is available for ordering"
+        },
+        "roles_allowed": ["owner"],
+        "fields": [
+          { "name": "item_name", "required": true, "note": "Name of the dish/drink" },
+          { "name": "price", "required": true, "note": "Selling price" },
+          { "name": "category", "required": true, "note": "e.g., food, drink, dessert, snack" },
+          { "name": "description", "required": false, "note": "Short description of the item" },
+          { "name": "is_available", "required": true, "note": "Toggle availability on/off" },
+          { "name": "image", "required": false, "note": "Photo of the dish" }
+        ],
+        "business_rules": [
+          "Unavailable items are hidden from the order screen",
+          "Price changes take effect immediately for new orders",
+          "Each menu item can be linked to a recipe and ingredient list"
+        ],
+        "acceptance_criteria": [
+          "Owner can add, edit, and delete menu items",
+          "Menu items can be categorized and filtered",
+          "Availability toggle immediately affects order screen",
+          "Menu items can be linked to recipe guides and inventory ingredients"
+        ],
+        "screen_refs": ["S-003", "S-009"]
+      },      {
+        "id": "F-006",
+        "title": "Recipe Guide / Cooking Instructions",
+        "priority": "must",
+        "description": "Each menu item can have a detailed cooking guide with step-by-step instructions, required ingredients with measurements, and cooking time. Accessible from Kitchen Display.",
+        "user_story": {
+          "role": "chef",
+          "action": "view the cooking guide for any menu item directly from the kitchen display while preparing orders",
+          "benefit": "ensure consistent food quality and enable any chef to prepare any dish correctly"
+        },
+        "roles_allowed": ["chef", "owner"],
+        "fields": [
+          { "name": "menu_item_ref", "required": true, "note": "Link to the menu item" },
+          { "name": "ingredients", "required": true, "note": "Array of ingredients with quantities and units" },
+          { "name": "steps", "required": true, "note": "Ordered list of cooking steps" },
+          { "name": "cooking_time", "required": false, "note": "Estimated preparation time in minutes" },
+          { "name": "difficulty_level", "required": false, "note": "easy | medium | hard" },
+          { "name": "notes", "required": false, "note": "Additional tips or warnings" }
+        ],
+        "business_rules": [
+          "Recipe ingredients must reference inventory items for stock deduction",
+          "Only Owner or authorized chef can edit recipes",
+          "Recipe is viewable from Kitchen Display per order item"
+        ],
+        "acceptance_criteria": [
+          "Owner can create and edit recipe guides for each menu item",
+          "Recipe shows ingredients, step-by-step instructions, and estimated cooking time",
+          "Chef can open recipe guide from Kitchen Display with one tap on a menu item",
+          "Recipe ingredients are linked to inventory items"
+        ],
+        "screen_refs": ["S-007", "S-010"]
+      },      {
+        "id": "F-007",
+        "title": "Daily Sales Report & Dashboard",
+        "priority": "must",
+        "description": "Automated daily sales summary showing total revenue, number of orders, top-selling items, and sales trends. Accessible as a dashboard for the owner.",
+        "user_story": {
+          "role": "owner",
+          "action": "view a daily sales dashboard showing revenue, order count, and best-selling items",
+          "benefit": "monitor business performance in real-time and make informed decisions"
+        },
+        "roles_allowed": ["owner"],
+        "fields": [
+          { "name": "date_range", "required": true, "note": "Today, this week, this month, custom range" },
+          { "name": "total_revenue", "required": true, "note": "Sum of all completed payments" },
+          { "name": "total_orders", "required": true, "note": "Count of all orders" },
+          { "name": "top_items", "required": true, "note": "Most ordered menu items" }
+        ],
+        "business_rules": [
+          "Report data updates in real-time as transactions are completed",
+          "Only completed (paid) orders are counted in revenue",
+          "Dashboard is accessible from any device"
+        ],
+        "acceptance_criteria": [
+          "Owner can view todays sales summary on a dashboard",
+          "Dashboard shows total revenue, order count, and top-selling items",
+          "Owner can filter reports by date range",
+          "Data refreshes automatically without manual action"
+        ],
+        "screen_refs": ["S-008"]
+      },
+      {
+        "id": "F-008",
+        "title": "Checklist-based Access Control",
+        "priority": "must",
+        "description": "Owner can configure permissions for each user/role via a checklist UI. Each module access can be toggled on/off per user.",
+        "user_story": {
+          "role": "owner",
+          "action": "configure exactly which modules each staff member can access using a simple checklist interface",
+          "benefit": "have granular control over who sees what, adapting to multi-role staff flexibility"
+        },
+        "roles_allowed": ["owner"],
+        "fields": [
+          { "name": "user_ref", "required": true, "note": "The user being configured" },
+          { "name": "permission_checklist", "required": true, "note": "Array of module toggles (boolean)" }
+        ],
+        "business_rules": [
+          "Only Owner can access the access control panel",
+          "Permission changes take effect immediately",
+          "Each role has default permissions that can be overridden per individual user",
+          "Core permissions cannot be removed"
+        ],
+        "acceptance_criteria": [
+          "Owner can view a list of all users with their current permissions",
+          "Owner can toggle each permission on/off via checkboxes",
+          "Changes apply immediately without requiring user to re-login",
+          "Default permissions are pre-set based on role but fully customizable"
+        ],
+        "screen_refs": ["S-013"]
+      },      {
+        "id": "F-009",
+        "title": "Multi-role Authentication / Login",
+        "priority": "must",
+        "description": "Secure login system with role-based routing. Each user logs in and is directed to their appropriate interface based on their role and permissions.",
+        "user_story": {
+          "role": "owner",
+          "action": "create user accounts with assigned roles so each staff member has their own login",
+          "benefit": "ensure accountability, track who did what, and enforce access control"
+        },
+        "roles_allowed": ["owner", "waiter-cashier", "chef"],
+        "fields": [
+          { "name": "username", "required": true, "note": "Unique identifier for login" },
+          { "name": "password", "required": true, "note": "Secured/hashed" },
+          { "name": "role", "required": true, "note": "owner | waiter-cashier | chef" },
+          { "name": "display_name", "required": true, "note": "Name shown in the system" }
+        ],
+        "business_rules": [
+          "Each user must have a unique username",
+          "After login, ALL users are routed to the Main Dashboard Hub (S-016)",
+          "Dashboard Hub shows role-appropriate menu options",
+          "Owner can create, edit, and deactivate user accounts",
+          "Failed login attempts are logged",
+          "Owner can set and reset PIN per user for shift operations"
+        ],
+        "acceptance_criteria": [
+          "Users can log in with username and password",
+          "All users are routed to Main Dashboard Hub after login",
+          "Dashboard Hub shows role-appropriate menu cards",
+          "Owner can manage all user accounts (create, edit, deactivate, set PIN)",
+          "Logged-in users name is displayed in the interface"
+        ],
+        "screen_refs": ["S-001", "S-013", "S-016"]
+      },
+      {
+        "id": "F-015",
+        "title": "Cash Register Shift Management (Open/Close Kasir)",
+        "priority": "must",
+        "description": "PIC cashier must verify PIN, then enter the opening cash balance before processing any payments. At closing, cashier enters a one-way closing session: can print detailed transaction report line-by-line, counts physical cash, and system compares with expected amount. If discrepancy exists, notes are MANDATORY before closing.",
+        "user_story": {
+          "role": "waiter-cashier",
+          "action": "open a shift with opening cash balance and close it by reconciling physical cash with system records",
+          "benefit": "ensure full accountability for cash handling and detect discrepancies immediately"
+        },
+        "roles_allowed": ["waiter-cashier", "owner"],
+        "fields": [
+          { "name": "shift_id", "required": true, "note": "Auto-generated unique shift identifier" },
+          { "name": "pic_cashier", "required": true, "note": "User who opened the shift" },
+          { "name": "pin_verified", "required": true, "note": "Boolean — cashier must verify 4-6 digit PIN before opening shift" },
+          { "name": "opening_balance", "required": true, "note": "Cash amount entered at shift start (modal awal operasional)" },
+          { "name": "shift_start_time", "required": true, "note": "Timestamp when shift opened" },
+          { "name": "shift_end_time", "required": false, "note": "Timestamp when shift closed" },
+          { "name": "expected_cash", "required": true, "note": "System-calculated: opening_balance + cash_sales - cash_refunds" },
+          { "name": "actual_cash", "required": false, "note": "Physical cash counted by cashier at closing" },
+          { "name": "discrepancy", "required": false, "note": "Difference between expected and actual cash (surplus/shortage)" },
+          { "name": "digital_sales_total", "required": true, "note": "Total digital/e-wallet payments during shift" },
+          { "name": "total_revenue", "required": true, "note": "Total all payments (cash + digital) during shift" },
+          { "name": "status", "required": true, "note": "open | closed" },
+          { "name": "closing_notes", "required": false, "note": "Optional notes from cashier explaining discrepancy" }
+        ],
+        "business_rules": [
+          "Cashier MUST verify PIN before opening a shift",
+          "Cashier MUST re-verify PIN every time they enter POS operational screens (S-002, S-003, S-004, S-005) from outside POS — this prevents transaction manipulation during active shift",
+          "PIN is NOT required when navigating WITHIN POS screens (e.g., S-002 to S-003 to S-004)",
+          "PIN is required when entering POS FROM: Dashboard Hub, admin screens (stock, menu), or any non-POS screen",
+          "Cashier MUST open a shift before processing any payment",
+          "Only one active shift per cashier at a time",
+          "Opening balance is the starting cash in the register (modal awal operasional)",
+          "Cashier can do pre-shift preparation (check menu, stock) before opening shift",
+          "During shift, all cash and digital transactions are tracked",
+          "At closing, system calculates expected cash = opening + cash_in - cash_out",
+          "Closing is a ONE-WAY session — cashier cannot return to operations after initiating close",
+          "Cashier can print detailed line-by-line transaction report during closing for physical cash tracing",
+          "Cashier inputs actual physical cash count",
+          "System shows discrepancy (surplus or shortage) with clear indicator",
+          "If discrepancy exists (not match), notes are MANDATORY — cashier must explain before closing",
+          "If cash matches (green), notes are optional",
+          "Closed shift data is immutable and logged for audit",
+          "Owner can view all shift history and discrepancy reports"
+        ],
+        "acceptance_criteria": [
+          "Cashier sees Open Shift option on Main Dashboard Hub",
+          "Cashier must enter correct PIN before accessing shift opening",
+          "Cashier enters opening cash balance and confirms to start shift",
+          "During active shift, current shift info is visible in header",
+          "Entering POS screens from outside POS always requires PIN re-verification",
+          "Navigating within POS screens does not require PIN",
+          "Cashier can initiate Close Shift — this enters a one-way closing session",
+          "In closing session, cashier CANNOT navigate back to operations",
+          "Close Shift screen shows full shift summary and line-by-line transaction detail",
+          "Cashier can print the transaction report for physical tracing",
+          "System calculates and displays discrepancy with color indicator",
+          "If discrepancy exists, notes field is mandatory and close button is disabled until filled",
+          "If cash matches, closing completes directly",
+          "Owner can view shift history with all opening/closing data and discrepancies",
+          "Non-owner users see quick-access bar on admin screens to return to Hub or their primary workspace"
+        ],
+        "screen_refs": ["S-014", "S-015", "S-016"]
+      },
+      {
+        "id": "F-016",
+        "title": "POS System Settings (Tax/PPN Configuration)",
+        "priority": "must",
+        "description": "System-wide settings for the POS including configurable PPN/tax rate applied to all transactions. Owner can enable/disable PPN and set the percentage. PPN is automatically calculated on every transaction.",
+        "user_story": {
+          "role": "owner",
+          "action": "configure PPN/tax rate and other POS system settings",
+          "benefit": "ensure all transactions comply with tax regulations and settings can be adjusted as tax rates change"
+        },
+        "roles_allowed": ["owner"],
+        "fields": [
+          { "name": "ppn_enabled", "required": true, "note": "Boolean — whether PPN is applied to transactions" },
+          { "name": "ppn_rate", "required": true, "note": "Percentage (e.g., 11 for 11% PPN). Applied to subtotal." },
+          { "name": "restaurant_name", "required": false, "note": "Name shown on receipts" },
+          { "name": "restaurant_address", "required": false, "note": "Address shown on receipts" },
+          { "name": "receipt_footer", "required": false, "note": "Custom footer text for receipts (e.g., 'Terima kasih!')" }
+        ],
+        "business_rules": [
+          "PPN rate is configurable by owner in system settings",
+          "PPN is calculated as: ppn_amount = subtotal * (ppn_rate / 100)",
+          "Grand total = subtotal + ppn_amount",
+          "PPN applies to all transactions when enabled",
+          "PPN breakdown must be visible on payment screen and on printed receipt",
+          "Changes to PPN rate apply to new transactions only, not retroactively"
+        ],
+        "acceptance_criteria": [
+          "Owner can access POS Settings from admin panel or Dashboard Hub",
+          "Owner can toggle PPN on/off",
+          "Owner can set PPN rate percentage",
+          "Payment screen shows subtotal, PPN amount, and grand total",
+          "Printed receipt includes PPN breakdown",
+          "Transaction history shows PPN info per transaction"
+        ],
+        "screen_refs": ["S-017", "S-004", "S-012"]
+      },
+      {
+        "id": "F-017",
+        "title": "Void / Cancel Order & Transaction",
+        "priority": "must",
+        "description": "Mechanism to void or cancel an order before or after payment. Voided items are tracked for audit and affect shift reconciliation correctly. PIN required for void.",
+        "user_story": {
+          "role": "waiter-cashier",
+          "action": "void a wrong order or cancel a transaction when customer changes mind",
+          "benefit": "correct mistakes without affecting cash reconciliation accuracy"
+        },
+        "roles_allowed": ["waiter-cashier", "owner"],
+        "fields": [
+          { "name": "void_id", "required": true, "note": "Auto-generated void reference" },
+          { "name": "original_order_ref", "required": true, "note": "Reference to original order being voided" },
+          { "name": "void_type", "required": true, "note": "full_void | partial_void (cancel specific items) | cancel_before_payment" },
+          { "name": "void_reason", "required": true, "note": "Mandatory reason: salah_input | customer_batal | item_habis | lainnya" },
+          { "name": "void_notes", "required": false, "note": "Additional explanation" },
+          { "name": "voided_by", "required": true, "note": "PIC who performed the void" },
+          { "name": "pin_verified", "required": true, "note": "PIN must be verified before void is processed" },
+          { "name": "void_amount", "required": true, "note": "Total amount voided (affects expected cash in shift)" }
+        ],
+        "business_rules": [
+          "PIN verification required before any void operation",
+          "Cancel before payment: order is cancelled, items returned to available, no cash impact",
+          "Void after payment (full): full refund tracked, expected cash reduced in shift",
+          "Partial void: specific items voided, difference refunded",
+          "Void reason is MANDATORY — kasir must select reason",
+          "All voids are logged immutably for audit trail",
+          "Voided transactions appear in shift closing summary with separate line",
+          "Expected cash formula updated: opening + cash_sales - cash_refunds_from_voids",
+          "Owner can view all void history with reasons"
+        ],
+        "acceptance_criteria": [
+          "Cashier can cancel an unpaid order from order list",
+          "Cashier can void a paid transaction (requires PIN)",
+          "Void reason selection is mandatory",
+          "Voided amounts are reflected in shift expected cash calculation",
+          "Close shift summary shows void count and total void amount",
+          "Owner can see void history in transaction report"
+        ],
+        "screen_refs": ["S-002", "S-004", "S-012", "S-015"]
+      }
+    ],    "should_have": [
+      {
+        "id": "F-010",
+        "title": "Table Management",
+        "priority": "should",
+        "description": "Visual overview of all restaurant tables with status (available, occupied, reserved). Orders are assigned to specific tables.",
+        "user_story": {
+          "role": "waiter-cashier",
+          "action": "see which tables are available or occupied and assign orders to specific tables",
+          "benefit": "manage seating efficiently and link orders to the correct table"
+        },
+        "roles_allowed": ["waiter-cashier", "owner"],
+        "acceptance_criteria": [
+          "Visual grid showing all tables with color-coded status",
+          "Waiter can tap a table to create or view its active order",
+          "Table status updates automatically when order is created/paid",
+          "Owner can configure total number of tables"
+        ],
+        "screen_refs": ["S-005"]
+      },
+      {
+        "id": "F-011",
+        "title": "Transaction History",
+        "priority": "should",
+        "description": "Complete log of all past transactions with search and filter capabilities.",
+        "user_story": {
+          "role": "owner",
+          "action": "search and review past transactions by date, amount, or payment method",
+          "benefit": "maintain financial accountability and resolve any disputes"
+        },
+        "roles_allowed": ["owner", "waiter-cashier"],
+        "description": "Complete sales report log with Shift and PIC information. Advanced filtering by date, ID, PIC cashier, Shift, payment method, and total range. Export to Excel for external reporting.",
+        "acceptance_criteria": [
+          "Transaction table shows: date/time, ID, table, Shift ID, PIC Kasir, subtotal, PPN, total, payment method",
+          "Transactions can be filtered by: date range, transaction ID, PIC Kasir, Shift ID, payment method, total range",
+          "All filters are combinable and have a reset button",
+          "Summary stats (count, total revenue, cash total, digital total) update with active filters",
+          "Each transaction shows full detail modal with PPN breakdown and Print Struk button",
+          "Filtered data can be exported to Excel (.xlsx)",
+          "Transaction data cannot be deleted by non-owner users"
+        ],
+        "screen_refs": ["S-012"]
+      },
+      {
+        "id": "F-012",
+        "title": "Low Stock Notification",
+        "priority": "should",
+        "description": "Automatic alerts when inventory items fall below a defined minimum threshold.",
+        "user_story": {
+          "role": "owner",
+          "action": "receive automatic notifications when ingredients are running low",
+          "benefit": "proactively restock before running out and avoid menu item unavailability"
+        },
+        "roles_allowed": ["owner"],
+        "acceptance_criteria": [
+          "System shows a warning badge when any item is below threshold",
+          "Owner can set minimum threshold per inventory item",
+          "Low stock items are highlighted in the inventory view",
+          "Dashboard shows count of low-stock items"
+        ],
+        "screen_refs": ["S-008", "S-011"]
+      },
+      {
+        "id": "F-018",
+        "title": "Discount / Promo Management",
+        "priority": "should",
+        "description": "Apply discounts to orders — percentage or fixed amount. Owner can create promo rules. Discount is visible on payment screen and receipt.",
+        "user_story": {
+          "role": "owner",
+          "action": "set up discounts and promos that cashiers can apply to orders",
+          "benefit": "attract customers and run promotions while tracking their impact on revenue"
+        },
+        "roles_allowed": ["owner", "waiter-cashier"],
+        "fields": [
+          { "name": "discount_type", "required": true, "note": "percentage | fixed_amount" },
+          { "name": "discount_value", "required": true, "note": "e.g., 10 for 10% or 5000 for Rp 5.000" },
+          { "name": "discount_name", "required": true, "note": "Display label e.g., 'Promo Weekday 10%', 'Diskon Member'" },
+          { "name": "applied_to", "required": true, "note": "whole_order | specific_items" },
+          { "name": "active", "required": true, "note": "Boolean — is this discount currently usable" }
+        ],
+        "business_rules": [
+          "Owner creates and manages discount/promo options in settings",
+          "Active promos are displayed as banner on order creation screen (S-003) so customer and cashier can see available promos immediately",
+          "Cashier can apply discount from order creation screen OR from payment screen",
+          "Discount applied BEFORE PPN calculation: Grand Total = (Subtotal - Discount) + PPN",
+          "Only one discount per order (prevent stacking)",
+          "If promo applied at order creation, it carries through to payment screen",
+          "Discount amount and name shown on payment screen and printed receipt",
+          "Discounted transactions tracked in sales report",
+          "Owner can activate/deactivate discounts anytime"
+        ],
+        "acceptance_criteria": [
+          "Owner can create/edit/deactivate discount rules in settings",
+          "Active promos shown as banner cards on order creation screen (S-003)",
+          "Cashier can tap promo banner to apply discount during order creation",
+          "Applied promo carries through to payment screen automatically",
+          "Cashier can also add/change discount from payment screen",
+          "Discount picker shows all active discounts with calculated amount",
+          "Payment shows: Subtotal → Diskon → Subtotal setelah diskon → PPN → Grand Total",
+          "Receipt includes discount line",
+          "Transaction history shows discount info"
+        ],
+        "screen_refs": ["S-003", "S-004", "S-017", "S-012"]
+      },
+      {
+        "id": "F-013",
+        "title": "Report Export to Excel",
+        "priority": "should",
+        "description": "Export transaction/sales data from Riwayat Transaksi to Excel (.xlsx) for offline accounting and reporting. Export respects active filters.",
+        "roles_allowed": ["owner"],
+        "acceptance_criteria": [
+          "Export button on Transaction History (S-012) generates Excel file",
+          "Export includes all visible columns: date, ID, table, shift, PIC, subtotal, PPN, total, method",
+          "Export respects currently active filters (only exports filtered results)",
+          "Excel file includes header row and formatted data",
+          "Loading indicator shown during export generation"
+        ],
+        "screen_refs": ["S-012"]
+      }
+    ],
+    "could_have": [
+      {
+        "id": "F-014",
+        "title": "Menu Categorization",
+        "priority": "could",
+        "description": "Organize menu items into categories for easier browsing during order creation.",
+        "roles_allowed": ["owner", "waiter-cashier"],
+        "acceptance_criteria": [
+          "Menu items can be assigned to categories",
+          "Order screen allows filtering by category",
+          "Owner can create, edit, and delete categories"
+        ],
+        "screen_refs": ["S-009"]
+      }
+    ],    "wont_have": [
+      {
+        "id": "F-W01",
+        "title": "Online Customer Ordering",
+        "reason": "Out of scope for MVP — focus is on in-restaurant POS operations first"
+      },
+      {
+        "id": "F-W02",
+        "title": "Multi-branch Support",
+        "reason": "Out of scope for MVP — system is designed for a single restaurant location"
+      }
+    ]
+  },
+  "summary": {
+    "total": 20,
+    "must": 12,
+    "should": 5,
+    "could": 1,
+    "wont": 2
+  }
+}

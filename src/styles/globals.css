@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: #2D8CF0;
+    --color-primary-light: #5BA8F5;
+    --color-primary-dark: #1A6FC4;
+    --color-secondary: #0D1B2A;
+    --color-accent: #42B4F5;
+    --color-background: #0F1923;
+    --color-surface: #162433;
+    --color-surface-elevated: #1C2E42;
+    --color-text-primary: #E8F1FA;
+    --color-text-secondary: #8BA3BC;
+    --color-border: #253545;
+    --color-error: #EF4444;
+    --color-warning: #F59E0B;
+    --color-success: #22C55E;
+    --color-info: #3B82F6;
+    --gradient-primary: linear-gradient(135deg, #1A6FC4, #42B4F5);
+    --font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-family);
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Touch target optimization for tablets */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+
+  /* Safe area padding for mobile/tablet */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Scrollbar styling for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-background);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-secondary);
+  }
+}
+
+@layer components {
+  /* Card component */
+  .card {
+    @apply bg-surface rounded border border-border shadow;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-dark text-white py-3 px-4 rounded font-medium transition-colors disabled:opacity-50;
+  }
+
+  /* Input */
+  .input {
+    @apply bg-background border border-border rounded px-4 py-3 text-text-primary focus:border-primary focus:outline-none w-full;
+  }
+}

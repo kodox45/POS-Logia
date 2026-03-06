@@ -1,0 +1,47 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:55:00Z",
+  "assets": [
+    {
+      "id": "A-001",
+      "filename": "logo-full.jpg",
+      "type": "logo",
+      "path": ".ba/design/assets/logo-full.jpg",
+      "provided_by": "user",
+      "description": "Full LogiaInitiative logo with swirl icon and wordmark on dark navy background",
+      "used_in": ["S-001 Brand Header", "layout.json header", "style.json brand reference"]
+    },
+    {
+      "id": "A-002",
+      "filename": "logo-icon-only.png",
+      "type": "logo",
+      "path": ".ba/design/assets/logo-icon-only.png",
+      "provided_by": "user",
+      "description": "LogiaInitiative swirl icon only with transparent background — for app icon, favicon, and compact header use",
+      "used_in": ["S-001 Brand Header (compact)", "sidebar header icon", "app favicon"]
+    },
+    {
+      "id": "A-003",
+      "filename": "logo-variant.png",
+      "type": "logo",
+      "path": ".ba/design/assets/logo-variant.png",
+      "provided_by": "user",
+      "description": "Alternative logo variant for additional branding contexts",
+      "used_in": ["receipt header", "login screen alternative"]
+    }
+  ],
+  "brand_materials": {
+    "app_name": "POS Restoran UMKM Logia",
+    "tagline": null,
+    "icon_style": "custom",
+    "logo_rationale": "LogiaInitiative brand identity — blue gradient swirl representing connectivity and flow, matching the digital transformation vision for UMKM restaurants"
+  },
+  "summary": {
+    "total": 3,
+    "by_type": {
+      "logo": 3,
+      "icon": 0,
+      "reference": 0
+    }
+  }
+}

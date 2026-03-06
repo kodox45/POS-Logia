@@ -1,0 +1,413 @@
+{
+  "domain": "user-management",
+  "version": "1.0",
+  "wave": 2,
+  "depends_on_domains": ["auth"],
+
+  "entities": {
+    "owns": [
+      {
+        "name": "User",
+        "id": "E-001",
+        "table_name": "users",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "username", "type": "string", "category": "business", "required": true, "unique": true, "default": null, "max_length": 255, "source": "F-009.fields[0]" },
+          { "name": "passwordHash", "type": "string", "category": "business", "required": true, "unique": false, "default": null, "max_length": 255, "source": "F-009.fields[1]" },
+          { "name": "pinHash", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 255, "source": "F-015.business_rules[0]" },
+          { "name": "role", "type": "enum", "category": "business", "required": true, "unique": false, "default": null, "values": ["owner", "waiter-cashier", "chef"], "source": "F-009.fields[2]" },
+          { "name": "displayName", "type": "string", "category": "business", "required": true, "unique": false, "default": null, "max_length": 255, "source": "F-009.fields[3]" },
+          { "name": "isActive", "type": "boolean", "category": "business", "required": true, "unique": false, "default": true, "source": "F-009.business_rules[3]" },
+          { "name": "lastLoginAt", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:prototype-summary" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "UserPermission", "type": "one-to-many", "foreign_key": "userId", "cascade_delete": true },
+          { "target": "Shift", "type": "one-to-many", "foreign_key": "picCashierId", "cascade_delete": false },
+          { "target": "Order", "type": "one-to-many", "foreign_key": "waiterId", "cascade_delete": false }
+        ],
+        "indexes": [
+          { "fields": ["username"], "unique": true },
+          { "fields": ["role"], "unique": false },
+          { "fields": ["isActive"], "unique": false }
+        ],
+        "state_machine": null,
+        "business_rules": [
+          { "rule": "Each user must have a unique username", "type": "constraint", "source": "F-009.business_rules[0]", "enforcement": "create" },
+          { "rule": "After login, ALL users are routed to the Main Dashboard Hub", "type": "constraint", "source": "F-009.business_rules[1]", "enforcement": "both" },
+          { "rule": "Owner can create, edit, and deactivate user accounts", "type": "constraint", "source": "F-009.business_rules[3]", "enforcement": "both" },
+          { "rule": "Failed login attempts are logged", "type": "constraint", "source": "F-009.business_rules[4]", "enforcement": "both" },
+          { "rule": "Owner can set and reset PIN per user for shift operations", "type": "constraint", "source": "F-009.business_rules[5]", "enforcement": "update" }
+        ]
+      },
+      {
+        "name": "UserPermission",
+        "id": "E-002",
+        "table_name": "userPermissions",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "userId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-008.fields[0]" },
+          { "name": "permissionKey", "type": "string", "category": "business", "required": true, "unique": false, "default": null, "max_length": 255, "source": "F-008.fields[1]" },
+          { "name": "isGranted", "type": "boolean", "category": "business", "required": true, "unique": false, "default": false, "source": "F-008.fields[1]" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "User", "type": "many-to-one", "foreign_key": "userId", "cascade_delete": true }
+        ],
+        "indexes": [
+          { "fields": ["userId", "permissionKey"], "unique": true },
+          { "fields": ["userId"], "unique": false }
+        ],
+        "state_machine": null,
+        "business_rules": [
+          { "rule": "Only Owner can access the access control panel", "type": "constraint", "source": "F-008.business_rules[0]", "enforcement": "both" },
+          { "rule": "Permission changes take effect immediately", "type": "constraint", "source": "F-008.business_rules[1]", "enforcement": "update" },
+          { "rule": "Each role has default permissions that can be overridden per individual user", "type": "constraint", "source": "F-008.business_rules[2]", "enforcement": "create" },
+          { "rule": "Core permissions cannot be removed", "type": "constraint", "source": "F-008.business_rules[3]", "enforcement": "update" }
+        ]
+      }
+    ],
+    "reads": [
+      {
+        "name": "Shift",
+        "id": "E-015",
+        "read_fields": ["id", "picCashierId", "status"]
+      },
+      {
+        "name": "Order",
+        "id": "E-011",
+        "read_fields": ["id", "waiterId"]
+      }
+    ]
+  },
+
+  "endpoints": [
+    {
+      "id": "EP-005",
+      "method": "GET",
+      "path": "/api/users",
+      "description": "List all user accounts with their roles and active status. Used by owner for user management screen.",
+      "source_features": ["F-009", "F-008"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [
+          { "name": "role", "type": "enum", "required": false, "description": "Filter by role", "values": ["owner", "waiter-cashier", "chef"] },
+          { "name": "isActive", "type": "boolean", "required": false, "description": "Filter by active status" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "users": [{ "id": "uuid", "username": "string", "displayName": "string", "role": "enum", "isActive": "boolean", "lastLoginAt": "ISO-8601|null", "createdAt": "ISO-8601" }],
+            "total": "number"
+          }
+        },
+        "errors": [
+          { "status": 403, "code": "FORBIDDEN", "message": "Only owner can list users" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "User",
+      "related_entity_id": "E-001",
+      "domain_group": "user-management"
+    },
+    {
+      "id": "EP-006",
+      "method": "GET",
+      "path": "/api/users/:id",
+      "description": "Get detailed user profile including permissions.",
+      "source_features": ["F-009", "F-008"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "User ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "username": "string",
+            "displayName": "string",
+            "role": "enum",
+            "isActive": "boolean",
+            "hasPinSet": "boolean",
+            "lastLoginAt": "ISO-8601|null",
+            "permissions": [{ "permissionKey": "string", "isGranted": "boolean" }],
+            "createdAt": "ISO-8601",
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "USER_NOT_FOUND", "message": "User not found" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "User",
+      "related_entity_id": "E-001",
+      "domain_group": "user-management"
+    },
+    {
+      "id": "EP-007",
+      "method": "POST",
+      "path": "/api/users",
+      "description": "Create a new user account with role assignment and optional PIN. Default permissions are set based on role.",
+      "source_features": ["F-009"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "username", "type": "string", "required": true, "description": "Unique username for login" },
+          { "name": "password", "type": "string", "required": true, "description": "Password (will be hashed with bcrypt)" },
+          { "name": "displayName", "type": "string", "required": true, "description": "Name shown in the system" },
+          { "name": "role", "type": "enum", "required": true, "description": "User role", "values": ["waiter-cashier", "chef"] },
+          { "name": "pin", "type": "string", "required": false, "description": "4-6 digit PIN (will be hashed)" }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 201,
+          "body": {
+            "id": "uuid",
+            "username": "string",
+            "displayName": "string",
+            "role": "enum",
+            "isActive": true,
+            "permissions": [{ "permissionKey": "string", "isGranted": "boolean" }]
+          }
+        },
+        "errors": [
+          { "status": 409, "code": "USERNAME_EXISTS", "message": "Username already taken" },
+          { "status": 403, "code": "FORBIDDEN", "message": "Only owner can create users" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Each user must have a unique username", "type": "constraint", "field": "username", "validation": "unique", "source": "F-009.business_rules[0]" },
+        { "rule": "Each role has default permissions that can be overridden per individual user", "type": "constraint", "source": "F-008.business_rules[2]" }
+      ],
+      "related_entity": "User",
+      "related_entity_id": "E-001",
+      "domain_group": "user-management"
+    },
+    {
+      "id": "EP-008",
+      "method": "PATCH",
+      "path": "/api/users/:id",
+      "description": "Update user account details including display name, password, PIN, and active status.",
+      "source_features": ["F-009"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "User ID" }],
+        "body": [
+          { "name": "displayName", "type": "string", "required": false, "description": "Updated display name" },
+          { "name": "password", "type": "string", "required": false, "description": "New password (will be hashed)" },
+          { "name": "pin", "type": "string", "required": false, "description": "New 4-6 digit PIN (will be hashed)" },
+          { "name": "isActive", "type": "boolean", "required": false, "description": "Activate or deactivate account" }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "username": "string", "displayName": "string", "isActive": "boolean", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 404, "code": "USER_NOT_FOUND", "message": "User not found" },
+          { "status": 403, "code": "FORBIDDEN", "message": "Only owner can edit users" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Owner can create, edit, and deactivate user accounts", "type": "constraint", "source": "F-009.business_rules[3]" },
+        { "rule": "Owner can set and reset PIN per user for shift operations", "type": "constraint", "source": "F-009.business_rules[5]" }
+      ],
+      "related_entity": "User",
+      "related_entity_id": "E-001",
+      "domain_group": "user-management"
+    },
+    {
+      "id": "EP-009",
+      "method": "GET",
+      "path": "/api/users/:id/permissions",
+      "description": "Get the full permission checklist for a specific user including default role permissions and individual overrides.",
+      "source_features": ["F-008"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "User ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "userId": "uuid",
+            "role": "enum",
+            "permissions": [{ "id": "uuid", "permissionKey": "string", "name": "string", "isGranted": "boolean", "isDefault": "boolean" }]
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "USER_NOT_FOUND", "message": "User not found" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Only Owner can access the access control panel", "type": "constraint", "source": "F-008.business_rules[0]" }
+      ],
+      "related_entity": "UserPermission",
+      "related_entity_id": "E-002",
+      "domain_group": "user-management"
+    },
+    {
+      "id": "EP-010",
+      "method": "PATCH",
+      "path": "/api/users/:id/permissions",
+      "description": "Update permission checklist for a specific user. Toggles individual permissions on/off.",
+      "source_features": ["F-008"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "User ID" }],
+        "body": [
+          { "name": "permissions", "type": "array", "required": true, "description": "Array of permission updates", "items": { "permissionKey": "string", "isGranted": "boolean" } }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "userId": "uuid",
+            "updatedPermissions": [{ "permissionKey": "string", "isGranted": "boolean" }],
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "USER_NOT_FOUND", "message": "User not found" },
+          { "status": 400, "code": "CORE_PERMISSION_PROTECTED", "message": "Core permissions cannot be removed" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Permission changes take effect immediately", "type": "constraint", "source": "F-008.business_rules[1]" },
+        { "rule": "Core permissions cannot be removed", "type": "constraint", "source": "F-008.business_rules[3]" }
+      ],
+      "related_entity": "UserPermission",
+      "related_entity_id": "E-002",
+      "domain_group": "user-management"
+    }
+  ],
+
+  "screens": [
+    {
+      "screen_id": "S-013",
+      "name": "User & Access Control",
+      "page_component": "UserManagementPage",
+      "route": "/admin/users",
+      "interface": "admin-panel",
+      "layout": "AdminLayout",
+      "guards": ["AuthGuard", "RoleGuard"],
+      "sections": [
+        {
+          "name": "User List",
+          "position": "center",
+          "description": "List of all users: display name, username, role, status (active/inactive), last login",
+          "components": ["data-table", "status-badge", "action-buttons"]
+        },
+        {
+          "name": "Toolbar",
+          "position": "top",
+          "description": "Add new user button, search bar, role filter",
+          "components": ["add-button", "search-bar", "role-filter"]
+        },
+        {
+          "name": "User Form",
+          "position": "modal",
+          "description": "Create/edit user: display name, username, password, role selector, active/inactive toggle",
+          "components": ["form-input", "role-select", "active-toggle"]
+        },
+        {
+          "name": "Permission Checklist Panel",
+          "position": "modal",
+          "description": "Checklist of all module permissions for selected user. Each permission is a toggle checkbox. Shows default for role and current override.",
+          "components": ["permission-checklist", "toggle-checkbox", "save-button"]
+        }
+      ]
+    }
+  ],
+
+  "features": [
+    {
+      "id": "F-008",
+      "title": "Checklist-based Access Control",
+      "priority": "must_have",
+      "acceptance_criteria": [
+        "Owner can view a list of all users with their current permissions",
+        "Owner can toggle each permission on/off via checkboxes",
+        "Changes apply immediately without requiring user to re-login",
+        "Default permissions are pre-set based on role but fully customizable"
+      ],
+      "business_rules": [
+        { "rule": "Only Owner can access the access control panel", "type": "constraint", "source": "F-008.business_rules[0]", "enforcement": "both" },
+        { "rule": "Permission changes take effect immediately", "type": "constraint", "source": "F-008.business_rules[1]", "enforcement": "update" },
+        { "rule": "Each role has default permissions that can be overridden per individual user", "type": "constraint", "source": "F-008.business_rules[2]", "enforcement": "create" },
+        { "rule": "Core permissions cannot be removed", "type": "constraint", "source": "F-008.business_rules[3]", "enforcement": "update" }
+      ]
+    },
+    {
+      "id": "F-009",
+      "title": "Multi-role Authentication / Login",
+      "priority": "must_have",
+      "acceptance_criteria": [
+        "Users can log in with username and password",
+        "All users are routed to Main Dashboard Hub after login",
+        "Dashboard Hub shows role-appropriate menu cards",
+        "Owner can manage all user accounts (create, edit, deactivate, set PIN)",
+        "Logged-in users name is displayed in the interface"
+      ],
+      "business_rules": [
+        { "rule": "Each user must have a unique username", "type": "constraint", "source": "F-009.business_rules[0]", "enforcement": "create" },
+        { "rule": "After login, ALL users are routed to the Main Dashboard Hub (S-016)", "type": "constraint", "source": "F-009.business_rules[1]", "enforcement": "both" },
+        { "rule": "Dashboard Hub shows role-appropriate menu options", "type": "constraint", "source": "F-009.business_rules[2]", "enforcement": "both" },
+        { "rule": "Owner can create, edit, and deactivate user accounts", "type": "constraint", "source": "F-009.business_rules[3]", "enforcement": "both" },
+        { "rule": "Failed login attempts are logged", "type": "constraint", "source": "F-009.business_rules[4]", "enforcement": "both" },
+        { "rule": "Owner can set and reset PIN per user for shift operations", "type": "constraint", "source": "F-009.business_rules[5]", "enforcement": "update" }
+      ]
+    }
+  ],
+
+  "cross_domain_contracts": [],
+
+  "state_dependencies": {
+    "owns_store": "useAuthStore",
+    "writes_to_tables": ["users", "userPermissions"],
+    "reads_from_tables": ["shifts", "orders"],
+    "calls_other_stores": []
+  },
+
+  "write_scope": [
+    "src/pages/admin/users/",
+    "src/components/user-management/",
+    "src/stores/useAuthStore.ts",
+    "server/routes/user-management/",
+    "server/services/user-management/"
+  ]
+}

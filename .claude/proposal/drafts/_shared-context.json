@@ -1,0 +1,146 @@
+{
+  "project_name": "pos-restoran-umkm-logia",
+  "app_type": "offline-first",
+  "complexity_tier": "complex",
+  "has_prototype": true,
+  "has_prototype_status": true,
+  "screen_count": 17,
+  "counts": {
+    "features_must": 12,
+    "features_should": 5,
+    "features_could": 1,
+    "roles": 3,
+    "screens": 17,
+    "entity_candidates": 15
+  },
+  "key_signals": {
+    "offline_first": true,
+    "auth_hint": {
+      "primary_method": "username-password",
+      "secondary_method": "pin",
+      "session_storage": "indexeddb",
+      "server_dependency": false
+    },
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "interface_count": 4,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "entity_candidate_count": 15,
+    "domain_groups": [
+      "auth",
+      "menu",
+      "recipe",
+      "inventory",
+      "order-management",
+      "kitchen",
+      "payment",
+      "shift-management",
+      "reporting",
+      "settings"
+    ],
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "attribute_name": "camelCase",
+      "endpoint_path": "kebab-case"
+    }
+  },
+  "source_paths": {
+    "index": ".ba/index.json",
+    "features": ".ba/requirements/features.json",
+    "roles": ".ba/requirements/roles.json",
+    "nfr": ".ba/requirements/nfr.json",
+    "screens": ".ba/design/screens.json",
+    "components": ".ba/design/components.json",
+    "flows": ".ba/design/flows.json",
+    "layout": ".ba/design/layout.json",
+    "style": ".ba/design/style.json",
+    "constraints": ".ba/discovery/constraints.json",
+    "problem": ".ba/discovery/problem.json",
+    "stakeholders": ".ba/discovery/stakeholders.json",
+    "manifest": ".ba/design/manifest.json",
+    "traceability": ".ba/validation/traceability.json",
+    "prd": ".ba/validation/prd.json"
+  },
+  "unavailable_sources": [],
+  "cross_domain_flows": [
+    {
+      "flow_id": "UF-001",
+      "name": "Complete Order-to-Payment Flow",
+      "domains_touched": ["order-management", "kitchen", "payment", "inventory"],
+      "trigger_events": [
+        { "event": "order.status -> pending (submitted)", "source_feature": "F-001" },
+        { "event": "order.status -> cooking", "source_feature": "F-002" },
+        { "event": "order.status -> ready", "source_feature": "F-002" },
+        { "event": "payment.completed", "source_feature": "F-003" }
+      ],
+      "timing_conflicts": [
+        {
+          "action": "deduct stock",
+          "sources": [
+            { "feature": "F-004", "timing": "when order is confirmed", "rule": "Stock deduction is triggered automatically when an order is confirmed" },
+            { "feature": "UF-001 step 11", "timing": "at payment completion", "rule": "Transaction recorded, receipt printed, order status set to paid, table becomes available, stock auto-deducted" }
+          ]
+        }
+      ],
+      "side_effects": [
+        { "source_domain": "order-management", "target_domain": "kitchen", "action": "send order to kitchen display", "source_feature": "F-001" },
+        { "source_domain": "kitchen", "target_domain": "order-management", "action": "notify waiter order ready", "source_feature": "F-002" },
+        { "source_domain": "payment", "target_domain": "inventory", "action": "deduct stock based on recipe ingredients", "source_feature": "F-004" },
+        { "source_domain": "payment", "target_domain": "order-management", "action": "update order status to paid, release table", "source_feature": "F-003" }
+      ]
+    },
+    {
+      "flow_id": "UF-006",
+      "name": "Insufficient Stock Warning",
+      "domains_touched": ["order-management", "inventory"],
+      "trigger_events": [
+        { "event": "order.submit attempted", "source_feature": "F-001" }
+      ],
+      "timing_conflicts": [],
+      "side_effects": [
+        { "source_domain": "order-management", "target_domain": "inventory", "action": "check stock levels against recipe ingredients", "source_feature": "F-004" }
+      ]
+    },
+    {
+      "flow_id": "UF-007",
+      "name": "Full Cashier Journey: Prep to Close Shift",
+      "domains_touched": ["auth", "shift-management", "order-management", "payment"],
+      "trigger_events": [
+        { "event": "shift.opened", "source_feature": "F-015" },
+        { "event": "shift.closed", "source_feature": "F-015" }
+      ],
+      "timing_conflicts": [],
+      "side_effects": [
+        { "source_domain": "shift-management", "target_domain": "payment", "action": "track all cash and digital transactions under shift", "source_feature": "F-015" },
+        { "source_domain": "shift-management", "target_domain": "auth", "action": "PIN verification required for shift open and POS entry", "source_feature": "F-015" }
+      ]
+    },
+    {
+      "flow_id": "UF-008",
+      "name": "Kitchen Ready to Waiter Serve",
+      "domains_touched": ["kitchen", "order-management"],
+      "trigger_events": [
+        { "event": "order.status -> ready", "source_feature": "F-002" }
+      ],
+      "timing_conflicts": [],
+      "side_effects": [
+        { "source_domain": "kitchen", "target_domain": "order-management", "action": "push notification to kitchenReadyNotifications array", "source_feature": "F-002" }
+      ]
+    },
+    {
+      "flow_id": "UF-010",
+      "name": "Void Paid Transaction",
+      "domains_touched": ["order-management", "payment", "shift-management"],
+      "trigger_events": [
+        { "event": "void.processed", "source_feature": "F-017" }
+      ],
+      "timing_conflicts": [],
+      "side_effects": [
+        { "source_domain": "order-management", "target_domain": "shift-management", "action": "reduce expected cash by void amount", "source_feature": "F-017" },
+        { "source_domain": "order-management", "target_domain": "payment", "action": "mark transaction as voided in history", "source_feature": "F-017" }
+      ]
+    }
+  ]
+}

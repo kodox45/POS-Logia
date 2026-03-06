@@ -1,0 +1,599 @@
+{
+  "domain": "payment",
+  "version": "1.0",
+  "wave": 3,
+  "depends_on_domains": ["order-management", "auth", "shift-management", "settings"],
+
+  "entities": {
+    "owns": [
+      {
+        "name": "Transaction",
+        "id": "E-013",
+        "table_name": "transactions",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "transactionNumber", "type": "string", "category": "business", "required": true, "unique": true, "default": null, "max_length": 20, "source": "inferred:structural" },
+          { "name": "orderId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-003.fields[0]" },
+          { "name": "shiftId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "inferred:prototype-summary" },
+          { "name": "cashierId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "inferred:prototype-summary" },
+          { "name": "tableNumber", "type": "integer", "category": "business", "required": true, "unique": false, "default": null, "source": "inferred:prototype-summary" },
+          { "name": "subtotalAmount", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-003.fields[1]" },
+          { "name": "discountName", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 255, "source": "F-018.business_rules[6]" },
+          { "name": "discountAmount", "type": "decimal", "category": "business", "required": false, "unique": false, "default": 0, "source": "F-003.business_rules[0]" },
+          { "name": "ppnRate", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-003.fields[2]" },
+          { "name": "ppnAmount", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-003.fields[3]" },
+          { "name": "grandTotal", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-003.fields[4]" },
+          { "name": "paymentMethod", "type": "enum", "category": "business", "required": true, "unique": false, "default": null, "values": ["tunai", "qris", "gopay", "ovo", "dana", "shopeepay", "transfer_bank"], "source": "F-003.fields[5]" },
+          { "name": "digitalPaymentRef", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 255, "source": "F-003.fields[6]" },
+          { "name": "transferProofPhotoUrl", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 500, "source": "F-003.fields[7]" },
+          { "name": "amountPaid", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-003.fields[8]" },
+          { "name": "changeAmount", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "F-003.fields[9]" },
+          { "name": "transactionStatus", "type": "enum", "category": "business", "required": true, "unique": false, "default": "completed", "values": ["completed", "voided"], "source": "inferred:structural" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "Order", "type": "many-to-one", "foreign_key": "orderId", "cascade_delete": false },
+          { "target": "Shift", "type": "many-to-one", "foreign_key": "shiftId", "cascade_delete": false },
+          { "target": "User", "type": "many-to-one", "foreign_key": "cashierId", "cascade_delete": false }
+        ],
+        "indexes": [
+          { "fields": ["transactionNumber"], "unique": true },
+          { "fields": ["orderId"], "unique": false },
+          { "fields": ["shiftId"], "unique": false },
+          { "fields": ["cashierId"], "unique": false },
+          { "fields": ["paymentMethod"], "unique": false },
+          { "fields": ["createdAt"], "unique": false }
+        ],
+        "state_machine": {
+          "states": ["completed", "voided"],
+          "transitions": [
+            { "from": "completed", "to": "voided", "trigger": "void_processed", "allowed_roles": ["waiter-cashier", "owner"] }
+          ],
+          "initial": "completed",
+          "terminal": ["voided"]
+        },
+        "business_rules": [
+          { "rule": "Payment cannot be processed if amount paid is less than grand total", "type": "constraint", "source": "F-003.business_rules[3]", "enforcement": "create" },
+          { "rule": "Transaction stores SPECIFIC payment method name (e.g., GoPay, OVO, Transfer BCA) - NOT generic Digital", "type": "constraint", "source": "F-003.business_rules[9]", "enforcement": "create" },
+          { "rule": "PPN amount = (subtotal - discount) * (ppnRate / 100)", "type": "formula", "source": "F-003.business_rules[1]", "inputs": ["Transaction.subtotalAmount", "Transaction.discountAmount", "Transaction.ppnRate"], "output": "Transaction.ppnAmount", "enforcement": "create" },
+          { "rule": "Grand total = (subtotal - discount) + ppnAmount", "type": "formula", "source": "F-003.business_rules[1]", "inputs": ["Transaction.subtotalAmount", "Transaction.discountAmount", "Transaction.ppnAmount"], "output": "Transaction.grandTotal", "enforcement": "create" },
+          { "rule": "For digital payments: no change calculation needed (exact amount)", "type": "constraint", "source": "F-003.business_rules[8]", "enforcement": "create" },
+          { "rule": "Transaction is recorded in sales history with full PPN info", "type": "constraint", "source": "F-003.business_rules[11]", "enforcement": "create" }
+        ]
+      },
+      {
+        "name": "VoidRecord",
+        "id": "E-015",
+        "table_name": "voidRecords",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "voidNumber", "type": "string", "category": "business", "required": true, "unique": true, "default": null, "max_length": 20, "source": "F-017.fields[0]" },
+          { "name": "originalOrderId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-017.fields[1]" },
+          { "name": "shiftId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "inferred:structural" },
+          { "name": "voidType", "type": "enum", "category": "business", "required": true, "unique": false, "default": null, "values": ["full_void", "partial_void", "cancel_before_payment"], "source": "F-017.fields[2]" },
+          { "name": "voidReason", "type": "enum", "category": "business", "required": true, "unique": false, "default": null, "values": ["salah_input", "customer_batal", "item_habis", "lainnya"], "source": "F-017.fields[3]" },
+          { "name": "voidNotes", "type": "text", "category": "business", "required": false, "unique": false, "default": null, "source": "F-017.fields[4]" },
+          { "name": "voidedBy", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-017.fields[5]" },
+          { "name": "pinVerified", "type": "boolean", "category": "business", "required": true, "unique": false, "default": false, "source": "F-017.fields[6]" },
+          { "name": "pinVerifiedAt", "type": "timestamp", "category": "business", "required": true, "unique": false, "default": null, "source": "F-017.business_rules[0]" },
+          { "name": "voidAmount", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-017.fields[7]" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "Order", "type": "many-to-one", "foreign_key": "originalOrderId", "cascade_delete": false },
+          { "target": "Shift", "type": "many-to-one", "foreign_key": "shiftId", "cascade_delete": false },
+          { "target": "User", "type": "many-to-one", "foreign_key": "voidedBy", "cascade_delete": false }
+        ],
+        "indexes": [
+          { "fields": ["voidNumber"], "unique": true },
+          { "fields": ["originalOrderId"], "unique": false },
+          { "fields": ["shiftId"], "unique": false },
+          { "fields": ["voidedBy"], "unique": false },
+          { "fields": ["createdAt"], "unique": false }
+        ],
+        "state_machine": null,
+        "business_rules": [
+          { "rule": "PIN verification required before any void operation", "type": "constraint", "source": "F-017.business_rules[0]", "enforcement": "create" },
+          { "rule": "Cancel before payment: order is cancelled, items returned to available, no cash impact", "type": "constraint", "source": "F-017.business_rules[1]", "enforcement": "create" },
+          { "rule": "Void after payment (full): full refund tracked, expected cash reduced in shift", "type": "constraint", "source": "F-017.business_rules[2]", "enforcement": "create" },
+          { "rule": "Void reason is MANDATORY - kasir must select reason", "type": "constraint", "source": "F-017.business_rules[4]", "enforcement": "create" },
+          { "rule": "All voids are logged immutably for audit trail", "type": "constraint", "source": "F-017.business_rules[5]", "enforcement": "create" },
+          { "rule": "Expected cash formula updated: opening + cash_sales - cash_refunds_from_voids", "type": "formula", "source": "F-017.business_rules[6]", "inputs": ["Shift.openingBalance", "Shift.cashSalesTotal", "VoidRecord.voidAmount"], "output": "Shift.expectedCash", "enforcement": "create" }
+        ]
+      }
+    ],
+    "reads": [
+      {
+        "name": "Order",
+        "id": "E-011",
+        "read_fields": ["id", "orderNumber", "tableId", "orderStatus", "subtotalAmount", "discountAmount", "ppnRate", "ppnAmount", "grandTotal"]
+      },
+      {
+        "name": "Shift",
+        "id": "E-014",
+        "read_fields": ["id", "shiftNumber", "shiftStatus", "openingBalance", "cashSalesTotal", "expectedCash"]
+      },
+      {
+        "name": "User",
+        "id": "E-001",
+        "read_fields": ["id", "displayName", "role", "pinHash"]
+      },
+      {
+        "name": "Discount",
+        "id": "E-016",
+        "read_fields": ["id", "discountName", "discountType", "discountValue", "isActive"]
+      },
+      {
+        "name": "PosSettings",
+        "id": "E-018",
+        "read_fields": ["ppnEnabled", "ppnRate"]
+      }
+    ]
+  },
+
+  "endpoints": [
+    {
+      "id": "EP-050",
+      "method": "POST",
+      "path": "/api/payments",
+      "description": "Process payment for an order. Calculates PPN, validates amount, creates transaction record. Updates order status to paid and releases table.",
+      "source_features": ["F-003", "F-016", "F-015"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "orderId", "type": "uuid", "required": true, "description": "Order to pay" },
+          { "name": "paymentMethod", "type": "enum", "required": true, "description": "Payment method", "values": ["tunai", "qris", "gopay", "ovo", "dana", "shopeepay", "transfer_bank"] },
+          { "name": "amountPaid", "type": "decimal", "required": true, "description": "Amount given by customer" },
+          { "name": "digitalPaymentRef", "type": "string", "required": false, "description": "Reference number for digital payments" },
+          { "name": "transferProofPhotoUrl", "type": "string", "required": false, "description": "Photo of transfer proof (for transfer_bank)" },
+          { "name": "discountId", "type": "uuid", "required": false, "description": "Applied discount (if not already on order)" }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 201,
+          "body": {
+            "transaction": {
+              "id": "uuid",
+              "transactionNumber": "string",
+              "orderId": "uuid",
+              "shiftId": "uuid",
+              "tableNumber": "number",
+              "subtotalAmount": "decimal",
+              "discountName": "string|null",
+              "discountAmount": "decimal",
+              "ppnRate": "decimal",
+              "ppnAmount": "decimal",
+              "grandTotal": "decimal",
+              "paymentMethod": "enum",
+              "amountPaid": "decimal",
+              "changeAmount": "decimal",
+              "createdAt": "ISO-8601"
+            },
+            "orderStatus": "paid",
+            "tableStatus": "available"
+          }
+        },
+        "errors": [
+          { "status": 400, "code": "INSUFFICIENT_AMOUNT", "message": "Payment cannot be processed if amount paid is less than grand total" },
+          { "status": 400, "code": "NO_ACTIVE_SHIFT", "message": "Cashier must open a shift before processing any payment" },
+          { "status": 404, "code": "ORDER_NOT_FOUND", "message": "Order not found" },
+          { "status": 400, "code": "ORDER_NOT_PAYABLE", "message": "Order is not in a payable status (must be served or ready)" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "PPN calculation", "formula": "(subtotal - discount) * (ppnRate / 100)", "inputs": ["subtotalAmount", "discountAmount", "ppnRate"], "output": "ppnAmount", "example": "100000 - 10000 = 90000; 90000 * 0.11 = 9900", "source": "F-003.business_rules[2]" },
+        { "rule": "Grand total calculation", "formula": "(subtotal - discount) + ppnAmount", "inputs": ["subtotalAmount", "discountAmount", "ppnAmount"], "output": "grandTotal", "example": "90000 + 9900 = 99900", "source": "F-003.business_rules[2]" },
+        { "rule": "Payment cannot be processed if amount paid is less than grand total", "type": "constraint", "source": "F-003.business_rules[3]" },
+        { "rule": "CASH: Numpad input for amount received, auto-calculate change", "type": "constraint", "source": "F-003.business_rules[4]" },
+        { "rule": "For digital payments: no change calculation needed (exact amount)", "type": "constraint", "source": "F-003.business_rules[8]" },
+        { "rule": "Transaction stores SPECIFIC payment method name, NOT generic Digital", "type": "constraint", "source": "F-003.business_rules[9]" },
+        { "rule": "Cashier MUST open a shift before processing any payment", "type": "constraint", "source": "F-015.business_rules[4]" },
+        { "rule": "Discount applied BEFORE PPN calculation: Grand Total = (Subtotal - Discount) + PPN", "type": "constraint", "source": "F-018.business_rules[3]" },
+        { "rule": "Only one discount per order (prevent stacking)", "type": "constraint", "source": "F-018.business_rules[4]" }
+      ],
+      "related_entity": "Transaction",
+      "related_entity_id": "E-013",
+      "domain_group": "payment"
+    },
+    {
+      "id": "EP-051",
+      "method": "POST",
+      "path": "/api/orders/:id/void",
+      "description": "Void a paid transaction. Requires PIN verification. Creates VoidRecord and adjusts shift expected cash.",
+      "source_features": ["F-017"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Order ID to void" }],
+        "body": [
+          { "name": "voidType", "type": "enum", "required": true, "description": "Type of void", "values": ["full_void", "partial_void"] },
+          { "name": "voidReason", "type": "enum", "required": true, "description": "Mandatory reason", "values": ["salah_input", "customer_batal", "item_habis", "lainnya"] },
+          { "name": "voidNotes", "type": "string", "required": false, "description": "Additional explanation" },
+          { "name": "voidedItems", "type": "array", "required": false, "description": "Items to void (for partial_void only)", "items": { "orderItemId": "uuid", "quantity": "number" } },
+          { "name": "pinVerified", "type": "boolean", "required": true, "description": "Must be true (PIN verified via /api/auth/verify-pin first)" }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 201,
+          "body": {
+            "voidRecord": {
+              "id": "uuid",
+              "voidNumber": "string",
+              "voidType": "enum",
+              "voidReason": "enum",
+              "voidAmount": "decimal",
+              "createdAt": "ISO-8601"
+            },
+            "orderStatus": "voided",
+            "shiftExpectedCashAdjustment": "decimal"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "ORDER_NOT_FOUND", "message": "Order not found" },
+          { "status": 400, "code": "ORDER_NOT_PAID", "message": "Can only void a paid order" },
+          { "status": 400, "code": "PIN_NOT_VERIFIED", "message": "PIN verification required before void" },
+          { "status": 400, "code": "REASON_REQUIRED", "message": "Void reason is mandatory" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "PIN verification required before any void operation", "type": "constraint", "source": "F-017.business_rules[0]" },
+        { "rule": "Void after payment (full): full refund tracked, expected cash reduced in shift", "type": "constraint", "source": "F-017.business_rules[2]" },
+        { "rule": "Void reason is MANDATORY - kasir must select reason", "type": "constraint", "source": "F-017.business_rules[4]" },
+        { "rule": "All voids are logged immutably for audit trail", "type": "constraint", "source": "F-017.business_rules[5]" },
+        { "rule": "Expected cash formula updated on void", "formula": "opening_balance + cash_sales - cash_refunds_from_voids", "inputs": ["Shift.openingBalance", "Shift.cashSalesTotal", "VoidRecord.voidAmount"], "output": "Shift.expectedCash", "source": "F-017.business_rules[6]" }
+      ],
+      "related_entity": "VoidRecord",
+      "related_entity_id": "E-015",
+      "domain_group": "payment"
+    },
+    {
+      "id": "EP-052",
+      "method": "GET",
+      "path": "/api/transactions",
+      "description": "List all transactions with advanced filtering. Used by Transaction History screen (S-012). Supports date range, PIC cashier, shift, payment method filters.",
+      "source_features": ["F-011", "F-013"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": "perm-view-transactions",
+      "params": {
+        "query": [
+          { "name": "dateFrom", "type": "date", "required": false, "description": "Start date" },
+          { "name": "dateTo", "type": "date", "required": false, "description": "End date" },
+          { "name": "transactionNumber", "type": "string", "required": false, "description": "Search by transaction ID" },
+          { "name": "cashierId", "type": "uuid", "required": false, "description": "Filter by PIC cashier" },
+          { "name": "shiftId", "type": "uuid", "required": false, "description": "Filter by shift" },
+          { "name": "paymentMethod", "type": "enum", "required": false, "description": "Filter by payment method" },
+          { "name": "totalMin", "type": "decimal", "required": false, "description": "Minimum grand total" },
+          { "name": "totalMax", "type": "decimal", "required": false, "description": "Maximum grand total" },
+          { "name": "transactionStatus", "type": "enum", "required": false, "description": "Filter by status", "values": ["completed", "voided"] }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "transactions": [{ "id": "uuid", "transactionNumber": "string", "orderId": "uuid", "tableNumber": "number", "shiftId": "uuid", "shiftNumber": "string", "cashierId": "uuid", "cashierName": "string", "subtotalAmount": "decimal", "discountAmount": "decimal", "ppnRate": "decimal", "ppnAmount": "decimal", "grandTotal": "decimal", "paymentMethod": "enum", "transactionStatus": "enum", "createdAt": "ISO-8601" }],
+            "total": "number",
+            "summaryStats": { "count": "number", "totalRevenue": "decimal", "cashTotal": "decimal", "digitalTotal": "decimal" }
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        { "rule": "Transaction data cannot be deleted by non-owner users", "type": "constraint", "source": "F-011" }
+      ],
+      "related_entity": "Transaction",
+      "related_entity_id": "E-013",
+      "domain_group": "payment"
+    },
+    {
+      "id": "EP-053",
+      "method": "GET",
+      "path": "/api/transactions/:id",
+      "description": "Get full transaction detail with PPN breakdown and order items. Used for receipt viewing and reprinting.",
+      "source_features": ["F-011", "F-003"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": "perm-view-transactions",
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Transaction ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "transactionNumber": "string",
+            "orderId": "uuid",
+            "orderNumber": "string",
+            "tableNumber": "number",
+            "shiftId": "uuid",
+            "shiftNumber": "string",
+            "cashierId": "uuid",
+            "cashierName": "string",
+            "items": [{ "itemName": "string", "quantity": "number", "unitPrice": "decimal", "lineTotal": "decimal" }],
+            "subtotalAmount": "decimal",
+            "discountName": "string|null",
+            "discountAmount": "decimal",
+            "ppnRate": "decimal",
+            "ppnAmount": "decimal",
+            "grandTotal": "decimal",
+            "paymentMethod": "enum",
+            "digitalPaymentRef": "string|null",
+            "amountPaid": "decimal",
+            "changeAmount": "decimal",
+            "transactionStatus": "enum",
+            "createdAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "TRANSACTION_NOT_FOUND", "message": "Transaction not found" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Any past transaction receipt can be reprinted from Transaction History", "type": "constraint", "source": "F-003.business_rules[12]" }
+      ],
+      "related_entity": "Transaction",
+      "related_entity_id": "E-013",
+      "domain_group": "payment"
+    },
+    {
+      "id": "EP-054",
+      "method": "GET",
+      "path": "/api/transactions/export",
+      "description": "Export filtered transaction data to Excel (.xlsx). Respects currently active filters.",
+      "source_features": ["F-013"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [
+          { "name": "dateFrom", "type": "date", "required": false, "description": "Start date" },
+          { "name": "dateTo", "type": "date", "required": false, "description": "End date" },
+          { "name": "cashierId", "type": "uuid", "required": false, "description": "Filter by PIC cashier" },
+          { "name": "shiftId", "type": "uuid", "required": false, "description": "Filter by shift" },
+          { "name": "paymentMethod", "type": "enum", "required": false, "description": "Filter by payment method" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": { "fileUrl": "string", "fileName": "string", "recordCount": "number" }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        { "rule": "Export includes all visible columns: date, ID, table, shift, PIC, subtotal, PPN, total, method", "type": "constraint", "source": "F-013" },
+        { "rule": "Export respects currently active filters", "type": "constraint", "source": "F-013" }
+      ],
+      "related_entity": "Transaction",
+      "related_entity_id": "E-013",
+      "domain_group": "payment"
+    },
+    {
+      "id": "EP-055",
+      "method": "GET",
+      "path": "/api/void-records",
+      "description": "List all void records for audit. Used by owner to review void history.",
+      "source_features": ["F-017"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [
+          { "name": "shiftId", "type": "uuid", "required": false, "description": "Filter by shift" },
+          { "name": "dateFrom", "type": "date", "required": false, "description": "Start date" },
+          { "name": "dateTo", "type": "date", "required": false, "description": "End date" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "voidRecords": [{ "id": "uuid", "voidNumber": "string", "originalOrderId": "uuid", "orderNumber": "string", "voidType": "enum", "voidReason": "enum", "voidNotes": "string|null", "voidAmount": "decimal", "voidedByName": "string", "createdAt": "ISO-8601" }],
+            "total": "number",
+            "totalVoidAmount": "decimal"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        { "rule": "Owner can view all void history with reasons", "type": "constraint", "source": "F-017.business_rules[7]" }
+      ],
+      "related_entity": "VoidRecord",
+      "related_entity_id": "E-015",
+      "domain_group": "payment"
+    }
+  ],
+
+  "screens": [
+    {
+      "screen_id": "S-004",
+      "name": "Payment Screen",
+      "page_component": "PaymentPage",
+      "route": "/pos/payment/:orderId",
+      "interface": "waiter-cashier-ui",
+      "layout": "WaiterCashierLayout",
+      "guards": ["AuthGuard", "RoleGuard", "PinGateModal", "ShiftGuard"],
+      "sections": [
+        { "name": "Order Detail", "position": "top", "components": ["order-item-row", "subtotal-display", "discount-display", "ppn-display", "grandtotal-display"] },
+        { "name": "Discount Selector", "position": "above-payment", "components": ["discount-picker", "discount-badge", "remove-button"] },
+        { "name": "Payment Method Tabs", "position": "center-top", "components": ["quick-amount-buttons", "numpad", "change-display", "qris-display", "confirm-received-button", "provider-select", "provider-qr-display", "ref-number-input", "bank-info-display", "photo-upload-bukti"] },
+        { "name": "Action Bar", "position": "bottom", "components": ["confirm-button"] },
+        { "name": "Payment Success Popup", "position": "modal-overlay", "components": ["success-icon", "transaction-summary", "print-button", "done-button"] },
+        { "name": "Void Transaction Modal", "position": "modal", "components": ["pin-gate-modal", "void-type-select", "reason-select", "text-input", "confirm-button"] }
+      ]
+    },
+    {
+      "screen_id": "S-012",
+      "name": "Transaction History (Laporan Penjualan)",
+      "page_component": "TransactionHistoryPage",
+      "route": "/admin/transactions",
+      "interface": "admin-panel",
+      "layout": "AdminLayout",
+      "guards": ["AuthGuard", "RoleGuard", "PermissionGuard"],
+      "sections": [
+        { "name": "Transaction Table", "position": "center", "components": ["data-table"] },
+        { "name": "Filter Bar", "position": "top", "components": ["date-range-picker", "search-bar", "filter-select", "reset-button"] },
+        { "name": "Export Bar", "position": "top-right", "components": ["export-excel-button"] },
+        { "name": "Summary Stats", "position": "above-table", "components": ["stat-chip"] },
+        { "name": "Transaction Detail Modal", "position": "modal", "components": ["detail-card", "order-item-row", "ppn-display", "print-button"] }
+      ]
+    }
+  ],
+
+  "features": [
+    {
+      "id": "F-003",
+      "title": "Cashier & Payment Processing",
+      "priority": "must_have",
+      "acceptance_criteria": [
+        "Payment screen shows subtotal, PPN %, PPN amount, and grand total",
+        "Cashier can select payment method and input amount received",
+        "Change is calculated against grand total (inclusive PPN)",
+        "After payment: success popup with checkmark, summary, and Print Struk button",
+        "Cashier can print receipt from success popup",
+        "Cashier can tap Selesai to return to order list",
+        "Past transactions can be viewed in detail and receipt reprinted from S-012",
+        "Completed payment updates order status to paid"
+      ],
+      "business_rules": [
+        { "rule": "Bill shows subtotal, discount (if any), PPN amount, and grand total separately", "type": "constraint", "source": "F-003.business_rules[0]", "enforcement": "both" },
+        { "rule": "PPN rate is pulled from system settings (F-016)", "type": "constraint", "source": "F-003.business_rules[1]", "enforcement": "both" },
+        { "rule": "Discount applied before PPN: (Subtotal - Discount) x PPN rate", "type": "formula", "source": "F-003.business_rules[2]", "enforcement": "both" },
+        { "rule": "Payment cannot be processed if amount paid is less than grand total", "type": "constraint", "source": "F-003.business_rules[3]", "enforcement": "both" },
+        { "rule": "Transaction stores SPECIFIC payment method name, NOT generic Digital", "type": "constraint", "source": "F-003.business_rules[9]", "enforcement": "both" }
+      ]
+    },
+    {
+      "id": "F-011",
+      "title": "Transaction History",
+      "priority": "should_have",
+      "acceptance_criteria": [
+        "Transaction table shows: date/time, ID, table, Shift ID, PIC Kasir, subtotal, PPN, total, payment method",
+        "Transactions can be filtered by: date range, transaction ID, PIC Kasir, Shift ID, payment method, total range",
+        "All filters are combinable and have a reset button",
+        "Summary stats (count, total revenue, cash total, digital total) update with active filters",
+        "Each transaction shows full detail modal with PPN breakdown and Print Struk button",
+        "Filtered data can be exported to Excel (.xlsx)",
+        "Transaction data cannot be deleted by non-owner users"
+      ],
+      "business_rules": []
+    },
+    {
+      "id": "F-013",
+      "title": "Report Export to Excel",
+      "priority": "should_have",
+      "acceptance_criteria": [
+        "Export button on Transaction History (S-012) generates Excel file",
+        "Export includes all visible columns: date, ID, table, shift, PIC, subtotal, PPN, total, method",
+        "Export respects currently active filters (only exports filtered results)",
+        "Excel file includes header row and formatted data",
+        "Loading indicator shown during export generation"
+      ],
+      "business_rules": []
+    },
+    {
+      "id": "F-017",
+      "title": "Void / Cancel Order & Transaction",
+      "priority": "must_have",
+      "acceptance_criteria": [
+        "Cashier can cancel an unpaid order from order list",
+        "Cashier can void a paid transaction (requires PIN)",
+        "Void reason selection is mandatory",
+        "Voided amounts are reflected in shift expected cash calculation",
+        "Close shift summary shows void count and total void amount",
+        "Owner can see void history in transaction report"
+      ],
+      "business_rules": [
+        { "rule": "PIN verification required before any void operation", "type": "constraint", "source": "F-017.business_rules[0]", "enforcement": "both" },
+        { "rule": "All voids are logged immutably for audit trail", "type": "constraint", "source": "F-017.business_rules[5]", "enforcement": "both" }
+      ]
+    }
+  ],
+
+  "cross_domain_contracts": [
+    {
+      "flow_id": "UF-001",
+      "flow_name": "Complete Order-to-Payment Flow",
+      "your_steps": [11],
+      "context": "Order has been served, waiter initiates payment",
+      "triggers_to": [
+        { "domain": "order-management", "action": "Update order status to paid" },
+        { "domain": "shift-management", "action": "Record transaction in active shift totals" }
+      ],
+      "receives_from": [
+        { "domain": "order-management", "data": "Order details with items and pricing" }
+      ],
+      "timing_notes": ["Stock deduction at order submission (D-001, D-030, D-064)"]
+    },
+    {
+      "flow_id": "UF-007",
+      "flow_name": "Full Cashier Journey: Prep to Close Shift",
+      "your_steps": [5],
+      "context": "Cashier processes orders and payments during active shift",
+      "triggers_to": [
+        { "domain": "shift-management", "action": "Update shift transaction totals (cash/digital)" }
+      ],
+      "receives_from": [
+        { "domain": "shift-management", "data": "Active shift ID for transaction linkage" }
+      ],
+      "timing_notes": []
+    },
+    {
+      "flow_id": "UF-010",
+      "flow_name": "Void Paid Transaction",
+      "your_steps": [3],
+      "context": "Cashier finds paid order, verifies PIN, processes void",
+      "triggers_to": [
+        { "domain": "order-management", "action": "Update order status to voided" },
+        { "domain": "shift-management", "action": "Reduce expected cash by void amount, increment void count" },
+        { "domain": "inventory", "action": "Create reversal stock movements to restore inventory" }
+      ],
+      "receives_from": [
+        { "domain": "auth", "data": "PIN verification result" }
+      ],
+      "timing_notes": []
+    }
+  ],
+
+  "state_dependencies": {
+    "owns_store": "usePaymentStore",
+    "writes_to_tables": ["transactions", "voidRecords"],
+    "reads_from_tables": ["orders", "shifts", "users", "discounts", "posSettings"],
+    "calls_other_stores": ["useOrderManagementStore", "useShiftManagementStore", "useAuthStore", "useSettingsStore"]
+  },
+
+  "write_scope": [
+    "src/pages/pos/",
+    "src/pages/admin/",
+    "src/components/payment/",
+    "src/stores/usePaymentStore.ts",
+    "server/routes/payment/",
+    "server/services/payment/"
+  ]
+}

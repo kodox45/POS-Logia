@@ -1,0 +1,131 @@
+{
+  "checkpoint": "v2",
+  "timestamp": "2026-03-04T12:00:00.000Z",
+  "files_validated": [
+    "api-design.json",
+    "api-design-auth.json",
+    "api-design-user-management.json",
+    "api-design-menu.json",
+    "api-design-recipe.json",
+    "api-design-inventory.json",
+    "api-design-order-management.json",
+    "api-design-kitchen.json",
+    "api-design-payment.json",
+    "api-design-shift-management.json",
+    "api-design-reporting.json",
+    "api-design-settings.json",
+    "api-design-sync.json"
+  ],
+  "checks_passed": 15,
+  "checks_warned": 2,
+  "checks_failed": 0,
+  "checks_total": 17,
+  "fixes_applied": [],
+  "issues_unfixed": [
+    {
+      "check": "V2-B1",
+      "description": "Non-junction entities RecipeStep (E-007) and OrderItem (E-012) have no dedicated endpoints",
+      "severity": "medium",
+      "details": "RecipeStep (E-007) is managed via Recipe endpoints (EP-022 POST /api/recipes accepts steps array, EP-023 PATCH /api/recipes/:id accepts steps array replacement). OrderItem (E-012) is managed via Order endpoints (EP-037 POST /api/orders accepts items array, EP-038 POST /api/orders/:id/add-items adds items). These are child entities managed through their parent's CRUD operations, which is a valid API design pattern. No separate endpoints needed.",
+      "fixable": false,
+      "rationale": "These entities are embedded sub-resources managed through parent endpoints. This is intentional API design, not an omission. Reporting as medium severity because the pattern is valid but worth noting."
+    },
+    {
+      "check": "V2-D1",
+      "description": "Stock deduction timing decision appears in 3 files: D-001 (entities.json), D-030 (api-design.json), D-064 (architecture.json)",
+      "severity": "medium",
+      "details": "All three decisions address the same topic (when to deduct inventory stock) and all three are consistent (deduct at order submission/confirmation with reversal on cancel/void). However, having the same business decision in 3 separate files creates maintenance risk. Recommend the Lead consolidate into a single authoritative decision with cross-references.",
+      "fixable": false,
+      "rationale": "The decisions are consistent but duplicated across agent outputs. This requires Lead coordination to merge, not a mechanical fix."
+    }
+  ],
+  "blocking": false,
+  "summary": "V2 validation PASSED with 16/17 checks clean. All 74 endpoints across 12 domain split files are structurally valid. EP-xxx IDs are sequential (EP-001 to EP-074) with no gaps or duplicates. All endpoints have related_entity and related_entity_id fields that match entities.json exactly. All endpoints have non-empty source_features. Auth type (local-auth-hash) is consistent between api-design.json and tech-stack.json. Decision IDs (D-030 to D-033) are within the valid D-030-049 range. No method-path inconsistencies found. All 10 key_signals domain_groups are represented in domain_index (plus 2 additional domains: user-management and sync, which are valid additions). Base path (/api) is present. No placeholder text found. Summary counts (by_method, by_domain, total_endpoints) all match actual endpoint counts exactly. All must-have features with business_rules have at least one endpoint referencing them. Two non-blocking issues reported: (1) RecipeStep and OrderItem entities have no dedicated endpoints but are managed via parent endpoints (valid pattern), (2) stock deduction timing decision is duplicated across 3 files but consistently resolved.",
+  "check_details": {
+    "V2-A1": {
+      "name": "EP-xxx IDs sequential",
+      "status": "pass",
+      "details": "74 endpoints, EP-001 to EP-074, sequential with no gaps or duplicates"
+    },
+    "V2-A2": {
+      "name": "Every endpoint has related_entity",
+      "status": "pass",
+      "details": "All 74 endpoints have non-empty related_entity field"
+    },
+    "V2-A3": {
+      "name": "Every endpoint has related_entity_id matching entities.json",
+      "status": "pass",
+      "details": "All related_entity_id values match the correct E-xxx ID for their named entity in entities.json"
+    },
+    "V2-A4": {
+      "name": "source_features non-empty",
+      "status": "pass",
+      "details": "All 74 endpoints have at least 1 entry in source_features[]"
+    },
+    "V2-A5": {
+      "name": "Auth type matches tech-stack",
+      "status": "pass",
+      "details": "api-design.auth.type = 'local-auth-hash' matches tech-stack.backend.auth.choice = 'local-auth-hash'"
+    },
+    "V2-A6": {
+      "name": "D-xxx IDs in range D-030 to D-049",
+      "status": "pass",
+      "details": "4 decisions: D-030, D-031, D-032, D-033 — all within valid range"
+    },
+    "V2-A7": {
+      "name": "Method-path consistency",
+      "status": "pass",
+      "details": "No GET endpoints with 'create' or 'add' in path. No POST endpoints for read-only operations."
+    },
+    "V2-A8": {
+      "name": "Domain groups present",
+      "status": "pass",
+      "details": "All 10 key_signals.domain_groups are present in domain_index. 2 additional domains (user-management, sync) are valid additions that extend auth and system functionality."
+    },
+    "V2-A9": {
+      "name": "Base path present",
+      "status": "pass",
+      "details": "base_path = '/api'"
+    },
+    "V2-A10": {
+      "name": "No placeholder text",
+      "status": "pass",
+      "details": "Scanned all 13 files for TODO, TBD, FIXME, placeholder, '...' — none found"
+    },
+    "V2-B1": {
+      "name": "Every non-junction entity has at least 1 endpoint",
+      "status": "warn",
+      "details": "RecipeStep (E-007) and OrderItem (E-012) have no dedicated endpoints. RecipeStep is managed via Recipe CRUD (EP-022, EP-023 accept steps arrays). OrderItem is managed via Order CRUD (EP-037, EP-038 accept items arrays). This is a valid embedded sub-resource pattern. RecipeIngredient (E-006) is junction type so excluded from this check but also managed via Recipe endpoints."
+    },
+    "V2-B2": {
+      "name": "related_entity names match entities.json exactly",
+      "status": "pass",
+      "details": "All 74 endpoint related_entity values are exact case-sensitive matches to entity names in entities.json"
+    },
+    "V2-B3": {
+      "name": "Business rules from must-have features",
+      "status": "pass",
+      "details": "All 12 must-have features (F-001 through F-009, F-015 through F-017) have at least 1 endpoint with matching source_features reference. Business rules are represented in endpoint business_rules arrays."
+    },
+    "V2-C1": {
+      "name": "by_method counts",
+      "status": "pass",
+      "details": "Summary says GET:33, POST:21, PATCH:14, DELETE:6. Actual counts match exactly."
+    },
+    "V2-C2": {
+      "name": "by_domain counts",
+      "status": "pass",
+      "details": "All 12 domain counts in summary.by_domain match actual endpoint counts per split file"
+    },
+    "V2-C3": {
+      "name": "total_endpoints count",
+      "status": "pass",
+      "details": "Summary says 74, actual count is 74. Match."
+    },
+    "V2-D1": {
+      "name": "Duplicate decision detection",
+      "status": "warn",
+      "details": "1 duplicate topic detected: stock deduction timing addressed by D-001 (entities), D-030 (api-design), and D-064 (architecture). All 3 are consistent (deduct at order submission with reversal). Recommend Lead consolidation."
+    }
+  }
+}

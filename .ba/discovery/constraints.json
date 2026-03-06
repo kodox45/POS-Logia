@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:15:00Z",
+  "budget": {
+    "type": "flexible",
+    "description": "No specific budget constraints mentioned",
+    "max_monthly": null
+  },
+  "timeline": {
+    "deadline": null,
+    "description": "No specific deadline — owner wants it done properly",
+    "urgency": "medium"
+  },
+  "technical": [
+    "Must run on tablet or smartphone devices",
+    "Staff has medium tech comfort — UI must be simple and intuitive"
+  ],
+  "organizational": [
+    "Small team with multi-role staff — system must not add workflow burden",
+    "Owner needs remote monitoring capability"
+  ]
+}

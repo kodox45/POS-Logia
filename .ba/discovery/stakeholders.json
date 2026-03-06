@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:05:00Z",
+  "stakeholders": [
+    {
+      "id": "owner",
+      "role": "Restaurant Owner",
+      "count": 1,
+      "type": "decision_maker",
+      "tech_comfort": "high",
+      "main_concern": "Full digitalization of restaurant operations — recording, management, and monitoring must be organized and traceable",
+      "usage_frequency": "daily",
+      "key_tasks": [
+        "Monitor overall restaurant operations",
+        "Review sales and inventory reports",
+        "Make business decisions based on data",
+        "Supervise staff performance"
+      ]
+    },
+    {
+      "id": "waiter-cashier",
+      "role": "Waiter / Cashier (multi-role)",
+      "count": null,
+      "type": "primary_user",
+      "tech_comfort": "medium",
+      "main_concern": "Easy-to-use system that does not slow down service workflow",
+      "usage_frequency": "daily",
+      "key_tasks": [
+        "Take customer orders",
+        "Process payments (cashier)",
+        "Serve food to customers",
+        "Occasionally assist chef in kitchen"
+      ]
+    },
+    {
+      "id": "chef",
+      "role": "Chef / Cook",
+      "count": null,
+      "type": "primary_user",
+      "tech_comfort": "medium",
+      "main_concern": "Receive orders clearly and on time without interruption",
+      "usage_frequency": "daily",
+      "key_tasks": [
+        "Prepare food based on incoming orders",
+        "Manage kitchen ingredients usage",
+        "Coordinate with waiters on order status"
+      ]
+    }
+  ]
+}

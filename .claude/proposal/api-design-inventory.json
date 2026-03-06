@@ -1,0 +1,353 @@
+{
+  "domain": "inventory",
+  "endpoints": [
+    {
+      "id": "EP-025",
+      "method": "GET",
+      "path": "/api/inventory-items",
+      "description": "List all inventory items with current stock levels, status, and low-stock indicators.",
+      "source_features": ["F-004", "F-012"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": "perm-view-stock",
+      "params": {
+        "query": [
+          { "name": "stockStatus", "type": "enum", "required": false, "description": "Filter by stock status", "values": ["ok", "low", "critical"] },
+          { "name": "search", "type": "string", "required": false, "description": "Search by item name" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "inventoryItems": [{ "id": "uuid", "itemName": "string", "quantity": "decimal", "unit": "string", "minimumThreshold": "decimal|null", "stockStatus": "enum" }],
+            "total": "number",
+            "lowStockCount": "number",
+            "criticalStockCount": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "InventoryItem",
+      "related_entity_id": "E-008",
+      "domain_group": "inventory"
+    },
+    {
+      "id": "EP-026",
+      "method": "GET",
+      "path": "/api/inventory-items/:id",
+      "description": "Get single inventory item with full details including recent stock movements.",
+      "source_features": ["F-004"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": "perm-view-stock",
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Inventory item ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "itemName": "string",
+            "quantity": "decimal",
+            "unit": "string",
+            "minimumThreshold": "decimal|null",
+            "stockStatus": "enum",
+            "recentMovements": [{ "id": "uuid", "movementType": "enum", "quantityChange": "decimal", "reason": "string|null", "performedBy": "string", "createdAt": "ISO-8601" }],
+            "createdAt": "ISO-8601",
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "INVENTORY_ITEM_NOT_FOUND", "message": "Inventory item not found" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "InventoryItem",
+      "related_entity_id": "E-008",
+      "domain_group": "inventory"
+    },
+    {
+      "id": "EP-027",
+      "method": "POST",
+      "path": "/api/inventory-items",
+      "description": "Create a new inventory item with initial stock quantity and optional threshold.",
+      "source_features": ["F-004"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "itemName", "type": "string", "required": true, "description": "Name of the inventory item" },
+          { "name": "quantity", "type": "decimal", "required": true, "description": "Initial stock quantity" },
+          { "name": "unit", "type": "string", "required": true, "description": "Unit of measure (kg, liter, piece, pack)" },
+          { "name": "minimumThreshold", "type": "decimal", "required": false, "description": "Low stock warning level" }
+        ]
+      },
+      "response": {
+        "success": { "status": 201, "body": { "id": "uuid", "itemName": "string", "quantity": "decimal", "unit": "string", "stockStatus": "enum", "createdAt": "ISO-8601" } },
+        "errors": [
+          { "status": 409, "code": "ITEM_NAME_EXISTS", "message": "Inventory item with this name already exists" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "InventoryItem",
+      "related_entity_id": "E-008",
+      "domain_group": "inventory"
+    },
+    {
+      "id": "EP-028",
+      "method": "PATCH",
+      "path": "/api/inventory-items/:id",
+      "description": "Update inventory item details (name, unit, threshold). Does not change stock quantity directly.",
+      "source_features": ["F-004"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Inventory item ID" }],
+        "body": [
+          { "name": "itemName", "type": "string", "required": false, "description": "Updated name" },
+          { "name": "unit", "type": "string", "required": false, "description": "Updated unit" },
+          { "name": "minimumThreshold", "type": "decimal", "required": false, "description": "Updated threshold" }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "itemName": "string", "unit": "string", "minimumThreshold": "decimal|null", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 404, "code": "INVENTORY_ITEM_NOT_FOUND", "message": "Inventory item not found" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "InventoryItem",
+      "related_entity_id": "E-008",
+      "domain_group": "inventory"
+    },
+    {
+      "id": "EP-029",
+      "method": "DELETE",
+      "path": "/api/inventory-items/:id",
+      "description": "Delete an inventory item. Only if not referenced by any active recipe.",
+      "source_features": ["F-004"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Inventory item ID" }],
+        "body": []
+      },
+      "response": {
+        "success": { "status": 200, "body": { "message": "Inventory item deleted successfully" } },
+        "errors": [
+          { "status": 404, "code": "INVENTORY_ITEM_NOT_FOUND", "message": "Inventory item not found" },
+          { "status": 409, "code": "ITEM_IN_USE", "message": "Cannot delete inventory item referenced by recipes" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "InventoryItem",
+      "related_entity_id": "E-008",
+      "domain_group": "inventory"
+    },
+    {
+      "id": "EP-030",
+      "method": "POST",
+      "path": "/api/inventory-items/:id/restock",
+      "description": "Add stock to an inventory item (restocking). Creates a stock movement record.",
+      "source_features": ["F-004"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Inventory item ID" }],
+        "body": [
+          { "name": "quantity", "type": "decimal", "required": true, "description": "Quantity to add" },
+          { "name": "reason", "type": "string", "required": false, "description": "Reason for restock" }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "inventoryItem": { "id": "uuid", "quantity": "decimal", "stockStatus": "enum" },
+            "stockMovement": { "id": "uuid", "movementType": "restock", "quantityChange": "decimal", "createdAt": "ISO-8601" }
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "INVENTORY_ITEM_NOT_FOUND", "message": "Inventory item not found" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Only authorized users can manually adjust stock (restock or correction)",
+          "type": "constraint",
+          "source": "F-004.business_rules[3]"
+        }
+      ],
+      "related_entity": "InventoryItem",
+      "related_entity_id": "E-008",
+      "domain_group": "inventory"
+    },
+    {
+      "id": "EP-031",
+      "method": "POST",
+      "path": "/api/inventory-items/:id/adjust",
+      "description": "Manual stock adjustment (correction). Creates a stock movement record for audit trail.",
+      "source_features": ["F-004"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Inventory item ID" }],
+        "body": [
+          { "name": "newQuantity", "type": "decimal", "required": true, "description": "Corrected stock quantity" },
+          { "name": "reason", "type": "string", "required": true, "description": "Mandatory reason for adjustment" }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "inventoryItem": { "id": "uuid", "quantity": "decimal", "stockStatus": "enum" },
+            "stockMovement": { "id": "uuid", "movementType": "manual_adjustment", "quantityChange": "decimal", "reason": "string", "createdAt": "ISO-8601" }
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "INVENTORY_ITEM_NOT_FOUND", "message": "Inventory item not found" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Only authorized users can manually adjust stock (restock or correction)",
+          "type": "constraint",
+          "source": "F-004.business_rules[3]"
+        }
+      ],
+      "related_entity": "InventoryItem",
+      "related_entity_id": "E-008",
+      "domain_group": "inventory"
+    },
+    {
+      "id": "EP-032",
+      "method": "GET",
+      "path": "/api/inventory-items/:id/movements",
+      "description": "Get stock movement history for an inventory item (in/out log).",
+      "source_features": ["F-004"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": "perm-view-stock",
+      "params": {
+        "query": [
+          { "name": "movementType", "type": "enum", "required": false, "description": "Filter by type", "values": ["restock", "auto_deduction", "manual_adjustment"] },
+          { "name": "dateFrom", "type": "date", "required": false, "description": "Start date filter" },
+          { "name": "dateTo", "type": "date", "required": false, "description": "End date filter" }
+        ],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Inventory item ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "movements": [{ "id": "uuid", "movementType": "enum", "quantityChange": "decimal", "reason": "string|null", "orderId": "uuid|null", "performedBy": "string", "createdAt": "ISO-8601" }],
+            "total": "number"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "INVENTORY_ITEM_NOT_FOUND", "message": "Inventory item not found" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "StockMovement",
+      "related_entity_id": "E-009",
+      "domain_group": "inventory"
+    },
+    {
+      "id": "EP-033",
+      "method": "GET",
+      "path": "/api/inventory/low-stock",
+      "description": "Get all inventory items that are below their minimum threshold. Used for dashboard alerts.",
+      "source_features": ["F-012"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "lowStockItems": [{ "id": "uuid", "itemName": "string", "quantity": "decimal", "unit": "string", "minimumThreshold": "decimal", "stockStatus": "enum" }],
+            "count": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        {
+          "rule": "System shows a warning badge when any item is below threshold",
+          "type": "constraint",
+          "source": "F-012"
+        }
+      ],
+      "related_entity": "InventoryItem",
+      "related_entity_id": "E-008",
+      "domain_group": "inventory"
+    },
+    {
+      "id": "EP-034",
+      "method": "POST",
+      "path": "/api/inventory/check-stock",
+      "description": "Check if sufficient stock exists for a given set of order items. Used before order submission to warn about insufficient ingredients.",
+      "source_features": ["F-004", "F-001"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "items", "type": "array", "required": true, "description": "Array of order items to check", "items": { "menuItemId": "uuid", "quantity": "number" } }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "sufficient": "boolean",
+            "insufficientItems": [{ "menuItemId": "uuid", "menuItemName": "string", "ingredient": "string", "required": "decimal", "available": "decimal", "unit": "string" }]
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        {
+          "rule": "Stock cannot go below zero - system warns if insufficient",
+          "type": "constraint",
+          "source": "F-004.business_rules[2]"
+        }
+      ],
+      "related_entity": "InventoryItem",
+      "related_entity_id": "E-008",
+      "domain_group": "inventory"
+    }
+  ],
+  "summary": {
+    "endpoint_count": 10,
+    "by_method": { "GET": 4, "POST": 4, "PATCH": 1, "DELETE": 1 }
+  }
+}

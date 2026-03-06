@@ -1,0 +1,136 @@
+{
+  "id": "V-T-017",
+  "subject": "Validate: Implement backend shift management and reporting APIs",
+  "owner": "validator-backend",
+  "builder_task_id": "T-017",
+  "layer": 2,
+  "wave": 3,
+  "goal": "Validate builder output for Implement backend shift management and reporting APIs",
+  "write_scope": [
+    ".claude/implementation/validation-backend.json"
+  ],
+  "acceptance": {
+    "F-015": [
+      "Shift open with PIN verification check works",
+      "One-shift-per-cashier constraint enforced",
+      "Shift summary returns accurate transaction breakdown",
+      "Close shift calculates discrepancy and enforces mandatory notes",
+      "Closed shifts become immutable",
+      "Owner can query shift history with filters"
+    ],
+    "F-007": [
+      "Dashboard returns revenue, order count, top items for date range",
+      "Payment method breakdown is accurate",
+      "Revenue by hour aggregation works",
+      "Sales summary with date range grouping works"
+    ],
+    "F-012": [
+      "Dashboard includes low stock alert count from inventory"
+    ]
+  },
+  "business_rules": [
+    {
+      "rule": "Cashier MUST verify PIN before opening a shift",
+      "type": "constraint",
+      "source": "F-015"
+    },
+    {
+      "rule": "Only one active shift per cashier at a time",
+      "type": "constraint",
+      "source": "F-015"
+    },
+    {
+      "rule": "Expected cash = opening_balance + cash_sales - cash_refunds_from_voids",
+      "type": "calculation",
+      "formula": "openingBalance + cashSalesTotal - voidTotalAmount",
+      "source": "F-015"
+    },
+    {
+      "rule": "Closing is a ONE-WAY session",
+      "type": "constraint",
+      "source": "F-015"
+    },
+    {
+      "rule": "If discrepancy exists, notes are MANDATORY",
+      "type": "constraint",
+      "source": "F-015"
+    },
+    {
+      "rule": "Closed shift data is immutable and logged for audit",
+      "type": "constraint",
+      "source": "F-015"
+    },
+    {
+      "rule": "Only completed (paid) orders are counted in revenue",
+      "type": "constraint",
+      "source": "F-007"
+    }
+  ],
+  "cross_domain_contracts": [
+    {
+      "flow_id": "UF-007",
+      "your_steps": [
+        4,
+        7
+      ],
+      "context": "Cashier opens shift, processes transactions, closes shift with reconciliation.",
+      "timing_notes": [
+        "Shift tracks all transactions",
+        "Discrepancy calculated at close",
+        "Shift data immutable after close"
+      ],
+      "next_domain": "All domain data readable for reporting"
+    }
+  ],
+  "_foundation_files": [
+    {
+      "path": "src/types/entities.ts",
+      "category": "types",
+      "lines": 413,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/enums.ts",
+      "category": "types",
+      "lines": 100,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/index.ts",
+      "category": "types",
+      "lines": 2,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  },
+  "validation_targets": {
+    "builder_write_scope": [
+      "server/routes/shift-management/",
+      "server/services/shift-management/",
+      "server/routes/reporting/",
+      "server/services/reporting/"
+    ],
+    "domain_packages": [
+      ".claude/implementation/domains/shift-management.json",
+      ".claude/implementation/domains/reporting.json"
+    ]
+  }
+}

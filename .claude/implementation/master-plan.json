@@ -1,0 +1,1806 @@
+{
+  "version": "5.0",
+  "generated_at": "2026-03-06T11:00:00.000Z",
+  "project": {
+    "name": "pos-restoran-umkm-logia",
+    "app_type": "offline-first",
+    "complexity": "complex",
+    "foundation_type": "offline-first",
+    "validation_approach": "hybrid"
+  },
+  "foundation_manifest": ".claude/implementation/foundation-manifest.json",
+  "domain_packages": ".claude/implementation/domains/",
+  "team_composition": [
+    {
+      "name": "builder-frontend-core",
+      "agent_template": ".claude/agents/builder.md",
+      "builder_role": "frontend",
+      "domain": "infrastructure + shared screens (S-001, S-016, S-014, S-015)",
+      "exclusive_write": ["src/components/navigation/", "src/components/auth/", "src/pages/auth/", "src/pages/dashboard/", "src/pages/shift/", "src/components/shift/"]
+    },
+    {
+      "name": "builder-frontend-waiter-cashier",
+      "agent_template": ".claude/agents/builder.md",
+      "builder_role": "frontend",
+      "domain": "waiter-cashier-ui interface (S-002, S-003, S-004, S-005)",
+      "exclusive_write": ["src/pages/pos/", "src/components/order/", "src/components/payment/"]
+    },
+    {
+      "name": "builder-frontend-kitchen",
+      "agent_template": ".claude/agents/builder.md",
+      "builder_role": "frontend",
+      "domain": "kitchen-display interface (S-006, S-007)",
+      "exclusive_write": ["src/pages/kitchen/", "src/components/kitchen/"]
+    },
+    {
+      "name": "builder-frontend-admin",
+      "agent_template": ".claude/agents/builder.md",
+      "builder_role": "frontend",
+      "domain": "admin-panel interface (S-008, S-009, S-010, S-011, S-012, S-013, S-017)",
+      "exclusive_write": ["src/pages/admin/", "src/components/menu/", "src/components/inventory/", "src/components/user-management/", "src/components/reporting/", "src/components/settings/"]
+    },
+    {
+      "name": "builder-backend-crud",
+      "agent_template": ".claude/agents/builder.md",
+      "builder_role": "backend",
+      "domain": "CRUD domains: auth, user-management, menu, recipe, settings",
+      "exclusive_write": ["server/routes/auth/", "server/services/auth/", "server/routes/user-management/", "server/services/user-management/", "server/routes/menu/", "server/services/menu/", "server/routes/recipe/", "server/services/recipe/", "server/routes/settings/", "server/services/settings/"]
+    },
+    {
+      "name": "builder-backend-logic",
+      "agent_template": ".claude/agents/builder.md",
+      "builder_role": "backend",
+      "domain": "complex domains: inventory, order-management, kitchen, payment, shift-management, reporting",
+      "exclusive_write": ["server/routes/inventory/", "server/services/inventory/", "server/routes/order-management/", "server/services/order-management/", "server/routes/kitchen/", "server/services/kitchen/", "server/routes/payment/", "server/services/payment/", "server/routes/shift-management/", "server/services/shift-management/", "server/routes/reporting/", "server/services/reporting/"]
+    },
+    {
+      "name": "builder-sync",
+      "agent_template": ".claude/agents/builder.md",
+      "builder_role": "sync",
+      "domain": "sync infrastructure: sync engine, conflict resolver, change tracker, PWA/service worker",
+      "exclusive_write": ["src/sync/", "src/hooks/useOnlineStatus.ts", "server/routes/sync/", "server/services/sync/", "public/sw.js"]
+    },
+    {
+      "name": "validator-frontend",
+      "agent_template": ".claude/agents/validator.md",
+      "builder_role": null,
+      "domain": "frontend validation",
+      "exclusive_write": ["tests/unit/", ".claude/implementation/validation-frontend.json"]
+    },
+    {
+      "name": "validator-backend",
+      "agent_template": ".claude/agents/validator.md",
+      "builder_role": null,
+      "domain": "backend validation",
+      "exclusive_write": ["tests/api/", ".claude/implementation/validation-backend.json"]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T-001",
+      "subject": "Implement frontend navigation, auth flow, and guard logic",
+      "owner": "builder-frontend-core",
+      "builder_role": "frontend",
+      "layer": 1,
+      "wave": 1,
+      "description": {
+        "goal": "Implement sidebar/tab navigation contents, auth flow UI (login form, error handling, session check), guard logic (PinGateModal interaction, ShiftGuard redirect), and shared layout interiors for DashboardHubLayout, WaiterCashierLayout, KitchenLayout, AdminLayout.",
+        "domain_packages": [],
+        "write_scope": ["src/components/navigation/", "src/components/auth/", "src/routes/guards/", "src/components/layout/"],
+        "read_sources": {
+          "ba_files": [".ba/design/layout.json", ".ba/requirements/roles.json"],
+          "entities": [],
+          "endpoints": {},
+          "features": [],
+          "screens": [],
+          "flows": [],
+          "components": []
+        },
+        "cross_domain_contracts": [],
+        "business_rules": [],
+        "state_dependencies": {
+          "owns_store": null,
+          "writes_to_tables": [],
+          "reads_from_tables": [],
+          "calls_other_stores": ["useAuthStore", "useShiftManagementStore"]
+        },
+        "acceptance": {
+          "infra": [
+            "Navigation renders correctly for all roles (owner, waiter-cashier, chef)",
+            "Auth flow works: login form validates input, shows errors, redirects to dashboard on success",
+            "AuthGuard redirects unauthenticated users to login",
+            "RoleGuard blocks unauthorized role access",
+            "PermissionGuard checks user-specific permissions",
+            "PinGateModal shows numpad, verifies PIN via useAuthStore, blocks POS entry without PIN",
+            "ShiftGuard redirects to open shift page when no active shift for payment actions",
+            "All 4 layouts render correct navigation elements"
+          ]
+        }
+      },
+      "depends_on": [],
+      "on_critical_path": true,
+      "active_form": "implementing frontend navigation, auth flow, and guard logic"
+    },
+    {
+      "id": "T-002",
+      "subject": "Set up backend infrastructure with database schema and server",
+      "owner": "builder-backend-crud",
+      "builder_role": "backend",
+      "layer": 1,
+      "wave": 1,
+      "description": {
+        "goal": "Set up Express.js server with middleware stack, implement auth middleware (bcrypt-based local auth), configure Prisma client initialization, add base route structure, implement error handling middleware, and CORS configuration.",
+        "domain_packages": [],
+        "write_scope": ["server/src/", "server/middleware/", "server/config/"],
+        "read_sources": {
+          "ba_files": [".ba/requirements/nfr.json"],
+          "entities": [],
+          "endpoints": {},
+          "features": [],
+          "screens": [],
+          "flows": [],
+          "components": []
+        },
+        "cross_domain_contracts": [],
+        "business_rules": [],
+        "state_dependencies": null,
+        "db_scope": {
+          "writes": [],
+          "reads": []
+        },
+        "acceptance": {
+          "infra": [
+            "Server starts on configured port",
+            "Prisma client connects to PostgreSQL",
+            "Auth middleware validates session tokens",
+            "Error handling returns structured JSON errors",
+            "CORS allows configured origins",
+            "Base route structure responds to health check"
+          ]
+        }
+      },
+      "depends_on": [],
+      "on_critical_path": true,
+      "active_form": "setting up backend infrastructure with database schema and server"
+    },
+    {
+      "id": "T-003",
+      "subject": "Implement sync engine with offline queue and conflict resolution",
+      "owner": "builder-sync",
+      "builder_role": "sync",
+      "layer": 1,
+      "wave": 1,
+      "description": {
+        "goal": "Implement the sync queue for batched push/pull of IndexedDB changes to PostgreSQL, conflict resolution (last-write-wins for most entities, append-only for financial records), service worker for PWA offline support, and online status detection hook.",
+        "domain_packages": [],
+        "write_scope": ["src/sync/", "src/hooks/useOnlineStatus.ts", "public/sw.js"],
+        "read_sources": {
+          "ba_files": [".ba/requirements/nfr.json"],
+          "entities": [],
+          "endpoints": {},
+          "features": [],
+          "screens": [],
+          "flows": [],
+          "components": []
+        },
+        "cross_domain_contracts": [],
+        "business_rules": [],
+        "state_dependencies": {
+          "owns_store": null,
+          "writes_to_tables": [],
+          "reads_from_tables": [],
+          "calls_other_stores": []
+        },
+        "acceptance": {
+          "infra": [
+            "Sync queue processes batched changes",
+            "Service worker registers and caches app shell",
+            "Online status hook detects connectivity changes",
+            "Conflict resolution applies last-write-wins correctly",
+            "Financial records (Transaction, Shift, VoidRecord) use append-only semantics",
+            "No data loss during offline-to-online transition"
+          ]
+        }
+      },
+      "depends_on": [],
+      "on_critical_path": true,
+      "active_form": "implementing sync engine with offline queue and conflict resolution"
+    },
+    {
+      "id": "T-004",
+      "subject": "Build auth and dashboard frontend (LoginPage, DashboardHubPage)",
+      "owner": "builder-frontend-core",
+      "builder_role": "frontend",
+      "layer": 2,
+      "wave": 1,
+      "description": {
+        "goal": "Implement LoginPage with username/password form, error display, and post-login routing to DashboardHub. Implement DashboardHubPage with role-based menu grid, welcome header with user display name, shift status indicator, and quick info bar.",
+        "domain_packages": [".claude/implementation/domains/auth.json"],
+        "write_scope": ["src/pages/auth/LoginPage.tsx", "src/pages/dashboard/DashboardHubPage.tsx", "src/stores/useAuthStore.ts"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/auth.json",
+          "entities": ["User", "UserPermission"],
+          "endpoints": { "domains": ["auth"], "ids": ["EP-001", "EP-002", "EP-003", "EP-004"] },
+          "features": ["F-009"],
+          "screens": ["S-001", "S-016"],
+          "flows": [],
+          "components": []
+        },
+        "cross_domain_contracts": [
+          {
+            "flow_id": "UF-007",
+            "your_steps": [1, 3],
+            "context": "Cashier logs in (step 1), then verifies PIN for shift operations (step 3).",
+            "timing_notes": [],
+            "next_domain": "shift-management opens shift after PIN verified"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule": "Each user must have a unique username",
+            "type": "constraint",
+            "source": "F-009"
+          },
+          {
+            "rule": "After login, ALL users are routed to the Main Dashboard Hub (S-016)",
+            "type": "constraint",
+            "source": "F-009"
+          },
+          {
+            "rule": "Dashboard Hub shows role-appropriate menu options",
+            "type": "constraint",
+            "source": "F-009"
+          },
+          {
+            "rule": "Failed login attempts are logged",
+            "type": "constraint",
+            "source": "F-009"
+          }
+        ],
+        "state_dependencies": {
+          "owns_store": "useAuthStore",
+          "writes_to_tables": ["users", "userPermissions"],
+          "reads_from_tables": ["shifts"],
+          "calls_other_stores": ["useShiftManagementStore"]
+        },
+        "acceptance": {
+          "F-009": [
+            "Users can log in with username and password",
+            "All users are routed to Main Dashboard Hub after login",
+            "Dashboard Hub shows role-appropriate menu cards",
+            "Logged-in users name is displayed in the interface"
+          ]
+        }
+      },
+      "depends_on": ["T-001"],
+      "on_critical_path": true,
+      "active_form": "building auth and dashboard frontend pages"
+    },
+    {
+      "id": "T-005",
+      "subject": "Build shift management frontend (OpenShiftPage, CloseShiftPage)",
+      "owner": "builder-frontend-core",
+      "builder_role": "frontend",
+      "layer": 2,
+      "wave": 3,
+      "description": {
+        "goal": "Implement OpenShiftPage with PIN verification numpad, opening balance input, and shift confirmation. Implement CloseShiftPage with one-way closing lock banner, shift summary, line-by-line transaction report with print, cash reconciliation numpad, discrepancy indicator, mandatory notes for discrepancy, and close confirmation.",
+        "domain_packages": [".claude/implementation/domains/shift-management.json"],
+        "write_scope": ["src/pages/shift/OpenShiftPage.tsx", "src/pages/shift/CloseShiftPage.tsx", "src/components/shift/", "src/stores/useShiftManagementStore.ts"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/shift-management.json",
+          "entities": ["Shift"],
+          "endpoints": { "domains": ["shift-management"], "ids": ["EP-056", "EP-057", "EP-058", "EP-059", "EP-060", "EP-061"] },
+          "features": ["F-015"],
+          "screens": ["S-014", "S-015"],
+          "flows": ["UF-007"],
+          "components": []
+        },
+        "cross_domain_contracts": [
+          {
+            "flow_id": "UF-007",
+            "your_steps": [4, 7],
+            "context": "Cashier has logged in and verified PIN (auth steps 1, 3). Now opens shift with opening balance and later closes shift.",
+            "timing_notes": ["Shift tracks all transactions", "Discrepancy calculated at close", "Shift data immutable after close"],
+            "next_domain": "payment processes transactions during shift"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule": "Cashier MUST verify PIN before opening a shift",
+            "type": "constraint",
+            "source": "F-015"
+          },
+          {
+            "rule": "Only one active shift per cashier at a time",
+            "type": "constraint",
+            "source": "F-015"
+          },
+          {
+            "rule": "Expected cash = opening_balance + cash_sales - cash_refunds_from_voids",
+            "type": "calculation",
+            "formula": "openingBalance + cashSalesTotal - voidTotalAmount",
+            "source": "F-015"
+          },
+          {
+            "rule": "Closing is a ONE-WAY session",
+            "type": "constraint",
+            "source": "F-015"
+          },
+          {
+            "rule": "If discrepancy exists, notes are MANDATORY",
+            "type": "constraint",
+            "source": "F-015"
+          },
+          {
+            "rule": "Closed shift data is immutable and logged for audit",
+            "type": "constraint",
+            "source": "F-015"
+          }
+        ],
+        "state_dependencies": {
+          "owns_store": "useShiftManagementStore",
+          "writes_to_tables": ["shifts"],
+          "reads_from_tables": ["users", "transactions", "voidRecords"],
+          "calls_other_stores": ["useAuthStore", "usePaymentStore"]
+        },
+        "acceptance": {
+          "F-015": [
+            "Cashier sees Open Shift option on Main Dashboard Hub",
+            "Cashier must enter correct PIN before accessing shift opening",
+            "Cashier enters opening cash balance and confirms to start shift",
+            "During active shift, current shift info is visible in header",
+            "Cashier can initiate Close Shift -- this enters a one-way closing session",
+            "In closing session, cashier CANNOT navigate back to operations",
+            "Close Shift screen shows full shift summary and line-by-line transaction detail",
+            "Cashier can print the transaction report for physical tracing",
+            "System calculates and displays discrepancy with color indicator",
+            "If discrepancy exists, notes field is mandatory and close button is disabled until filled",
+            "If cash matches, closing completes directly",
+            "Owner can view shift history with all opening/closing data and discrepancies"
+          ]
+        }
+      },
+      "depends_on": ["T-001", "T-004"],
+      "on_critical_path": false,
+      "active_form": "building shift management frontend pages"
+    },
+    {
+      "id": "T-006",
+      "subject": "Build order list, create order, and table map pages",
+      "owner": "builder-frontend-waiter-cashier",
+      "builder_role": "frontend",
+      "layer": 2,
+      "wave": 3,
+      "description": {
+        "goal": "Implement OrderListPage (S-002) with kitchen ready notification bar, active orders list with status badges and elapsed timers, cancel order confirmation modal. Implement CreateOrderPage (S-003) with table selector, promo banner, menu browser with category filter, order summary sidebar. Implement TableMapPage (S-005) with visual table grid and status indicators.",
+        "domain_packages": [".claude/implementation/domains/order-management.json"],
+        "write_scope": ["src/pages/pos/OrderListPage.tsx", "src/pages/pos/CreateOrderPage.tsx", "src/pages/pos/TableMapPage.tsx", "src/components/order/", "src/stores/useOrderManagementStore.ts"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/order-management.json",
+          "entities": ["Order", "OrderItem", "Table"],
+          "endpoints": { "domains": ["order-management"], "ids": ["EP-035", "EP-036", "EP-037", "EP-038", "EP-039", "EP-040", "EP-041", "EP-042", "EP-043", "EP-044"] },
+          "features": ["F-001", "F-010", "F-017"],
+          "screens": ["S-002", "S-003", "S-005"],
+          "flows": ["UF-001", "UF-006", "UF-008"],
+          "components": []
+        },
+        "cross_domain_contracts": [
+          {
+            "flow_id": "UF-001",
+            "your_steps": [1, 3],
+            "context": "Waiter selects table, browses menu, creates order.",
+            "timing_notes": ["Stock deduction at order submission (D-001, D-030, D-064)"],
+            "next_domain": "kitchen receives order, inventory deducts stock"
+          },
+          {
+            "flow_id": "UF-008",
+            "your_steps": [],
+            "context": "Kitchen marks order ready, waiter sees notification on S-002",
+            "timing_notes": [],
+            "next_domain": "kitchen domain pushes KitchenNotification"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule": "Order must have at least one menu item",
+            "type": "constraint",
+            "source": "F-001"
+          },
+          {
+            "rule": "Each order is linked to a specific table",
+            "type": "constraint",
+            "source": "F-001"
+          },
+          {
+            "rule": "If a table already has an active (unpaid) order, cashier can ADD items to that existing order",
+            "type": "constraint",
+            "source": "F-001"
+          },
+          {
+            "rule": "Additional items are appended to the same order with Tambahan label",
+            "type": "constraint",
+            "source": "F-001"
+          },
+          {
+            "rule": "Order total recalculated automatically after adding items",
+            "type": "calculation",
+            "formula": "SUM(item.unitPrice * item.quantity)",
+            "source": "F-001"
+          },
+          {
+            "rule": "Order can be cancelled before payment (status -> cancelled)",
+            "type": "constraint",
+            "source": "F-001"
+          },
+          {
+            "rule": "Discount applied before PPN: Grand Total = (Subtotal - Discount) * (1 + PPN rate)",
+            "type": "calculation",
+            "formula": "(subtotalAmount - discountAmount) * (1 + ppnRate / 100)",
+            "source": "F-003"
+          }
+        ],
+        "state_dependencies": {
+          "owns_store": "useOrderManagementStore",
+          "writes_to_tables": ["orders", "orderItems", "tables"],
+          "reads_from_tables": ["users", "shifts", "menuItems", "discounts"],
+          "calls_other_stores": ["useAuthStore", "useMenuStore", "useSettingsStore", "useInventoryStore"]
+        },
+        "acceptance": {
+          "F-001": [
+            "Waiter can create a new order by selecting menu items and assigning to a table",
+            "If table already has active order, waiter sees option to Tambah Pesanan",
+            "Additional items are appended to existing order and sent to kitchen",
+            "Order total updates automatically after adding items",
+            "Order appears on Kitchen Display within 2 seconds of submission",
+            "Order total is auto-calculated based on menu item prices and quantities",
+            "Special notes are visible to the chef on Kitchen Display"
+          ],
+          "F-010": [
+            "Visual grid showing all tables with color-coded status",
+            "Waiter can tap a table to create or view its active order",
+            "Table status updates automatically when order is created/paid",
+            "Owner can configure total number of tables"
+          ],
+          "F-017": [
+            "Cashier can cancel an unpaid order from order list"
+          ]
+        }
+      },
+      "depends_on": ["T-001"],
+      "on_critical_path": true,
+      "active_form": "building order list, create order, and table map pages"
+    },
+    {
+      "id": "T-007",
+      "subject": "Build payment and void transaction pages",
+      "owner": "builder-frontend-waiter-cashier",
+      "builder_role": "frontend",
+      "layer": 2,
+      "wave": 3,
+      "description": {
+        "goal": "Implement PaymentPage (S-004) with order detail display, discount selector, payment method tabs (tunai/qris/e-wallet/transfer), numpad for cash, QR display for digital, success popup with print receipt, and void transaction modal with PIN gate and reason selection.",
+        "domain_packages": [".claude/implementation/domains/payment.json"],
+        "write_scope": ["src/pages/pos/PaymentPage.tsx", "src/components/payment/", "src/stores/usePaymentStore.ts"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/payment.json",
+          "entities": ["Transaction", "VoidRecord"],
+          "endpoints": { "domains": ["payment"], "ids": ["EP-050", "EP-051", "EP-052", "EP-053", "EP-054", "EP-055"] },
+          "features": ["F-003", "F-017"],
+          "screens": ["S-004"],
+          "flows": ["UF-001", "UF-010"],
+          "components": []
+        },
+        "cross_domain_contracts": [
+          {
+            "flow_id": "UF-001",
+            "your_steps": [11],
+            "context": "Order has been served, waiter initiates payment.",
+            "timing_notes": ["Stock deduction at order submission (D-001, D-030, D-064)"],
+            "next_domain": "order status updated to paid, table released, shift totals updated"
+          },
+          {
+            "flow_id": "UF-010",
+            "your_steps": [3],
+            "context": "Cashier finds paid order, verifies PIN, processes void.",
+            "timing_notes": [],
+            "next_domain": "order voided, shift expected cash reduced, stock reversed"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule": "PPN calculation",
+            "type": "calculation",
+            "formula": "(subtotal - discount) * (ppnRate / 100)",
+            "source": "F-003"
+          },
+          {
+            "rule": "Grand total calculation",
+            "type": "calculation",
+            "formula": "(subtotal - discount) + ppnAmount",
+            "source": "F-003"
+          },
+          {
+            "rule": "Payment cannot be processed if amount paid is less than grand total",
+            "type": "constraint",
+            "source": "F-003"
+          },
+          {
+            "rule": "Transaction stores SPECIFIC payment method name, NOT generic Digital",
+            "type": "constraint",
+            "source": "F-003"
+          },
+          {
+            "rule": "Cashier MUST open a shift before processing any payment",
+            "type": "constraint",
+            "source": "F-015"
+          },
+          {
+            "rule": "PIN verification required before any void operation",
+            "type": "constraint",
+            "source": "F-017"
+          },
+          {
+            "rule": "Void reason is MANDATORY",
+            "type": "constraint",
+            "source": "F-017"
+          },
+          {
+            "rule": "Expected cash formula updated on void",
+            "type": "calculation",
+            "formula": "opening_balance + cash_sales - cash_refunds_from_voids",
+            "source": "F-017"
+          }
+        ],
+        "state_dependencies": {
+          "owns_store": "usePaymentStore",
+          "writes_to_tables": ["transactions", "voidRecords"],
+          "reads_from_tables": ["orders", "shifts", "users", "discounts", "posSettings"],
+          "calls_other_stores": ["useOrderManagementStore", "useShiftManagementStore", "useAuthStore", "useSettingsStore"]
+        },
+        "acceptance": {
+          "F-003": [
+            "Payment screen shows subtotal, PPN %, PPN amount, and grand total",
+            "Cashier can select payment method and input amount received",
+            "Change is calculated against grand total (inclusive PPN)",
+            "After payment: success popup with checkmark, summary, and Print Struk button",
+            "Cashier can print receipt from success popup",
+            "Cashier can tap Selesai to return to order list",
+            "Completed payment updates order status to paid"
+          ],
+          "F-017": [
+            "Cashier can void a paid transaction (requires PIN)",
+            "Void reason selection is mandatory",
+            "Voided amounts are reflected in shift expected cash calculation"
+          ]
+        }
+      },
+      "depends_on": ["T-001", "T-006"],
+      "on_critical_path": false,
+      "active_form": "building payment and void transaction pages"
+    },
+    {
+      "id": "T-008",
+      "subject": "Build kitchen display pages (KitchenQueuePage, RecipeViewerPage)",
+      "owner": "builder-frontend-kitchen",
+      "builder_role": "frontend",
+      "layer": 2,
+      "wave": 3,
+      "description": {
+        "goal": "Implement KitchenQueuePage (S-006) with kanban-style order queue (pending/cooking/ready columns), new order audio alert, elapsed timer per order, late order red highlight (>15 min), tambahan badge, single-tap status transitions, recipe quick access links. Implement RecipeViewerPage (S-007) with recipe header, ingredients list, cooking steps, and notes.",
+        "domain_packages": [".claude/implementation/domains/kitchen.json", ".claude/implementation/domains/recipe.json"],
+        "write_scope": ["src/pages/kitchen/KitchenQueuePage.tsx", "src/pages/kitchen/RecipeViewerPage.tsx", "src/components/kitchen/", "src/stores/useKitchenStore.ts"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/kitchen.json",
+          "entities": ["Order", "KitchenNotification", "Recipe", "RecipeIngredient", "RecipeStep"],
+          "endpoints": { "domains": ["kitchen", "recipe"], "ids": ["EP-045", "EP-046", "EP-047", "EP-048", "EP-049", "EP-021"] },
+          "features": ["F-002", "F-006"],
+          "screens": ["S-006", "S-007"],
+          "flows": ["UF-001", "UF-008"],
+          "components": []
+        },
+        "cross_domain_contracts": [
+          {
+            "flow_id": "UF-001",
+            "your_steps": [4, 7, 9],
+            "context": "Order-management submits order (step 3), kitchen receives it in queue.",
+            "timing_notes": [],
+            "next_domain": "Notification sent to waiter POS screen when ready"
+          },
+          {
+            "flow_id": "UF-008",
+            "your_steps": [1, 2, 3],
+            "context": "Chef marks order ready, waiter sees notification, waiter confirms served.",
+            "timing_notes": [],
+            "next_domain": "order-management order status updated to served"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule": "New orders appear at the top of the queue with audio/visual alert",
+            "type": "constraint",
+            "source": "F-002"
+          },
+          {
+            "rule": "Chef taps to change status: pending -> cooking -> ready",
+            "type": "constraint",
+            "source": "F-002"
+          },
+          {
+            "rule": "When chef marks ready: notification sent to waiter/cashier POS screen immediately",
+            "type": "constraint",
+            "source": "F-002"
+          },
+          {
+            "rule": "Orders exceeding target time (15 min) are highlighted in red as late",
+            "type": "constraint",
+            "source": "F-002"
+          },
+          {
+            "rule": "Additional items (tambahan) from same table appear as new items in the SAME order card",
+            "type": "constraint",
+            "source": "F-002"
+          },
+          {
+            "rule": "Recipe is viewable from Kitchen Display per order item",
+            "type": "constraint",
+            "source": "F-006"
+          }
+        ],
+        "state_dependencies": {
+          "owns_store": "useKitchenStore",
+          "writes_to_tables": ["orders", "kitchenNotifications"],
+          "reads_from_tables": ["tables", "users", "orderItems", "recipes"],
+          "calls_other_stores": ["useOrderManagementStore"]
+        },
+        "acceptance": {
+          "F-002": [
+            "Kitchen display shows all pending and cooking orders in queue format",
+            "Chef can update order status with a single tap",
+            "Recipe/cooking guide is accessible from each order item",
+            "When order is marked ready, waiter gets real-time notification on POS screen",
+            "Notification shows table number and items that are ready",
+            "Waiter can mark order as served from notification",
+            "Elapsed time counter visible on each order",
+            "Late orders (>15 min) visually highlighted",
+            "Completed orders move to done section"
+          ],
+          "F-006": [
+            "Chef can open recipe guide from Kitchen Display with one tap on a menu item",
+            "Recipe shows ingredients, step-by-step instructions, and estimated cooking time"
+          ]
+        }
+      },
+      "depends_on": ["T-001"],
+      "on_critical_path": false,
+      "active_form": "building kitchen display and recipe viewer pages"
+    },
+    {
+      "id": "T-009",
+      "subject": "Build admin dashboard, menu management, and recipe management pages",
+      "owner": "builder-frontend-admin",
+      "builder_role": "frontend",
+      "layer": 2,
+      "wave": 2,
+      "description": {
+        "goal": "Implement AdminDashboardPage (S-008) with KPI summary cards, revenue chart, peak hours heatmap, top selling items, payment method breakdown, shift performance table, and low stock alerts widget. Implement MenuManagementPage (S-009) with menu list table, category filter, add/edit form modal with image upload. Implement RecipeManagementPage (S-010) with recipe list, viewer panel, and editor form.",
+        "domain_packages": [".claude/implementation/domains/reporting.json", ".claude/implementation/domains/menu.json", ".claude/implementation/domains/recipe.json"],
+        "write_scope": ["src/pages/admin/AdminDashboardPage.tsx", "src/pages/admin/MenuManagementPage.tsx", "src/pages/admin/RecipeManagementPage.tsx", "src/components/reporting/", "src/components/menu/", "src/stores/useReportingStore.ts", "src/stores/useMenuStore.ts", "src/stores/useRecipeStore.ts"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/reporting.json",
+          "entities": ["Transaction", "MenuItem", "MenuCategory", "Recipe", "RecipeIngredient", "RecipeStep"],
+          "endpoints": { "domains": ["reporting", "menu", "recipe"], "ids": ["EP-062", "EP-063", "EP-011", "EP-012", "EP-013", "EP-014", "EP-015", "EP-016", "EP-017", "EP-018", "EP-019", "EP-020", "EP-021", "EP-022", "EP-023", "EP-024"] },
+          "features": ["F-007", "F-005", "F-006", "F-014"],
+          "screens": ["S-008", "S-009", "S-010"],
+          "flows": [],
+          "components": []
+        },
+        "cross_domain_contracts": [],
+        "business_rules": [
+          {
+            "rule": "Report data updates in real-time as transactions are completed",
+            "type": "constraint",
+            "source": "F-007"
+          },
+          {
+            "rule": "Only completed (paid) orders are counted in revenue",
+            "type": "constraint",
+            "source": "F-007"
+          },
+          {
+            "rule": "Unavailable items are hidden from the order screen",
+            "type": "constraint",
+            "source": "F-005"
+          },
+          {
+            "rule": "Price changes take effect immediately for new orders",
+            "type": "constraint",
+            "source": "F-005"
+          },
+          {
+            "rule": "Recipe ingredients must reference inventory items for stock deduction",
+            "type": "constraint",
+            "source": "F-006"
+          }
+        ],
+        "state_dependencies": {
+          "owns_store": "useReportingStore",
+          "writes_to_tables": [],
+          "reads_from_tables": ["transactions", "orders", "menuItems", "menuCategories", "recipes"],
+          "calls_other_stores": ["useMenuStore", "useRecipeStore", "useInventoryStore"]
+        },
+        "acceptance": {
+          "F-007": [
+            "Owner can view todays sales summary on a dashboard",
+            "Dashboard shows total revenue, order count, and top-selling items",
+            "Owner can filter reports by date range",
+            "Data refreshes automatically without manual action"
+          ],
+          "F-005": [
+            "Owner can add, edit, and delete menu items",
+            "Menu items can be categorized and filtered",
+            "Availability toggle immediately affects order screen",
+            "Menu items can be linked to recipe guides and inventory ingredients"
+          ],
+          "F-006": [
+            "Owner can create and edit recipe guides for each menu item",
+            "Recipe shows ingredients, step-by-step instructions, and estimated cooking time",
+            "Recipe ingredients are linked to inventory items"
+          ],
+          "F-014": [
+            "Menu items can be assigned to categories",
+            "Order screen allows filtering by category",
+            "Owner can create, edit, and delete categories"
+          ]
+        }
+      },
+      "depends_on": ["T-001"],
+      "on_critical_path": false,
+      "active_form": "building admin dashboard, menu management, and recipe management pages"
+    },
+    {
+      "id": "T-010",
+      "subject": "Build inventory, transaction history, user management, and settings pages",
+      "owner": "builder-frontend-admin",
+      "builder_role": "frontend",
+      "layer": 2,
+      "wave": 2,
+      "description": {
+        "goal": "Implement InventoryManagementPage (S-011) with stock overview table, restock/adjust modals, movement history drawer. Implement TransactionHistoryPage (S-012) with advanced filter bar, summary stats, transaction detail modal with print, export to Excel. Implement UserManagementPage (S-013) with user list, create/edit form, permission checklist panel. Implement SystemSettingsPage (S-017) with PPN toggle/rate, payment method configs, discount management, restaurant info, receipt settings.",
+        "domain_packages": [".claude/implementation/domains/inventory.json", ".claude/implementation/domains/payment.json", ".claude/implementation/domains/user-management.json", ".claude/implementation/domains/settings.json"],
+        "write_scope": ["src/pages/admin/InventoryManagementPage.tsx", "src/pages/admin/TransactionHistoryPage.tsx", "src/pages/admin/UserManagementPage.tsx", "src/pages/admin/SystemSettingsPage.tsx", "src/components/inventory/", "src/components/user-management/", "src/components/settings/"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/inventory.json",
+          "entities": ["InventoryItem", "StockMovement", "Transaction", "VoidRecord", "User", "UserPermission", "PosSettings", "EwalletProvider", "Discount"],
+          "endpoints": { "domains": ["inventory", "payment", "user-management", "settings"], "ids": ["EP-025", "EP-026", "EP-027", "EP-028", "EP-029", "EP-030", "EP-031", "EP-032", "EP-033", "EP-052", "EP-053", "EP-054", "EP-055", "EP-005", "EP-006", "EP-007", "EP-008", "EP-009", "EP-010", "EP-064", "EP-065", "EP-066", "EP-067", "EP-068", "EP-069", "EP-070", "EP-071"] },
+          "features": ["F-004", "F-012", "F-011", "F-013", "F-008", "F-009", "F-016", "F-018"],
+          "screens": ["S-011", "S-012", "S-013", "S-017"],
+          "flows": [],
+          "components": []
+        },
+        "cross_domain_contracts": [],
+        "business_rules": [
+          {
+            "rule": "Stock deduction is triggered automatically when an order is confirmed",
+            "type": "constraint",
+            "source": "F-004"
+          },
+          {
+            "rule": "Only authorized users can manually adjust stock (restock or correction)",
+            "type": "constraint",
+            "source": "F-004"
+          },
+          {
+            "rule": "Only Owner can access the access control panel",
+            "type": "constraint",
+            "source": "F-008"
+          },
+          {
+            "rule": "Permission changes take effect immediately",
+            "type": "constraint",
+            "source": "F-008"
+          },
+          {
+            "rule": "Core permissions cannot be removed",
+            "type": "constraint",
+            "source": "F-008"
+          },
+          {
+            "rule": "PPN rate is configurable by owner in system settings",
+            "type": "constraint",
+            "source": "F-016"
+          },
+          {
+            "rule": "Changes to PPN rate apply to new transactions only, not retroactively",
+            "type": "constraint",
+            "source": "F-016"
+          },
+          {
+            "rule": "Discount applied BEFORE PPN calculation: Grand Total = (Subtotal - Discount) + PPN",
+            "type": "calculation",
+            "formula": "(Subtotal - Discount) + ppnAmount",
+            "source": "F-018"
+          },
+          {
+            "rule": "Only one discount per order (prevent stacking)",
+            "type": "constraint",
+            "source": "F-018"
+          }
+        ],
+        "state_dependencies": {
+          "owns_store": "useInventoryStore",
+          "writes_to_tables": ["inventoryItems", "stockMovements", "posSettings", "ewalletProviders", "discounts", "users", "userPermissions"],
+          "reads_from_tables": ["recipeIngredients", "transactions", "orders"],
+          "calls_other_stores": ["useAuthStore", "useSettingsStore"]
+        },
+        "acceptance": {
+          "F-004": [
+            "Owner can view all inventory items with current stock levels",
+            "Stock auto-decreases when orders are placed based on recipe ingredients",
+            "Owner can manually add stock (restocking)",
+            "System shows stock movement history (in/out log)"
+          ],
+          "F-012": [
+            "System shows a warning badge when any item is below threshold",
+            "Owner can set minimum threshold per inventory item",
+            "Low stock items are highlighted in the inventory view",
+            "Dashboard shows count of low-stock items"
+          ],
+          "F-011": [
+            "Transaction table shows: date/time, ID, table, Shift ID, PIC Kasir, subtotal, PPN, total, payment method",
+            "Transactions can be filtered by: date range, transaction ID, PIC Kasir, Shift ID, payment method, total range",
+            "All filters are combinable and have a reset button",
+            "Summary stats update with active filters",
+            "Each transaction shows full detail modal with PPN breakdown and Print Struk button",
+            "Filtered data can be exported to Excel (.xlsx)",
+            "Transaction data cannot be deleted by non-owner users"
+          ],
+          "F-013": [
+            "Export button on Transaction History generates Excel file",
+            "Export includes all visible columns",
+            "Export respects currently active filters",
+            "Loading indicator shown during export generation"
+          ],
+          "F-008": [
+            "Owner can view a list of all users with their current permissions",
+            "Owner can toggle each permission on/off via checkboxes",
+            "Changes apply immediately without requiring user to re-login",
+            "Default permissions are pre-set based on role but fully customizable"
+          ],
+          "F-016": [
+            "Owner can access POS Settings from admin panel or Dashboard Hub",
+            "Owner can toggle PPN on/off",
+            "Owner can set PPN rate percentage",
+            "Printed receipt includes PPN breakdown"
+          ],
+          "F-018": [
+            "Owner can create/edit/deactivate discount rules in settings",
+            "Active promos shown as banner cards on order creation screen",
+            "Discount picker shows all active discounts with calculated amount",
+            "Payment shows: Subtotal -> Diskon -> Subtotal setelah diskon -> PPN -> Grand Total",
+            "Receipt includes discount line"
+          ]
+        }
+      },
+      "depends_on": ["T-001"],
+      "on_critical_path": false,
+      "active_form": "building inventory, transaction history, user management, and settings pages"
+    },
+    {
+      "id": "T-011",
+      "subject": "Implement backend auth and user management APIs",
+      "owner": "builder-backend-crud",
+      "builder_role": "backend",
+      "layer": 2,
+      "wave": 1,
+      "description": {
+        "goal": "Implement auth endpoints (login, logout, verify-pin, session) and user management endpoints (CRUD users, get/update permissions). Local-first auth with bcrypt password/PIN hashing. Session token management via IndexedDB.",
+        "domain_packages": [".claude/implementation/domains/auth.json", ".claude/implementation/domains/user-management.json"],
+        "write_scope": ["server/routes/auth/", "server/services/auth/", "server/routes/user-management/", "server/services/user-management/"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/auth.json",
+          "entities": ["User", "UserPermission"],
+          "endpoints": { "domains": ["auth", "user-management"], "ids": ["EP-001", "EP-002", "EP-003", "EP-004", "EP-005", "EP-006", "EP-007", "EP-008", "EP-009", "EP-010"] },
+          "features": ["F-009", "F-008"],
+          "screens": [],
+          "flows": [],
+          "components": []
+        },
+        "cross_domain_contracts": [],
+        "business_rules": [
+          {
+            "rule": "Each user must have a unique username",
+            "type": "constraint",
+            "source": "F-009"
+          },
+          {
+            "rule": "Failed login attempts are logged",
+            "type": "constraint",
+            "source": "F-009"
+          },
+          {
+            "rule": "Owner can set and reset PIN per user for shift operations",
+            "type": "constraint",
+            "source": "F-009"
+          },
+          {
+            "rule": "Only Owner can access the access control panel",
+            "type": "constraint",
+            "source": "F-008"
+          },
+          {
+            "rule": "Permission changes take effect immediately",
+            "type": "constraint",
+            "source": "F-008"
+          },
+          {
+            "rule": "Each role has default permissions that can be overridden per individual user",
+            "type": "constraint",
+            "source": "F-008"
+          },
+          {
+            "rule": "Core permissions cannot be removed",
+            "type": "constraint",
+            "source": "F-008"
+          }
+        ],
+        "state_dependencies": null,
+        "db_scope": {
+          "writes": ["users", "userPermissions"],
+          "reads": ["users", "userPermissions", "shifts"]
+        },
+        "acceptance": {
+          "F-009": [
+            "Users can log in with username and password (bcrypt comparison)",
+            "Session token returned on successful login",
+            "PIN verification works for shift/void/POS contexts",
+            "Owner can manage all user accounts (create, edit, deactivate, set PIN)"
+          ],
+          "F-008": [
+            "Owner can view a list of all users with their current permissions",
+            "Owner can toggle each permission on/off via checkboxes",
+            "Default permissions are pre-set based on role but fully customizable"
+          ]
+        }
+      },
+      "depends_on": ["T-002"],
+      "on_critical_path": false,
+      "active_form": "implementing backend auth and user management APIs"
+    },
+    {
+      "id": "T-012",
+      "subject": "Implement backend menu, recipe, and settings APIs",
+      "owner": "builder-backend-crud",
+      "builder_role": "backend",
+      "layer": 2,
+      "wave": 2,
+      "description": {
+        "goal": "Implement menu CRUD endpoints (items + categories), recipe CRUD endpoints (with nested ingredients and steps), and settings endpoints (POS settings, e-wallet providers, discount management).",
+        "domain_packages": [".claude/implementation/domains/menu.json", ".claude/implementation/domains/recipe.json", ".claude/implementation/domains/settings.json"],
+        "write_scope": ["server/routes/menu/", "server/services/menu/", "server/routes/recipe/", "server/services/recipe/", "server/routes/settings/", "server/services/settings/"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/menu.json",
+          "entities": ["MenuItem", "MenuCategory", "Recipe", "RecipeIngredient", "RecipeStep", "PosSettings", "EwalletProvider", "Discount"],
+          "endpoints": { "domains": ["menu", "recipe", "settings"], "ids": ["EP-011", "EP-012", "EP-013", "EP-014", "EP-015", "EP-016", "EP-017", "EP-018", "EP-019", "EP-020", "EP-021", "EP-022", "EP-023", "EP-024", "EP-064", "EP-065", "EP-066", "EP-067", "EP-068", "EP-069", "EP-070", "EP-071"] },
+          "features": ["F-005", "F-006", "F-014", "F-016", "F-018"],
+          "screens": [],
+          "flows": [],
+          "components": []
+        },
+        "cross_domain_contracts": [],
+        "business_rules": [
+          {
+            "rule": "Unavailable items are hidden from the order screen",
+            "type": "constraint",
+            "source": "F-005"
+          },
+          {
+            "rule": "Price changes take effect immediately for new orders",
+            "type": "constraint",
+            "source": "F-005"
+          },
+          {
+            "rule": "Recipe ingredients must reference inventory items for stock deduction",
+            "type": "constraint",
+            "source": "F-006"
+          },
+          {
+            "rule": "Only Owner or authorized chef can edit recipes",
+            "type": "constraint",
+            "source": "F-006"
+          },
+          {
+            "rule": "PPN is calculated as: ppn_amount = subtotal * (ppn_rate / 100)",
+            "type": "calculation",
+            "formula": "subtotal * (ppn_rate / 100)",
+            "source": "F-016"
+          },
+          {
+            "rule": "Changes to PPN rate apply to new transactions only, not retroactively",
+            "type": "constraint",
+            "source": "F-016"
+          },
+          {
+            "rule": "Discount applied BEFORE PPN calculation: Grand Total = (Subtotal - Discount) + PPN",
+            "type": "calculation",
+            "formula": "(Subtotal - Discount) + ppnAmount",
+            "source": "F-018"
+          },
+          {
+            "rule": "Only one discount per order (prevent stacking)",
+            "type": "constraint",
+            "source": "F-018"
+          }
+        ],
+        "state_dependencies": null,
+        "db_scope": {
+          "writes": ["menuItems", "menuCategories", "recipes", "recipeIngredients", "recipeSteps", "posSettings", "ewalletProviders", "discounts"],
+          "reads": ["menuItems", "menuCategories", "recipes", "recipeIngredients", "recipeSteps", "inventoryItems", "posSettings", "ewalletProviders", "discounts", "orders"]
+        },
+        "acceptance": {
+          "F-005": [
+            "Menu item CRUD operations work correctly",
+            "Availability toggle persists and takes effect",
+            "Category-based filtering works"
+          ],
+          "F-006": [
+            "Recipe CRUD with nested ingredients and steps",
+            "Ingredients reference valid inventory items",
+            "Permission enforcement for chef editing"
+          ],
+          "F-014": [
+            "Category CRUD operations work correctly",
+            "Cannot delete category with assigned items"
+          ],
+          "F-016": [
+            "PPN toggle and rate configuration persists",
+            "E-wallet provider enable/disable works",
+            "Settings are readable by all authenticated users"
+          ],
+          "F-018": [
+            "Discount CRUD operations work correctly",
+            "Active/inactive toggle works",
+            "Cannot delete discount applied to active orders"
+          ]
+        }
+      },
+      "depends_on": ["T-002", "T-011"],
+      "on_critical_path": false,
+      "active_form": "implementing backend menu, recipe, and settings APIs"
+    },
+    {
+      "id": "T-013",
+      "subject": "Implement backend inventory APIs with stock check and deduction",
+      "owner": "builder-backend-logic",
+      "builder_role": "backend",
+      "layer": 2,
+      "wave": 2,
+      "description": {
+        "goal": "Implement inventory CRUD endpoints, restock and manual adjustment endpoints with stock movement logging, stock movement history query, low stock alert query, and stock check endpoint for order submission validation. Implement stock status state machine (ok/low/critical based on quantity vs threshold).",
+        "domain_packages": [".claude/implementation/domains/inventory.json"],
+        "write_scope": ["server/routes/inventory/", "server/services/inventory/"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/inventory.json",
+          "entities": ["InventoryItem", "StockMovement"],
+          "endpoints": { "domains": ["inventory"], "ids": ["EP-025", "EP-026", "EP-027", "EP-028", "EP-029", "EP-030", "EP-031", "EP-032", "EP-033", "EP-034"] },
+          "features": ["F-004", "F-012"],
+          "screens": [],
+          "flows": ["UF-006"],
+          "components": []
+        },
+        "cross_domain_contracts": [
+          {
+            "flow_id": "UF-001",
+            "your_steps": [],
+            "context": "Inventory is a side-effect target: order submission triggers stock deduction.",
+            "timing_notes": ["Stock deduction at order submission (D-001, D-030, D-064)"],
+            "next_domain": "Stock warnings returned to order-management"
+          },
+          {
+            "flow_id": "UF-006",
+            "your_steps": [1, 2],
+            "context": "Order-management requests stock check before order submission.",
+            "timing_notes": [],
+            "next_domain": "Warning dialog shown to waiter"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule": "Stock deduction is triggered automatically when an order is confirmed",
+            "type": "multi_step",
+            "steps": [
+              "Order is confirmed/paid",
+              "For each order item, look up recipe",
+              "For each recipe ingredient, deduct quantityRequired * orderItem.quantity from inventory",
+              "Update stockStatus based on new quantity vs minimumThreshold"
+            ],
+            "source": "F-004"
+          },
+          {
+            "rule": "Deduction amounts are based on recipe ingredient definitions",
+            "type": "constraint",
+            "source": "F-004"
+          },
+          {
+            "rule": "Stock cannot go below zero - system warns if insufficient",
+            "type": "constraint",
+            "source": "F-004"
+          },
+          {
+            "rule": "Only authorized users can manually adjust stock (restock or correction)",
+            "type": "constraint",
+            "source": "F-004"
+          }
+        ],
+        "state_dependencies": null,
+        "db_scope": {
+          "writes": ["inventoryItems", "stockMovements"],
+          "reads": ["inventoryItems", "stockMovements", "recipeIngredients", "orders", "users"]
+        },
+        "acceptance": {
+          "F-004": [
+            "Inventory CRUD operations work correctly",
+            "Stock auto-deduction on order works via recipe ingredients",
+            "Restock and manual adjustment create stock movement records",
+            "Stock status updates based on quantity vs threshold"
+          ],
+          "F-012": [
+            "Low stock endpoint returns items below threshold",
+            "Stock status badges (ok/low/critical) are accurate"
+          ]
+        }
+      },
+      "depends_on": ["T-002"],
+      "on_critical_path": true,
+      "active_form": "implementing backend inventory APIs with stock check and deduction"
+    },
+    {
+      "id": "T-014",
+      "subject": "Implement backend order management and table APIs",
+      "owner": "builder-backend-logic",
+      "builder_role": "backend",
+      "layer": 2,
+      "wave": 3,
+      "description": {
+        "goal": "Implement order CRUD endpoints with state machine transitions, add-items endpoint for additional orders with Tambahan label, order status update with stock deduction side-effects, cancellation with stock reversal. Implement table CRUD and status auto-updates. Wire cross-domain stock check on order creation.",
+        "domain_packages": [".claude/implementation/domains/order-management.json"],
+        "write_scope": ["server/routes/order-management/", "server/services/order-management/"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/order-management.json",
+          "entities": ["Order", "OrderItem", "Table"],
+          "endpoints": { "domains": ["order-management"], "ids": ["EP-035", "EP-036", "EP-037", "EP-038", "EP-039", "EP-040", "EP-041", "EP-042", "EP-043", "EP-044"] },
+          "features": ["F-001", "F-010", "F-017"],
+          "screens": [],
+          "flows": ["UF-001", "UF-006"],
+          "components": []
+        },
+        "cross_domain_contracts": [
+          {
+            "flow_id": "UF-001",
+            "your_steps": [1, 3],
+            "context": "Waiter selects table, browses menu, creates order.",
+            "timing_notes": ["Stock deduction at order submission (D-001, D-030, D-064)"],
+            "next_domain": "kitchen receives order, inventory deducts stock"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule": "Order must have at least one menu item",
+            "type": "constraint",
+            "source": "F-001"
+          },
+          {
+            "rule": "Each order is linked to a specific table",
+            "type": "constraint",
+            "source": "F-001"
+          },
+          {
+            "rule": "Stock deduction triggered on order submission",
+            "type": "multi_step",
+            "steps": ["Check recipe ingredients for each order item", "Deduct from inventory", "Create stock movement records", "Update stock status if below threshold"],
+            "source": "F-004"
+          },
+          {
+            "rule": "Order total recalculated automatically",
+            "type": "calculation",
+            "formula": "SUM(item.unitPrice * item.quantity)",
+            "source": "F-001"
+          },
+          {
+            "rule": "When cancelling, reverse stock deductions via reversal StockMovement",
+            "type": "multi_step",
+            "steps": ["Set order status to cancelled", "For each order item, look up recipe", "Create reversal stock movements (positive quantities)", "Update inventory quantities", "Release table if no other active orders"],
+            "source": "F-001"
+          },
+          {
+            "rule": "Table status updates automatically when order is created/paid",
+            "type": "constraint",
+            "source": "F-010"
+          }
+        ],
+        "state_dependencies": null,
+        "db_scope": {
+          "writes": ["orders", "orderItems", "tables"],
+          "reads": ["orders", "orderItems", "tables", "users", "shifts", "menuItems", "discounts", "inventoryItems", "recipeIngredients", "stockMovements"]
+        },
+        "acceptance": {
+          "F-001": [
+            "Order creation with auto-subtotal calculation works",
+            "Additional items endpoint appends with Tambahan label",
+            "Order status transitions follow state machine",
+            "Cancellation reverses stock deductions",
+            "Stock warnings returned on order submission"
+          ],
+          "F-010": [
+            "Table CRUD works correctly",
+            "Table status auto-updates on order lifecycle",
+            "Cannot delete occupied table"
+          ],
+          "F-017": [
+            "Cancellation before payment restores table and stock"
+          ]
+        }
+      },
+      "depends_on": ["T-002", "T-013"],
+      "on_critical_path": true,
+      "active_form": "implementing backend order management and table APIs"
+    },
+    {
+      "id": "T-015",
+      "subject": "Implement backend kitchen and notification APIs",
+      "owner": "builder-backend-logic",
+      "builder_role": "backend",
+      "layer": 2,
+      "wave": 3,
+      "description": {
+        "goal": "Implement kitchen order queue endpoint with elapsed time and late order detection, start-cooking and mark-ready endpoints with order state transitions, kitchen notification creation on mark-ready, notification query for waiter display, and notification acknowledge endpoint that updates order to served.",
+        "domain_packages": [".claude/implementation/domains/kitchen.json"],
+        "write_scope": ["server/routes/kitchen/", "server/services/kitchen/"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/kitchen.json",
+          "entities": ["Order", "KitchenNotification"],
+          "endpoints": { "domains": ["kitchen"], "ids": ["EP-045", "EP-046", "EP-047", "EP-048", "EP-049"] },
+          "features": ["F-002"],
+          "screens": [],
+          "flows": ["UF-001", "UF-008"],
+          "components": []
+        },
+        "cross_domain_contracts": [
+          {
+            "flow_id": "UF-001",
+            "your_steps": [4, 7, 9],
+            "context": "Order-management submits order (step 3), kitchen receives it.",
+            "timing_notes": [],
+            "next_domain": "Notification sent to waiter when ready"
+          },
+          {
+            "flow_id": "UF-008",
+            "your_steps": [1, 2, 3],
+            "context": "Chef marks order ready, notification created, waiter acknowledges served.",
+            "timing_notes": [],
+            "next_domain": "Order status updated to served"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule": "New orders appear at the top of the queue with audio/visual alert",
+            "type": "constraint",
+            "source": "F-002"
+          },
+          {
+            "rule": "Chef taps to change status: pending -> cooking -> ready",
+            "type": "constraint",
+            "source": "F-002"
+          },
+          {
+            "rule": "When chef marks ready: notification sent to waiter/cashier POS screen immediately",
+            "type": "constraint",
+            "source": "F-002"
+          },
+          {
+            "rule": "Orders exceeding target time (15 min) are highlighted in red as late",
+            "type": "constraint",
+            "source": "F-002"
+          },
+          {
+            "rule": "Kitchen display auto-removes served orders after confirmation",
+            "type": "constraint",
+            "source": "F-002"
+          }
+        ],
+        "state_dependencies": null,
+        "db_scope": {
+          "writes": ["orders", "kitchenNotifications"],
+          "reads": ["orders", "orderItems", "tables", "users", "kitchenNotifications", "recipes"]
+        },
+        "acceptance": {
+          "F-002": [
+            "Kitchen queue returns orders with elapsed time and late flag",
+            "Start-cooking updates order status and cookingStartedAt",
+            "Mark-ready creates KitchenNotification and sets readyAt",
+            "Notification query returns unacknowledged notifications",
+            "Acknowledge updates notification and order status to served"
+          ]
+        }
+      },
+      "depends_on": ["T-002", "T-014"],
+      "on_critical_path": false,
+      "active_form": "implementing backend kitchen and notification APIs"
+    },
+    {
+      "id": "T-016",
+      "subject": "Implement backend payment, void, and transaction APIs",
+      "owner": "builder-backend-logic",
+      "builder_role": "backend",
+      "layer": 2,
+      "wave": 3,
+      "description": {
+        "goal": "Implement payment processing endpoint with PPN calculation, shift validation, discount application, order status update, and table release. Implement void endpoint with PIN verification check, VoidRecord creation, shift expected cash adjustment, and stock reversal trigger. Implement transaction list with advanced filtering, detail with receipt data, export endpoint, and void records query.",
+        "domain_packages": [".claude/implementation/domains/payment.json"],
+        "write_scope": ["server/routes/payment/", "server/services/payment/"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/payment.json",
+          "entities": ["Transaction", "VoidRecord"],
+          "endpoints": { "domains": ["payment"], "ids": ["EP-050", "EP-051", "EP-052", "EP-053", "EP-054", "EP-055"] },
+          "features": ["F-003", "F-011", "F-013", "F-017"],
+          "screens": [],
+          "flows": ["UF-001", "UF-007", "UF-010"],
+          "components": []
+        },
+        "cross_domain_contracts": [
+          {
+            "flow_id": "UF-001",
+            "your_steps": [11],
+            "context": "Order has been served, waiter processes payment.",
+            "timing_notes": ["Stock deduction at order submission (D-001, D-030, D-064)"],
+            "next_domain": "Order paid, table released, shift totals updated"
+          },
+          {
+            "flow_id": "UF-010",
+            "your_steps": [3],
+            "context": "Cashier processes void after PIN verification.",
+            "timing_notes": [],
+            "next_domain": "Order voided, shift cash reduced, stock reversed"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule": "PPN calculation",
+            "type": "calculation",
+            "formula": "(subtotal - discount) * (ppnRate / 100)",
+            "source": "F-003"
+          },
+          {
+            "rule": "Grand total calculation",
+            "type": "calculation",
+            "formula": "(subtotal - discount) + ppnAmount",
+            "source": "F-003"
+          },
+          {
+            "rule": "Payment cannot be processed if amount paid is less than grand total",
+            "type": "constraint",
+            "source": "F-003"
+          },
+          {
+            "rule": "Transaction stores SPECIFIC payment method name, NOT generic Digital",
+            "type": "constraint",
+            "source": "F-003"
+          },
+          {
+            "rule": "Cashier MUST open a shift before processing any payment",
+            "type": "constraint",
+            "source": "F-015"
+          },
+          {
+            "rule": "PIN verification required before any void operation",
+            "type": "constraint",
+            "source": "F-017"
+          },
+          {
+            "rule": "Void reason is MANDATORY",
+            "type": "constraint",
+            "source": "F-017"
+          },
+          {
+            "rule": "Expected cash formula updated on void",
+            "type": "calculation",
+            "formula": "opening_balance + cash_sales - cash_refunds_from_voids",
+            "source": "F-017"
+          },
+          {
+            "rule": "All voids are logged immutably for audit trail",
+            "type": "constraint",
+            "source": "F-017"
+          }
+        ],
+        "state_dependencies": null,
+        "db_scope": {
+          "writes": ["transactions", "voidRecords", "orders", "tables", "shifts", "inventoryItems", "stockMovements"],
+          "reads": ["orders", "orderItems", "shifts", "users", "discounts", "posSettings", "transactions", "voidRecords"]
+        },
+        "acceptance": {
+          "F-003": [
+            "Payment creates transaction with correct PPN calculation",
+            "Order status updated to paid and table released",
+            "Cash change calculation works for tunai payments",
+            "Digital payment methods store specific method name"
+          ],
+          "F-011": [
+            "Transaction list with advanced filtering works",
+            "Transaction detail includes full PPN breakdown"
+          ],
+          "F-013": [
+            "Export endpoint returns filtered transaction data"
+          ],
+          "F-017": [
+            "Void creates VoidRecord with mandatory reason",
+            "Shift expected cash reduced by void amount",
+            "Stock reversed on void",
+            "Void records queryable for audit"
+          ]
+        }
+      },
+      "depends_on": ["T-002", "T-014"],
+      "on_critical_path": false,
+      "active_form": "implementing backend payment, void, and transaction APIs"
+    },
+    {
+      "id": "T-017",
+      "subject": "Implement backend shift management and reporting APIs",
+      "owner": "builder-backend-logic",
+      "builder_role": "backend",
+      "layer": 2,
+      "wave": 3,
+      "description": {
+        "goal": "Implement shift open endpoint with PIN verification check and one-shift-per-cashier constraint, active shift query, shift summary with transaction breakdown, close shift with cash reconciliation and mandatory notes for discrepancy, shift list for owner audit. Implement reporting dashboard endpoint with revenue aggregation, top selling items, payment method breakdown, revenue by hour, and low stock alert count. Implement sales summary endpoint with date range and grouping.",
+        "domain_packages": [".claude/implementation/domains/shift-management.json", ".claude/implementation/domains/reporting.json"],
+        "write_scope": ["server/routes/shift-management/", "server/services/shift-management/", "server/routes/reporting/", "server/services/reporting/"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/shift-management.json",
+          "entities": ["Shift", "Transaction"],
+          "endpoints": { "domains": ["shift-management", "reporting"], "ids": ["EP-056", "EP-057", "EP-058", "EP-059", "EP-060", "EP-061", "EP-062", "EP-063"] },
+          "features": ["F-015", "F-007", "F-012"],
+          "screens": [],
+          "flows": ["UF-007"],
+          "components": []
+        },
+        "cross_domain_contracts": [
+          {
+            "flow_id": "UF-007",
+            "your_steps": [4, 7],
+            "context": "Cashier opens shift, processes transactions, closes shift with reconciliation.",
+            "timing_notes": ["Shift tracks all transactions", "Discrepancy calculated at close", "Shift data immutable after close"],
+            "next_domain": "All domain data readable for reporting"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule": "Cashier MUST verify PIN before opening a shift",
+            "type": "constraint",
+            "source": "F-015"
+          },
+          {
+            "rule": "Only one active shift per cashier at a time",
+            "type": "constraint",
+            "source": "F-015"
+          },
+          {
+            "rule": "Expected cash = opening_balance + cash_sales - cash_refunds_from_voids",
+            "type": "calculation",
+            "formula": "openingBalance + cashSalesTotal - voidTotalAmount",
+            "source": "F-015"
+          },
+          {
+            "rule": "Closing is a ONE-WAY session",
+            "type": "constraint",
+            "source": "F-015"
+          },
+          {
+            "rule": "If discrepancy exists, notes are MANDATORY",
+            "type": "constraint",
+            "source": "F-015"
+          },
+          {
+            "rule": "Closed shift data is immutable and logged for audit",
+            "type": "constraint",
+            "source": "F-015"
+          },
+          {
+            "rule": "Only completed (paid) orders are counted in revenue",
+            "type": "constraint",
+            "source": "F-007"
+          }
+        ],
+        "state_dependencies": null,
+        "db_scope": {
+          "writes": ["shifts"],
+          "reads": ["shifts", "users", "transactions", "voidRecords", "orders", "orderItems", "menuItems", "inventoryItems"]
+        },
+        "acceptance": {
+          "F-015": [
+            "Shift open with PIN verification check works",
+            "One-shift-per-cashier constraint enforced",
+            "Shift summary returns accurate transaction breakdown",
+            "Close shift calculates discrepancy and enforces mandatory notes",
+            "Closed shifts become immutable",
+            "Owner can query shift history with filters"
+          ],
+          "F-007": [
+            "Dashboard returns revenue, order count, top items for date range",
+            "Payment method breakdown is accurate",
+            "Revenue by hour aggregation works",
+            "Sales summary with date range grouping works"
+          ],
+          "F-012": [
+            "Dashboard includes low stock alert count from inventory"
+          ]
+        }
+      },
+      "depends_on": ["T-002", "T-014"],
+      "on_critical_path": false,
+      "active_form": "implementing backend shift management and reporting APIs"
+    },
+    {
+      "id": "T-018",
+      "subject": "Implement backend sync push/pull/status APIs",
+      "owner": "builder-sync",
+      "builder_role": "sync",
+      "layer": 2,
+      "wave": 1,
+      "description": {
+        "goal": "Implement server-side sync endpoints: push (receive batched changes from client), pull (send changes since last sync timestamp), and status check. Integrate with Prisma for PostgreSQL persistence. Handle conflict detection and resolution (last-write-wins general, append-only for financial records).",
+        "domain_packages": [".claude/implementation/domains/sync.json"],
+        "write_scope": ["server/routes/sync/", "server/services/sync/"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/sync.json",
+          "entities": [],
+          "endpoints": { "domains": ["sync"], "ids": ["EP-072", "EP-073", "EP-074"] },
+          "features": [],
+          "screens": [],
+          "flows": [],
+          "components": []
+        },
+        "cross_domain_contracts": [],
+        "business_rules": [
+          {
+            "rule": "Auto-sync to cloud/server when internet connection is available",
+            "type": "constraint",
+            "source": "nfr.reliability"
+          },
+          {
+            "rule": "No data loss during offline-to-online transition",
+            "type": "constraint",
+            "source": "nfr.reliability"
+          },
+          {
+            "rule": "Append-only semantics for financial records (Transaction, Shift, VoidRecord)",
+            "type": "constraint",
+            "source": "architecture"
+          }
+        ],
+        "state_dependencies": null,
+        "db_scope": {
+          "writes": ["users", "menuItems", "menuCategories", "recipes", "recipeIngredients", "recipeSteps", "inventoryItems", "stockMovements", "tables", "orders", "orderItems", "transactions", "shifts", "voidRecords", "kitchenNotifications", "posSettings", "discounts", "ewalletProviders", "userPermissions"],
+          "reads": ["users", "menuItems", "menuCategories", "recipes", "recipeIngredients", "recipeSteps", "inventoryItems", "stockMovements", "tables", "orders", "orderItems", "transactions", "shifts", "voidRecords", "kitchenNotifications", "posSettings", "discounts", "ewalletProviders", "userPermissions"]
+        },
+        "acceptance": {
+          "infra": [
+            "Push endpoint receives and persists batched changes",
+            "Pull endpoint returns changes since last sync timestamp",
+            "Status endpoint returns sync state and pending counts",
+            "Conflict detection returns conflicted records",
+            "Financial records use append-only sync strategy"
+          ]
+        }
+      },
+      "depends_on": ["T-002", "T-003"],
+      "on_critical_path": false,
+      "active_form": "implementing backend sync push/pull/status APIs"
+    },
+    {
+      "id": "T-019",
+      "subject": "Validate all frontend features against specification",
+      "owner": "validator-frontend",
+      "builder_role": null,
+      "layer": 2,
+      "wave": 1,
+      "description": {
+        "goal": "Validate all frontend features against specification. Phase A: validate foundation code and types. Phase B: validate builder output against acceptance criteria for all screens and features.",
+        "domain_packages": [],
+        "write_scope": ["tests/unit/", ".claude/implementation/validation-frontend.json"],
+        "read_sources": {
+          "primary": ".claude/implementation/foundation-manifest.json",
+          "ba_files": [".ba/requirements/features.json", ".ba/design/screens.json", ".ba/design/layout.json"],
+          "entities": [],
+          "endpoints": {},
+          "features": ["F-001", "F-002", "F-003", "F-004", "F-005", "F-006", "F-007", "F-008", "F-009", "F-010", "F-011", "F-012", "F-013", "F-014", "F-015", "F-016", "F-017", "F-018"],
+          "screens": ["S-001", "S-002", "S-003", "S-004", "S-005", "S-006", "S-007", "S-008", "S-009", "S-010", "S-011", "S-012", "S-013", "S-014", "S-015", "S-016", "S-017"],
+          "flows": [],
+          "components": []
+        },
+        "cross_domain_contracts": [],
+        "business_rules": [],
+        "state_dependencies": null,
+        "acceptance": {
+          "validation": [
+            "All 17 screens render without errors",
+            "All must_have feature acceptance criteria verified",
+            "All should_have feature acceptance criteria verified",
+            "Guard chains work correctly for each screen",
+            "Offline mode degrades gracefully"
+          ]
+        }
+      },
+      "depends_on": [],
+      "on_critical_path": false,
+      "active_form": "validating all frontend features against specification"
+    },
+    {
+      "id": "T-020",
+      "subject": "Validate all backend endpoints and business logic",
+      "owner": "validator-backend",
+      "builder_role": null,
+      "layer": 2,
+      "wave": 1,
+      "description": {
+        "goal": "Validate all backend endpoints and business logic. Phase A: validate database schema and server setup. Phase B: validate builder output against API specifications for all 74 endpoints.",
+        "domain_packages": [],
+        "write_scope": ["tests/api/", ".claude/implementation/validation-backend.json"],
+        "read_sources": {
+          "primary": ".claude/implementation/foundation-manifest.json",
+          "ba_files": [".ba/requirements/features.json", ".ba/requirements/nfr.json"],
+          "entities": [],
+          "endpoints": {},
+          "features": ["F-001", "F-002", "F-003", "F-004", "F-005", "F-006", "F-007", "F-008", "F-009", "F-010", "F-011", "F-012", "F-013", "F-014", "F-015", "F-016", "F-017", "F-018"],
+          "screens": [],
+          "flows": ["UF-001", "UF-006", "UF-007", "UF-008", "UF-010"],
+          "components": []
+        },
+        "cross_domain_contracts": [],
+        "business_rules": [],
+        "state_dependencies": null,
+        "acceptance": {
+          "validation": [
+            "All 74 endpoints respond with correct status codes",
+            "Business rules enforced on create/update operations",
+            "State machine transitions validated for Order, Table, Shift, Transaction",
+            "Cross-domain side effects (stock deduction, table release) verified",
+            "Auth middleware blocks unauthorized access"
+          ]
+        }
+      },
+      "depends_on": [],
+      "on_critical_path": false,
+      "active_form": "validating all backend endpoints and business logic"
+    },
+    {
+      "id": "T-021",
+      "subject": "Wire sync to domain stores",
+      "owner": "builder-sync",
+      "builder_role": "sync",
+      "layer": 3,
+      "wave": 4,
+      "description": {
+        "goal": "Connect sync engine to all domain Zustand stores. Implement per-table sync tracking, automatic push on store mutations, periodic pull for background sync, and online/offline status indicator in all layouts.",
+        "domain_packages": [".claude/implementation/domains/sync.json"],
+        "write_scope": ["src/sync/", "src/stores/"],
+        "read_sources": {
+          "primary": ".claude/implementation/domains/sync.json",
+          "entities": [],
+          "endpoints": { "domains": ["sync"], "ids": ["EP-072", "EP-073", "EP-074"] },
+          "features": [],
+          "screens": [],
+          "flows": [],
+          "components": []
+        },
+        "cross_domain_contracts": [],
+        "business_rules": [
+          {
+            "rule": "Auto-sync to cloud/server when internet connection is available",
+            "type": "constraint",
+            "source": "nfr.reliability"
+          },
+          {
+            "rule": "Data persists locally on device even after app restart",
+            "type": "constraint",
+            "source": "nfr.reliability"
+          }
+        ],
+        "state_dependencies": {
+          "owns_store": null,
+          "writes_to_tables": [],
+          "reads_from_tables": [],
+          "calls_other_stores": ["useAuthStore", "useMenuStore", "useRecipeStore", "useInventoryStore", "useOrderManagementStore", "useKitchenStore", "usePaymentStore", "useShiftManagementStore", "useReportingStore", "useSettingsStore"]
+        },
+        "acceptance": {
+          "sync": [
+            "Store mutations trigger sync queue push",
+            "Background pull syncs server changes to local stores",
+            "Online/offline indicator shown in all layouts",
+            "Per-table sync status tracked in Dexie",
+            "Financial records use append-only sync"
+          ]
+        }
+      },
+      "depends_on": ["T-003", "T-018", "T-004", "T-006", "T-007", "T-008", "T-009", "T-010"],
+      "on_critical_path": false,
+      "active_form": "wiring sync to domain stores"
+    },
+    {
+      "id": "T-022",
+      "subject": "Seed data and end-to-end verification",
+      "owner": "validator-frontend",
+      "builder_role": null,
+      "layer": 4,
+      "wave": 5,
+      "description": {
+        "goal": "Create seed data for all entities (users with all roles, menu items with categories, recipes with ingredients, inventory items, tables). Verify complete user flows end-to-end: UF-001 (order-to-payment), UF-006 (stock warning), UF-007 (shift lifecycle), UF-008 (kitchen-to-serve), UF-010 (void transaction).",
+        "domain_packages": [],
+        "write_scope": ["src/db/seed.ts", "prisma/seed.ts", ".claude/implementation/e2e-verification.json"],
+        "read_sources": {
+          "primary": ".claude/proposal/integration-map.json",
+          "ba_files": [".ba/requirements/features.json"],
+          "entities": [],
+          "endpoints": {},
+          "features": ["F-001", "F-002", "F-003", "F-004", "F-005", "F-006", "F-007", "F-008", "F-009", "F-010", "F-011", "F-012", "F-013", "F-014", "F-015", "F-016", "F-017", "F-018"],
+          "screens": [],
+          "flows": ["UF-001", "UF-006", "UF-007", "UF-008", "UF-010"],
+          "components": []
+        },
+        "cross_domain_contracts": [
+          {
+            "flow_id": "UF-001",
+            "your_steps": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            "context": "Complete order-to-payment flow across all domains",
+            "timing_notes": ["Stock deduction at order submission (D-001, D-030, D-064)"],
+            "next_domain": "End of flow"
+          },
+          {
+            "flow_id": "UF-007",
+            "your_steps": [1, 2, 3, 4, 5, 6, 7],
+            "context": "Full cashier journey: login to close shift",
+            "timing_notes": [],
+            "next_domain": "End of flow"
+          },
+          {
+            "flow_id": "UF-010",
+            "your_steps": [1, 2, 3],
+            "context": "Void paid transaction flow",
+            "timing_notes": [],
+            "next_domain": "End of flow"
+          }
+        ],
+        "business_rules": [],
+        "state_dependencies": null,
+        "acceptance": {
+          "e2e": [
+            "Seed data covers all 19 entity types",
+            "All 3 roles have test accounts with correct permissions",
+            "UF-001 (order-to-payment) completes successfully across all domains",
+            "UF-006 (stock warning) shows warning when insufficient stock",
+            "UF-007 (shift lifecycle) opens, processes, and closes shift correctly",
+            "UF-008 (kitchen-to-serve) notification flow works end-to-end",
+            "UF-010 (void) creates VoidRecord and adjusts shift/stock correctly"
+          ]
+        }
+      },
+      "depends_on": ["T-004", "T-005", "T-006", "T-007", "T-008", "T-009", "T-010", "T-011", "T-012", "T-013", "T-014", "T-015", "T-016", "T-017", "T-018", "T-021"],
+      "on_critical_path": false,
+      "active_form": "creating seed data and running end-to-end verification"
+    }
+  ],
+  "metadata": {
+    "entity_count": 19,
+    "screen_count": 17,
+    "interface_count": 4,
+    "domain_cluster_count": 12,
+    "domain_package_count": 12,
+    "feature_count": { "must": 12, "should": 5, "could": 1 },
+    "endpoint_count": 74,
+    "task_count": 22,
+    "layer_count": 4,
+    "wave_count": 5,
+    "estimated_files": 130,
+    "foundation_files": 64
+  }
+}

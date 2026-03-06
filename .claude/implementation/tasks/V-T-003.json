@@ -1,0 +1,65 @@
+{
+  "id": "V-T-003",
+  "subject": "Validate: Implement sync engine with offline queue and conflict resolution",
+  "owner": "validator-backend",
+  "builder_task_id": "T-003",
+  "layer": 1,
+  "wave": 1,
+  "goal": "Validate builder output for Implement sync engine with offline queue and conflict resolution",
+  "write_scope": [
+    ".claude/implementation/validation-backend.json"
+  ],
+  "acceptance": {
+    "infra": [
+      "Sync queue processes batched changes",
+      "Service worker registers and caches app shell",
+      "Online status hook detects connectivity changes",
+      "Conflict resolution applies last-write-wins correctly",
+      "Financial records (Transaction, Shift, VoidRecord) use append-only semantics",
+      "No data loss during offline-to-online transition"
+    ]
+  },
+  "business_rules": [],
+  "cross_domain_contracts": [],
+  "_foundation_files": [
+    {
+      "path": "src/hooks/useOnlineStatus.ts",
+      "category": "new",
+      "lines": 0,
+      "action": "CREATE_NEW"
+    },
+    {
+      "path": "public/sw.js",
+      "category": "new",
+      "lines": 0,
+      "action": "CREATE_NEW"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  },
+  "validation_targets": {
+    "builder_write_scope": [
+      "src/sync/",
+      "src/hooks/useOnlineStatus.ts",
+      "public/sw.js"
+    ],
+    "domain_packages": []
+  }
+}

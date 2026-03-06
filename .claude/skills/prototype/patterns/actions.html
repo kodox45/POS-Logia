@@ -1,0 +1,203 @@
+<!-- PATTERN: button-primary -->
+
+<button class="px-4 py-2 text-sm font-medium text-white bg-{primary-color} {border-radius} hover:bg-{primary-hover} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{primary-color} active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+  {Label}
+</button>
+
+<!-- Secondary -->
+<button class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 {border-radius} hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+  {Label}
+</button>
+
+<!-- Outline -->
+<button class="px-4 py-2 text-sm font-medium text-{primary-color} border border-{primary-color} {border-radius} hover:bg-{primary-light} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{primary-color} active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+  {Label}
+</button>
+
+<!-- Ghost -->
+<button class="px-4 py-2 text-sm font-medium text-{primary-color} {border-radius} hover:bg-{primary-light} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{primary-color} active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+  {Label}
+</button>
+
+<!-- Danger -->
+<button class="px-4 py-2 text-sm font-medium text-white bg-red-600 {border-radius} hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+  {Label}
+</button>
+
+<!-- Icon-Only -->
+<button class="p-2 text-gray-500 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{primary-color} active:scale-95 transition-all" aria-label="{Action description}">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+</button>
+
+<!-- Size: Small -->
+<button class="px-3 py-1.5 text-xs font-medium text-white bg-{primary-color} {border-radius} hover:bg-{primary-hover} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{primary-color} active:scale-95 transition-all">
+  {Label}
+</button>
+
+<!-- Size: Large -->
+<button class="px-6 py-3 text-base font-medium text-white bg-{primary-color} {border-radius} hover:bg-{primary-hover} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{primary-color} active:scale-95 transition-all">
+  {Label}
+</button>
+
+<!-- Loading State -->
+<button class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-{primary-color} {border-radius} opacity-75 cursor-not-allowed" disabled>
+  <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+  </svg>
+  Loading...
+</button>
+<!-- /PATTERN: button-primary -->
+
+
+<!-- PATTERN: button-group -->
+
+<!-- Static Group -->
+<div class="inline-flex {shadow}" role="group" aria-label="{Group label}">
+  <button class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-2 focus:ring-{primary-color}">
+    {Option 1}
+  </button>
+  <button class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border-t border-b border-gray-300 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-2 focus:ring-{primary-color}">
+    {Option 2}
+  </button>
+  <button class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-2 focus:ring-{primary-color}">
+    {Option 3}
+  </button>
+</div>
+
+<!-- Toggle Group with Alpine.js -->
+<div x-data="{ active: 'grid' }" class="inline-flex {shadow}" role="group" aria-label="View toggle">
+  <button @click="active = 'grid'"
+          :class="active === 'grid' ? 'bg-{primary-color} text-white border-{primary-color}' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+          class="px-4 py-2 text-sm font-medium border rounded-l-lg focus:z-10 focus:outline-none focus:ring-2 focus:ring-{primary-color} transition-colors">
+    Grid
+  </button>
+  <button @click="active = 'list'"
+          :class="active === 'list' ? 'bg-{primary-color} text-white border-{primary-color}' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+          class="px-4 py-2 text-sm font-medium border-t border-b border-r rounded-r-lg focus:z-10 focus:outline-none focus:ring-2 focus:ring-{primary-color} transition-colors">
+    List
+  </button>
+</div>
+<!-- /PATTERN: button-group -->
+
+
+<!-- PATTERN: dropdown-menu -->
+
+<div x-data="{ open: false }" class="relative inline-block text-left">
+  <button @click="open = !open" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 {border-radius} hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{primary-color} transition-colors" aria-haspopup="true" :aria-expanded="open">
+    {Menu Label}
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+  </button>
+  <div x-show="open" @click.outside="open = false"
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0 scale-95"
+       x-transition:enter-end="opacity-100 scale-100"
+       x-transition:leave="transition ease-in duration-100"
+       x-transition:leave-start="opacity-100 scale-100"
+       x-transition:leave-end="opacity-0 scale-95"
+       class="absolute right-0 mt-2 w-48 bg-white {border-radius} {shadow} border border-gray-200 z-10 py-1" role="menu" aria-orientation="vertical">
+    <a href="#" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors" role="menuitem">
+      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+      Edit
+    </a>
+    <a href="#" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors" role="menuitem">
+      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+      Duplicate
+    </a>
+    <div class="border-t border-gray-100 my-1"></div>
+    <a href="#" class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors" role="menuitem">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      Delete
+    </a>
+  </div>
+</div>
+<!-- /PATTERN: dropdown-menu -->
+
+
+<!-- PATTERN: fab -->
+
+<!-- Icon Only -->
+<button class="fixed bottom-6 right-6 z-40 w-14 h-14 flex items-center justify-center rounded-full bg-{primary-color} text-white shadow-lg hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{primary-color} active:scale-95 transition-all" aria-label="{Primary action}">
+  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+</button>
+
+<!-- Extended with Label -->
+<button class="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 px-5 py-3 rounded-full bg-{primary-color} text-white shadow-lg hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{primary-color} active:scale-95 transition-all" aria-label="{Primary action}">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+  <span class="text-sm font-medium">{Create New}</span>
+</button>
+<!-- /PATTERN: fab -->
+
+
+<!-- PATTERN: search-bar -->
+
+<div x-data="{ query: '', focused: false }" class="relative w-full max-w-md">
+  <div class="relative">
+    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    <input x-model="query" @focus="focused = true" @blur="setTimeout(() => focused = false, 150)"
+           type="text" placeholder="Search..."
+           class="w-full pl-10 pr-8 py-2 text-sm border border-gray-300 {border-radius} focus:outline-none focus:ring-2 focus:ring-{primary-color} focus:border-transparent transition-shadow" />
+    <button x-show="query.length > 0" @click="query = ''" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" aria-label="Clear search">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div x-show="focused && query.length > 0"
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0 -translate-y-1"
+       x-transition:enter-end="opacity-100 translate-y-0"
+       class="absolute left-0 right-0 mt-1 bg-white {border-radius} {shadow} border border-gray-200 z-10 py-1">
+    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">{Suggestion 1}</a>
+    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">{Suggestion 2}</a>
+    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">{Suggestion 3}</a>
+  </div>
+</div>
+<!-- /PATTERN: search-bar -->
+
+
+<!-- PATTERN: filter-bar -->
+
+<div x-data="{
+  filters: ['Status: Active', 'Role: Admin'],
+  dropdownOpen: false,
+  removeFilter(index) { this.filters.splice(index, 1) },
+  clearAll() { this.filters = [] }
+}" class="flex flex-wrap items-center gap-2 p-3 bg-white border border-gray-200 {border-radius}">
+  <!-- Active Chips -->
+  <template x-for="(filter, index) in filters" :key="index">
+    <span class="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-{primary-color} bg-{primary-light} {border-radius}">
+      <span x-text="filter"></span>
+      <button @click="removeFilter(index)" class="text-{primary-color} hover:text-{primary-hover} ml-0.5" aria-label="Remove filter">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </span>
+  </template>
+  <!-- Add Filter -->
+  <div class="relative">
+    <button @click="dropdownOpen = !dropdownOpen" class="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 {border-radius} hover:bg-gray-200 transition-colors">
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Add Filter
+    </button>
+    <div x-show="dropdownOpen" @click.outside="dropdownOpen = false"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         class="absolute left-0 mt-2 w-48 bg-white {border-radius} {shadow} border border-gray-200 z-10 py-2">
+      <label class="flex items-center gap-2 px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" class="rounded border-gray-300 text-{primary-color} focus:ring-{primary-color}" />
+        {Filter Option A}
+      </label>
+      <label class="flex items-center gap-2 px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" class="rounded border-gray-300 text-{primary-color} focus:ring-{primary-color}" />
+        {Filter Option B}
+      </label>
+    </div>
+  </div>
+  <!-- Count Badge -->
+  <span x-show="filters.length > 0" class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-{primary-color} rounded-full" x-text="filters.length"></span>
+  <div class="flex-1"></div>
+  <!-- Clear All -->
+  <button x-show="filters.length > 0" @click="clearAll()" class="text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors">
+    Clear All
+  </button>
+</div>
+<!-- /PATTERN: filter-bar -->

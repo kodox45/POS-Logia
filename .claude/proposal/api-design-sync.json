@@ -1,0 +1,128 @@
+{
+  "domain": "sync",
+  "endpoints": [
+    {
+      "id": "EP-072",
+      "method": "POST",
+      "path": "/api/sync/push",
+      "description": "Push local changes to the server sync target. Sends batched changes from IndexedDB to PostgreSQL when online.",
+      "source_features": ["F-009"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "changes", "type": "array", "required": true, "description": "Array of entity changes to sync", "items": { "entity": "string", "syncId": "uuid", "operation": "create|update|delete", "data": "object", "timestamp": "ISO-8601" } },
+          { "name": "deviceId", "type": "string", "required": true, "description": "Unique device identifier" }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "synced": "number",
+            "conflicts": [{ "syncId": "uuid", "entity": "string", "conflictType": "string", "serverVersion": "object" }],
+            "syncedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 401, "code": "NOT_AUTHENTICATED", "message": "Auth required for sync" },
+          { "status": 409, "code": "SYNC_CONFLICT", "message": "Conflict detected, resolve before retry" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Auto-sync to cloud/server when internet connection is available",
+          "type": "constraint",
+          "source": "nfr.reliability"
+        },
+        {
+          "rule": "No data loss during offline-to-online transition",
+          "type": "constraint",
+          "source": "nfr.reliability"
+        }
+      ],
+      "related_entity": "User",
+      "related_entity_id": "E-001",
+      "domain_group": "sync"
+    },
+    {
+      "id": "EP-073",
+      "method": "POST",
+      "path": "/api/sync/pull",
+      "description": "Pull server changes to local device. Gets all changes since last sync timestamp for the requesting device.",
+      "source_features": ["F-009"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "lastSyncedAt", "type": "ISO-8601", "required": true, "description": "Timestamp of last successful sync" },
+          { "name": "deviceId", "type": "string", "required": true, "description": "Unique device identifier" }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "changes": [{ "entity": "string", "syncId": "uuid", "operation": "create|update|delete", "data": "object", "timestamp": "ISO-8601" }],
+            "totalChanges": "number",
+            "syncedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 401, "code": "NOT_AUTHENTICATED", "message": "Auth required for sync" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Data persists locally on device even after app restart",
+          "type": "constraint",
+          "source": "nfr.reliability"
+        }
+      ],
+      "related_entity": "User",
+      "related_entity_id": "E-001",
+      "domain_group": "sync"
+    },
+    {
+      "id": "EP-074",
+      "method": "GET",
+      "path": "/api/sync/status",
+      "description": "Check sync status and connectivity. Returns last sync timestamp and pending change count.",
+      "source_features": ["F-009"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "online": "boolean",
+            "lastSyncedAt": "ISO-8601|null",
+            "pendingChanges": "number",
+            "conflicts": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "User",
+      "related_entity_id": "E-001",
+      "domain_group": "sync"
+    }
+  ],
+  "summary": {
+    "endpoint_count": 3,
+    "by_method": { "GET": 1, "POST": 2, "PATCH": 0, "DELETE": 0 }
+  }
+}

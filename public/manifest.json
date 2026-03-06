@@ -1,0 +1,22 @@
+{
+  "name": "Logia POS - Sistem Kasir Offline-First",
+  "short_name": "Logia POS",
+  "description": "Sistem POS offline-first untuk restoran UMKM",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0F1923",
+  "background_color": "#0F1923",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

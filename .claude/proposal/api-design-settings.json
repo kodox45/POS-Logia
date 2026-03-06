@@ -1,0 +1,296 @@
+{
+  "domain": "settings",
+  "endpoints": [
+    {
+      "id": "EP-064",
+      "method": "GET",
+      "path": "/api/settings",
+      "description": "Get current POS system settings including PPN configuration, restaurant info, and receipt settings.",
+      "source_features": ["F-016"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "ppnEnabled": "boolean",
+            "ppnRate": "decimal",
+            "restaurantName": "string|null",
+            "restaurantAddress": "string|null",
+            "receiptFooter": "string|null",
+            "showPpnOnReceipt": "boolean",
+            "qrisImageUrl": "string|null",
+            "bankName": "string|null",
+            "bankAccountNumber": "string|null",
+            "bankAccountHolder": "string|null",
+            "restaurantLogoUrl": "string|null",
+            "ewalletProviders": [{ "id": "uuid", "providerName": "string", "isEnabled": "boolean", "qrImageUrl": "string|null" }]
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "PosSettings",
+      "related_entity_id": "E-018",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-065",
+      "method": "PATCH",
+      "path": "/api/settings",
+      "description": "Update POS system settings. Only owner can modify. PPN rate changes apply to new transactions only.",
+      "source_features": ["F-016"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "ppnEnabled", "type": "boolean", "required": false, "description": "Toggle PPN on/off" },
+          { "name": "ppnRate", "type": "decimal", "required": false, "description": "PPN percentage (e.g., 11 for 11%)" },
+          { "name": "restaurantName", "type": "string", "required": false, "description": "Name on receipts" },
+          { "name": "restaurantAddress", "type": "string", "required": false, "description": "Address on receipts" },
+          { "name": "receiptFooter", "type": "string", "required": false, "description": "Custom footer text" },
+          { "name": "showPpnOnReceipt", "type": "boolean", "required": false, "description": "Show PPN on receipt" },
+          { "name": "qrisImageUrl", "type": "string", "required": false, "description": "QRIS QR code image URL" },
+          { "name": "bankName", "type": "string", "required": false, "description": "Bank name for transfers" },
+          { "name": "bankAccountNumber", "type": "string", "required": false, "description": "Bank account number" },
+          { "name": "bankAccountHolder", "type": "string", "required": false, "description": "Account holder name" },
+          { "name": "restaurantLogoUrl", "type": "string", "required": false, "description": "Logo URL for receipts" }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 403, "code": "FORBIDDEN", "message": "Only owner can modify settings" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "PPN rate is configurable by owner in system settings",
+          "type": "constraint",
+          "source": "F-016.business_rules[0]"
+        },
+        {
+          "rule": "Changes to PPN rate apply to new transactions only, not retroactively",
+          "type": "constraint",
+          "source": "F-016.business_rules[5]"
+        }
+      ],
+      "related_entity": "PosSettings",
+      "related_entity_id": "E-018",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-066",
+      "method": "GET",
+      "path": "/api/settings/ewallet-providers",
+      "description": "List all configured e-wallet payment providers with their enabled status and QR images.",
+      "source_features": ["F-003", "F-016"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [
+          { "name": "isEnabled", "type": "boolean", "required": false, "description": "Filter by enabled status" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "providers": [{ "id": "uuid", "providerName": "string", "isEnabled": "boolean", "qrImageUrl": "string|null" }]
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "EwalletProvider",
+      "related_entity_id": "E-019",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-067",
+      "method": "PATCH",
+      "path": "/api/settings/ewallet-providers/:id",
+      "description": "Update an e-wallet provider configuration. Enable/disable provider or update QR code image.",
+      "source_features": ["F-003", "F-016"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "E-wallet provider ID" }],
+        "body": [
+          { "name": "isEnabled", "type": "boolean", "required": false, "description": "Enable/disable" },
+          { "name": "qrImageUrl", "type": "string", "required": false, "description": "QR code image URL" }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "providerName": "string", "isEnabled": "boolean", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 404, "code": "PROVIDER_NOT_FOUND", "message": "E-wallet provider not found" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "E-Wallet provider shows specific QR code for that provider during payment",
+          "type": "constraint",
+          "source": "F-003.business_rules[6]"
+        }
+      ],
+      "related_entity": "EwalletProvider",
+      "related_entity_id": "E-019",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-068",
+      "method": "GET",
+      "path": "/api/discounts",
+      "description": "List all discount/promo rules. Active discounts shown on order creation screen as banner cards.",
+      "source_features": ["F-018"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [
+          { "name": "isActive", "type": "boolean", "required": false, "description": "Filter by active status" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "discounts": [{ "id": "uuid", "discountName": "string", "discountType": "enum", "discountValue": "decimal", "appliedTo": "enum", "isActive": "boolean" }],
+            "total": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        {
+          "rule": "Active promos are displayed as banner on order creation screen",
+          "type": "constraint",
+          "source": "F-018.business_rules[1]"
+        }
+      ],
+      "related_entity": "Discount",
+      "related_entity_id": "E-016",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-069",
+      "method": "POST",
+      "path": "/api/discounts",
+      "description": "Create a new discount/promo rule.",
+      "source_features": ["F-018"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "discountName", "type": "string", "required": true, "description": "Display label (e.g., 'Promo Weekday 10%')" },
+          { "name": "discountType", "type": "enum", "required": true, "description": "Type", "values": ["percentage", "fixed_amount"] },
+          { "name": "discountValue", "type": "decimal", "required": true, "description": "Value (e.g., 10 for 10% or 5000 for Rp 5.000)" },
+          { "name": "appliedTo", "type": "enum", "required": true, "description": "Scope", "values": ["whole_order", "specific_items"] },
+          { "name": "isActive", "type": "boolean", "required": false, "description": "Active status, defaults to true" }
+        ]
+      },
+      "response": {
+        "success": { "status": 201, "body": { "id": "uuid", "discountName": "string", "discountType": "enum", "discountValue": "decimal", "isActive": "boolean", "createdAt": "ISO-8601" } },
+        "errors": []
+      },
+      "business_rules": [
+        {
+          "rule": "Owner creates and manages discount/promo options in settings",
+          "type": "constraint",
+          "source": "F-018.business_rules[0]"
+        }
+      ],
+      "related_entity": "Discount",
+      "related_entity_id": "E-016",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-070",
+      "method": "PATCH",
+      "path": "/api/discounts/:id",
+      "description": "Update a discount/promo rule. Owner can activate/deactivate discounts anytime.",
+      "source_features": ["F-018"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Discount ID" }],
+        "body": [
+          { "name": "discountName", "type": "string", "required": false, "description": "Updated name" },
+          { "name": "discountType", "type": "enum", "required": false, "description": "Updated type" },
+          { "name": "discountValue", "type": "decimal", "required": false, "description": "Updated value" },
+          { "name": "appliedTo", "type": "enum", "required": false, "description": "Updated scope" },
+          { "name": "isActive", "type": "boolean", "required": false, "description": "Activate/deactivate" }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "discountName": "string", "isActive": "boolean", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 404, "code": "DISCOUNT_NOT_FOUND", "message": "Discount not found" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Owner can activate/deactivate discounts anytime",
+          "type": "constraint",
+          "source": "F-018.business_rules[7]"
+        }
+      ],
+      "related_entity": "Discount",
+      "related_entity_id": "E-016",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-071",
+      "method": "DELETE",
+      "path": "/api/discounts/:id",
+      "description": "Delete a discount/promo rule. Only if not currently applied to any active orders.",
+      "source_features": ["F-018"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Discount ID" }],
+        "body": []
+      },
+      "response": {
+        "success": { "status": 200, "body": { "message": "Discount deleted successfully" } },
+        "errors": [
+          { "status": 404, "code": "DISCOUNT_NOT_FOUND", "message": "Discount not found" },
+          { "status": 409, "code": "DISCOUNT_IN_USE", "message": "Cannot delete discount applied to active orders" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "Discount",
+      "related_entity_id": "E-016",
+      "domain_group": "settings"
+    }
+  ],
+  "summary": {
+    "endpoint_count": 8,
+    "by_method": { "GET": 3, "POST": 1, "PATCH": 3, "DELETE": 1 }
+  }
+}

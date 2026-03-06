@@ -1,0 +1,307 @@
+<!-- PATTERN: page-container -->
+
+<!-- Standard -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  {Page content goes here}
+</div>
+
+<!-- Narrow (forms, articles) -->
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+  {Narrow content}
+</div>
+
+<!-- Full-Width with Padding -->
+<div class="w-full px-4 sm:px-6 lg:px-8">
+  {Full-width content}
+</div>
+<!-- /PATTERN: page-container -->
+
+
+<!-- PATTERN: responsive-grid -->
+
+<!-- 2-Column -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div>{Column 1}</div>
+  <div>{Column 2}</div>
+</div>
+
+<!-- 3-Column -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div>{Column 1}</div>
+  <div>{Column 2}</div>
+  <div>{Column 3}</div>
+</div>
+
+<!-- 4-Column -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div>{Column 1}</div>
+  <div>{Column 2}</div>
+  <div>{Column 3}</div>
+  <div>{Column 4}</div>
+</div>
+
+<!-- Auto-Fit (min 280px each) -->
+<div class="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-6">
+  <div>{Card 1}</div>
+  <div>{Card 2}</div>
+  <div>{Card 3}</div>
+</div>
+<!-- /PATTERN: responsive-grid -->
+
+
+<!-- PATTERN: section-header -->
+
+<!-- Default Section -->
+<section>
+  <div class="border-b border-gray-200 pb-4 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900">{Section Title}</h2>
+    <p class="mt-1 text-sm text-gray-500">{Optional description text.}</p>
+  </div>
+  <div>{Section content}</div>
+</section>
+
+<!-- Section with Action Button -->
+<section>
+  <div class="flex items-center justify-between border-b border-gray-200 pb-4 mb-6">
+    <div>
+      <h2 class="text-lg font-semibold text-gray-900">{Section Title}</h2>
+      <p class="mt-1 text-sm text-gray-500">{Description}</p>
+    </div>
+    <button class="px-4 py-2 text-sm font-medium text-white bg-{primary-color} {border-radius} hover:bg-{primary-hover} transition-colors flex-shrink-0">
+      {Action}
+    </button>
+  </div>
+  <div>{Section content}</div>
+</section>
+<!-- /PATTERN: section-header -->
+
+
+<!-- PATTERN: sidebar-layout-shell -->
+
+<div x-data="{ menuOpen: false }" class="min-h-screen bg-gray-50">
+  <!-- Sidebar -->
+  <aside class="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 z-30 transform transition-transform duration-200"
+         :class="menuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
+    <div class="flex items-center h-16 px-6 border-b border-gray-200">
+      <span class="text-lg font-bold text-gray-900">{App Name}</span>
+    </div>
+    <nav class="p-4 space-y-1">
+      <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-{primary-color} bg-{primary-light} {border-radius}">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
+        Dashboard
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 {border-radius} transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        Users
+      </a>
+    </nav>
+  </aside>
+  <!-- Mobile Overlay -->
+  <div x-show="menuOpen" @click="menuOpen = false"
+       class="fixed inset-0 bg-black/50 z-20 lg:hidden"
+       x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
+  <!-- Main Content -->
+  <main class="lg:ml-64 min-h-screen">
+    <div class="lg:hidden flex items-center h-16 px-4 bg-white border-b border-gray-200">
+      <button @click="menuOpen = true" class="text-gray-600 hover:text-gray-900" aria-label="Open navigation menu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <span class="ml-4 text-lg font-semibold text-gray-900">{Page Title}</span>
+    </div>
+    <div class="p-4 sm:p-6 lg:p-8">{Content}</div>
+  </main>
+</div>
+<!-- /PATTERN: sidebar-layout-shell -->
+
+
+<!-- PATTERN: topnav-layout-shell -->
+
+<div x-data="{ navOpen: false }" class="min-h-screen bg-gray-50">
+  <header class="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+      <span class="text-lg font-bold text-gray-900">{App Name}</span>
+      <nav class="hidden md:flex items-center gap-6">
+        <a href="#" class="text-sm font-medium text-{primary-color}">{Active Link}</a>
+        <a href="#" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">{Link 2}</a>
+      </nav>
+      <div class="hidden md:flex items-center gap-4">
+        <button class="px-4 py-2 text-sm font-medium text-white bg-{primary-color} {border-radius} hover:bg-{primary-hover} transition-colors">{CTA}</button>
+      </div>
+      <button @click="navOpen = !navOpen" class="md:hidden text-gray-600 hover:text-gray-900" aria-label="Toggle navigation">
+        <svg x-show="!navOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg x-show="navOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <!-- Mobile Nav Menu -->
+    <div x-show="navOpen"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-y-2"
+         class="md:hidden bg-white border-b border-gray-200 {shadow}">
+      <nav class="px-4 py-3 space-y-1">
+        <a href="#" class="block px-3 py-2 text-sm font-medium text-{primary-color} bg-{primary-light} {border-radius}">{Active Link}</a>
+        <a href="#" class="block px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 {border-radius}">{Link 2}</a>
+      </nav>
+    </div>
+  </header>
+  <main class="pt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">{Content}</div>
+  </main>
+</div>
+<!-- /PATTERN: topnav-layout-shell -->
+
+
+<!-- PATTERN: card-container -->
+
+<!-- Basic Card -->
+<div class="bg-white {border-radius} {shadow} p-6">
+  {Card content}
+</div>
+
+<!-- Card with Header -->
+<div class="bg-white {border-radius} {shadow}">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <h3 class="text-base font-semibold text-gray-900">{Card Title}</h3>
+  </div>
+  <div class="p-6">{Card body content}</div>
+</div>
+
+<!-- Card with Header and Footer -->
+<div class="bg-white {border-radius} {shadow}">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <h3 class="text-base font-semibold text-gray-900">{Card Title}</h3>
+  </div>
+  <div class="p-6">{Card body content}</div>
+  <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+    <div class="flex justify-end gap-3">
+      <button class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 {border-radius} hover:bg-gray-200 transition-colors">Cancel</button>
+      <button class="px-4 py-2 text-sm font-medium text-white bg-{primary-color} {border-radius} hover:bg-{primary-hover} transition-colors">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hoverable Card -->
+<a href="#" class="block bg-white {border-radius} {shadow} p-6 hover:shadow-lg transition-shadow">
+  <h3 class="text-base font-semibold text-gray-900 mb-2">{Card Title}</h3>
+  <p class="text-sm text-gray-500">{Card description text}</p>
+</a>
+<!-- /PATTERN: card-container -->
+
+
+<!-- PATTERN: spacing-utilities -->
+
+<!-- Responsive Page Padding -->
+<div class="p-4 sm:p-6 lg:p-8">{Content with responsive padding}</div>
+
+<!-- Stacked Sections -->
+<div class="space-y-6">
+  <section>{Section 1}</section>
+  <section>{Section 2}</section>
+  <section>{Section 3}</section>
+</div>
+
+<!-- Responsive Gap -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+  <div>{Item 1}</div>
+  <div>{Item 2}</div>
+</div>
+
+<!-- Show/Hide Utilities -->
+<div class="sm:hidden">{Mobile-only content}</div>
+<div class="hidden sm:block">{Desktop-only content}</div>
+<div class="hidden md:flex items-center gap-4">{Desktop navigation items}</div>
+<!-- /PATTERN: spacing-utilities -->
+
+
+<!-- PATTERN: accordion -->
+<!-- Collapsible content sections with expand/collapse animation -->
+
+<div x-data="{ openItem: null }" class="space-y-2">
+  <!-- Accordion Item 1 -->
+  <div class="bg-white {border-radius} border border-gray-200 overflow-hidden">
+    <button @click="openItem = openItem === 1 ? null : 1"
+            class="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors focus:outline-none"
+            :aria-expanded="openItem === 1 ? 'true' : 'false'"
+            aria-controls="accordion-panel-1">
+      <span>{Section 1 Title}</span>
+      <svg class="w-4 h-4 text-gray-500 transition-transform duration-200"
+           :class="openItem === 1 ? 'rotate-180' : ''"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
+    <div x-show="openItem === 1"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 max-h-0"
+         x-transition:enter-end="opacity-100 max-h-96"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 max-h-96"
+         x-transition:leave-end="opacity-0 max-h-0"
+         class="overflow-hidden"
+         id="accordion-panel-1"
+         role="region">
+      <div class="px-4 pb-4 text-sm text-gray-600 border-t border-gray-100 pt-3">
+        {Section 1 content goes here.}
+      </div>
+    </div>
+  </div>
+
+  <!-- Accordion Item 2 -->
+  <div class="bg-white {border-radius} border border-gray-200 overflow-hidden">
+    <button @click="openItem = openItem === 2 ? null : 2"
+            class="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors focus:outline-none"
+            :aria-expanded="openItem === 2 ? 'true' : 'false'"
+            aria-controls="accordion-panel-2">
+      <span>{Section 2 Title}</span>
+      <svg class="w-4 h-4 text-gray-500 transition-transform duration-200"
+           :class="openItem === 2 ? 'rotate-180' : ''"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
+    <div x-show="openItem === 2"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 max-h-0"
+         x-transition:enter-end="opacity-100 max-h-96"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 max-h-96"
+         x-transition:leave-end="opacity-0 max-h-0"
+         class="overflow-hidden"
+         id="accordion-panel-2"
+         role="region">
+      <div class="px-4 pb-4 text-sm text-gray-600 border-t border-gray-100 pt-3">
+        {Section 2 content goes here.}
+      </div>
+    </div>
+  </div>
+
+  <!-- Accordion Item 3 -->
+  <div class="bg-white {border-radius} border border-gray-200 overflow-hidden">
+    <button @click="openItem = openItem === 3 ? null : 3"
+            class="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors focus:outline-none"
+            :aria-expanded="openItem === 3 ? 'true' : 'false'"
+            aria-controls="accordion-panel-3">
+      <span>{Section 3 Title}</span>
+      <svg class="w-4 h-4 text-gray-500 transition-transform duration-200"
+           :class="openItem === 3 ? 'rotate-180' : ''"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
+    <div x-show="openItem === 3"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 max-h-0"
+         x-transition:enter-end="opacity-100 max-h-96"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 max-h-96"
+         x-transition:leave-end="opacity-0 max-h-0"
+         class="overflow-hidden"
+         id="accordion-panel-3"
+         role="region">
+      <div class="px-4 pb-4 text-sm text-gray-600 border-t border-gray-100 pt-3">
+        {Section 3 content goes here.}
+      </div>
+    </div>
+  </div>
+</div>
+<!-- /PATTERN: accordion -->

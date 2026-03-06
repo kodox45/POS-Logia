@@ -1,0 +1,130 @@
+{
+  "id": "V-T-021",
+  "subject": "Validate: Wire sync to domain stores",
+  "owner": "validator-backend",
+  "builder_task_id": "T-021",
+  "layer": 3,
+  "wave": 4,
+  "goal": "Validate builder output for Wire sync to domain stores",
+  "write_scope": [
+    ".claude/implementation/validation-backend.json"
+  ],
+  "acceptance": {
+    "sync": [
+      "Store mutations trigger sync queue push",
+      "Background pull syncs server changes to local stores",
+      "Online/offline indicator shown in all layouts",
+      "Per-table sync status tracked in Dexie",
+      "Financial records use append-only sync"
+    ]
+  },
+  "business_rules": [
+    {
+      "rule": "Auto-sync to cloud/server when internet connection is available",
+      "type": "constraint",
+      "source": "nfr.reliability"
+    },
+    {
+      "rule": "Data persists locally on device even after app restart",
+      "type": "constraint",
+      "source": "nfr.reliability"
+    }
+  ],
+  "cross_domain_contracts": [],
+  "_foundation_files": [
+    {
+      "path": "src/stores/useAuthStore.ts",
+      "category": "state",
+      "lines": 86,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useMenuStore.ts",
+      "category": "state",
+      "lines": 74,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useRecipeStore.ts",
+      "category": "state",
+      "lines": 72,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useInventoryStore.ts",
+      "category": "state",
+      "lines": 74,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useOrderManagementStore.ts",
+      "category": "state",
+      "lines": 85,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useKitchenStore.ts",
+      "category": "state",
+      "lines": 68,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/usePaymentStore.ts",
+      "category": "state",
+      "lines": 76,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useShiftManagementStore.ts",
+      "category": "state",
+      "lines": 75,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useReportingStore.ts",
+      "category": "state",
+      "lines": 97,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useSettingsStore.ts",
+      "category": "state",
+      "lines": 79,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/index.ts",
+      "category": "state",
+      "lines": 10,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  },
+  "validation_targets": {
+    "builder_write_scope": [
+      "src/sync/",
+      "src/stores/"
+    ],
+    "domain_packages": [
+      ".claude/implementation/domains/sync.json"
+    ]
+  }
+}

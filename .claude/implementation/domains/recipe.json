@@ -1,0 +1,345 @@
+{
+  "domain": "recipe",
+  "version": "1.0",
+  "wave": 2,
+  "depends_on_domains": ["menu", "inventory"],
+
+  "entities": {
+    "owns": [
+      {
+        "name": "Recipe",
+        "id": "E-005",
+        "table_name": "recipes",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "menuItemId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-006.fields[0]" },
+          { "name": "cookingTime", "type": "integer", "category": "business", "required": false, "unique": false, "default": null, "source": "F-006.fields[3]" },
+          { "name": "difficultyLevel", "type": "enum", "category": "business", "required": false, "unique": false, "default": null, "values": ["easy", "medium", "hard"], "source": "F-006.fields[4]" },
+          { "name": "notes", "type": "text", "category": "business", "required": false, "unique": false, "default": null, "source": "F-006.fields[5]" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "MenuItem", "type": "many-to-one", "foreign_key": "menuItemId", "cascade_delete": true },
+          { "target": "RecipeIngredient", "type": "one-to-many", "foreign_key": "recipeId", "cascade_delete": true },
+          { "target": "RecipeStep", "type": "one-to-many", "foreign_key": "recipeId", "cascade_delete": true }
+        ],
+        "indexes": [
+          { "fields": ["menuItemId"], "unique": false }
+        ],
+        "state_machine": null,
+        "business_rules": [
+          { "rule": "Recipe ingredients must reference inventory items for stock deduction", "type": "constraint", "source": "F-006.business_rules[0]", "enforcement": "both" },
+          { "rule": "Only Owner or authorized chef can edit recipes", "type": "constraint", "source": "F-006.business_rules[1]", "enforcement": "update" },
+          { "rule": "Recipe is viewable from Kitchen Display per order item", "type": "constraint", "source": "F-006.business_rules[2]", "enforcement": "both" }
+        ]
+      },
+      {
+        "name": "RecipeIngredient",
+        "id": "E-006",
+        "table_name": "recipeIngredients",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "recipeId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-006.fields[1]" },
+          { "name": "inventoryItemId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-006.business_rules[0]" },
+          { "name": "quantityRequired", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-006.fields[1]" },
+          { "name": "unit", "type": "string", "category": "business", "required": true, "unique": false, "default": null, "max_length": 50, "source": "F-006.fields[1]" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "Recipe", "type": "many-to-one", "foreign_key": "recipeId", "cascade_delete": true },
+          { "target": "InventoryItem", "type": "many-to-one", "foreign_key": "inventoryItemId", "cascade_delete": false }
+        ],
+        "indexes": [
+          { "fields": ["recipeId"], "unique": false },
+          { "fields": ["inventoryItemId"], "unique": false },
+          { "fields": ["recipeId", "inventoryItemId"], "unique": true }
+        ],
+        "state_machine": null,
+        "business_rules": [
+          { "rule": "Recipe ingredients must reference existing inventory items for stock deduction linkage", "type": "constraint", "source": "F-006.business_rules[0]", "enforcement": "create" }
+        ]
+      },
+      {
+        "name": "RecipeStep",
+        "id": "E-007",
+        "table_name": "recipeSteps",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "recipeId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-006.fields[2]" },
+          { "name": "stepOrder", "type": "integer", "category": "business", "required": true, "unique": false, "default": null, "source": "F-006.fields[2]" },
+          { "name": "instruction", "type": "text", "category": "business", "required": true, "unique": false, "default": null, "source": "F-006.fields[2]" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "Recipe", "type": "many-to-one", "foreign_key": "recipeId", "cascade_delete": true }
+        ],
+        "indexes": [
+          { "fields": ["recipeId", "stepOrder"], "unique": true }
+        ],
+        "state_machine": null,
+        "business_rules": []
+      }
+    ],
+    "reads": [
+      {
+        "name": "MenuItem",
+        "id": "E-003",
+        "read_fields": ["id", "itemName", "price", "imageUrl"]
+      },
+      {
+        "name": "InventoryItem",
+        "id": "E-008",
+        "read_fields": ["id", "itemName", "unit", "quantity"]
+      }
+    ]
+  },
+
+  "endpoints": [
+    {
+      "id": "EP-020",
+      "method": "GET",
+      "path": "/api/recipes",
+      "description": "List all recipes with their linked menu items. Used by recipe management and kitchen display.",
+      "source_features": ["F-006"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "chef"],
+      "permission_required": "perm-view-recipe",
+      "params": {
+        "query": [
+          { "name": "menuItemId", "type": "uuid", "required": false, "description": "Filter by linked menu item" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "recipes": [{ "id": "uuid", "menuItemId": "uuid", "menuItemName": "string", "cookingTime": "number|null", "difficultyLevel": "enum|null", "ingredientCount": "number", "stepCount": "number" }],
+            "total": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "Recipe",
+      "related_entity_id": "E-005",
+      "domain_group": "recipe"
+    },
+    {
+      "id": "EP-021",
+      "method": "GET",
+      "path": "/api/recipes/:id",
+      "description": "Get full recipe details including ingredients with inventory links and step-by-step cooking instructions. Accessible from Kitchen Display.",
+      "source_features": ["F-006"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "chef"],
+      "permission_required": "perm-view-recipe",
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Recipe ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "menuItemId": "uuid",
+            "menuItemName": "string",
+            "cookingTime": "number|null",
+            "difficultyLevel": "enum|null",
+            "notes": "string|null",
+            "ingredients": [{ "id": "uuid", "inventoryItemId": "uuid", "inventoryItemName": "string", "quantityRequired": "decimal", "unit": "string" }],
+            "steps": [{ "id": "uuid", "stepOrder": "number", "instruction": "string" }]
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "RECIPE_NOT_FOUND", "message": "Recipe not found" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Recipe is viewable from Kitchen Display per order item", "type": "constraint", "source": "F-006.business_rules[2]" }
+      ],
+      "related_entity": "Recipe",
+      "related_entity_id": "E-005",
+      "domain_group": "recipe"
+    },
+    {
+      "id": "EP-022",
+      "method": "POST",
+      "path": "/api/recipes",
+      "description": "Create a new recipe linked to a menu item with ingredients and step-by-step instructions.",
+      "source_features": ["F-006"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "menuItemId", "type": "uuid", "required": true, "description": "Menu item to link" },
+          { "name": "cookingTime", "type": "integer", "required": false, "description": "Estimated prep time in minutes" },
+          { "name": "difficultyLevel", "type": "enum", "required": false, "description": "easy | medium | hard" },
+          { "name": "notes", "type": "string", "required": false, "description": "Additional tips or warnings" },
+          { "name": "ingredients", "type": "array", "required": true, "description": "Array of ingredient entries", "items": { "inventoryItemId": "uuid", "quantityRequired": "decimal", "unit": "string" } },
+          { "name": "steps", "type": "array", "required": true, "description": "Ordered array of cooking steps", "items": { "stepOrder": "number", "instruction": "string" } }
+        ]
+      },
+      "response": {
+        "success": { "status": 201, "body": { "id": "uuid", "menuItemId": "uuid", "ingredientCount": "number", "stepCount": "number", "createdAt": "ISO-8601" } },
+        "errors": [
+          { "status": 400, "code": "MENU_ITEM_NOT_FOUND", "message": "Referenced menu item does not exist" },
+          { "status": 400, "code": "INVENTORY_ITEM_NOT_FOUND", "message": "One or more ingredient inventory items not found" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Recipe ingredients must reference inventory items for stock deduction", "type": "constraint", "source": "F-006.business_rules[0]" }
+      ],
+      "related_entity": "Recipe",
+      "related_entity_id": "E-005",
+      "domain_group": "recipe"
+    },
+    {
+      "id": "EP-023",
+      "method": "PATCH",
+      "path": "/api/recipes/:id",
+      "description": "Update recipe details, ingredients, or steps. Only owner or authorized chef can edit.",
+      "source_features": ["F-006"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": "perm-chef-manage-recipe",
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Recipe ID" }],
+        "body": [
+          { "name": "cookingTime", "type": "integer", "required": false, "description": "Updated cooking time" },
+          { "name": "difficultyLevel", "type": "enum", "required": false, "description": "Updated difficulty" },
+          { "name": "notes", "type": "string", "required": false, "description": "Updated notes" },
+          { "name": "ingredients", "type": "array", "required": false, "description": "Replace all ingredients", "items": { "inventoryItemId": "uuid", "quantityRequired": "decimal", "unit": "string" } },
+          { "name": "steps", "type": "array", "required": false, "description": "Replace all steps", "items": { "stepOrder": "number", "instruction": "string" } }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 404, "code": "RECIPE_NOT_FOUND", "message": "Recipe not found" },
+          { "status": 403, "code": "FORBIDDEN", "message": "Only owner or authorized chef can edit recipes" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Only Owner or authorized chef can edit recipes", "type": "constraint", "source": "F-006.business_rules[1]" }
+      ],
+      "related_entity": "Recipe",
+      "related_entity_id": "E-005",
+      "domain_group": "recipe"
+    },
+    {
+      "id": "EP-024",
+      "method": "DELETE",
+      "path": "/api/recipes/:id",
+      "description": "Delete a recipe and its associated ingredients and steps.",
+      "source_features": ["F-006"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Recipe ID" }],
+        "body": []
+      },
+      "response": {
+        "success": { "status": 200, "body": { "message": "Recipe deleted successfully" } },
+        "errors": [
+          { "status": 404, "code": "RECIPE_NOT_FOUND", "message": "Recipe not found" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "Recipe",
+      "related_entity_id": "E-005",
+      "domain_group": "recipe"
+    }
+  ],
+
+  "screens": [
+    {
+      "screen_id": "S-007",
+      "name": "Recipe Viewer",
+      "page_component": "RecipeViewerPage",
+      "route": "/kitchen/recipe/:recipeId",
+      "interface": "kitchen-display",
+      "layout": "KitchenLayout",
+      "guards": ["AuthGuard", "RoleGuard"],
+      "sections": [
+        { "name": "Recipe Header", "position": "top", "components": ["recipe-header"] },
+        { "name": "Ingredients List", "position": "center-left", "components": ["ingredient-row"] },
+        { "name": "Cooking Steps", "position": "center-right", "components": ["step-card"] },
+        { "name": "Notes & Tips", "position": "bottom", "components": ["note-box"] }
+      ]
+    },
+    {
+      "screen_id": "S-010",
+      "name": "Recipe Management",
+      "page_component": "RecipeManagementPage",
+      "route": "/admin/recipes",
+      "interface": "admin-panel",
+      "layout": "AdminLayout",
+      "guards": ["AuthGuard", "RoleGuard"],
+      "sections": [
+        { "name": "Recipe List", "position": "center", "components": ["data-table", "action-buttons"] },
+        { "name": "Toolbar", "position": "top", "components": ["add-button", "search-bar"] },
+        { "name": "Recipe Viewer Panel", "position": "inline-detail", "components": ["back-button", "recipe-header", "ingredient-list", "step-card"] },
+        { "name": "Recipe Editor Form", "position": "modal", "components": ["menu-item-select", "ingredient-row-editor", "step-editor", "form-input", "save-button", "cancel-button"] }
+      ]
+    }
+  ],
+
+  "features": [
+    {
+      "id": "F-006",
+      "title": "Recipe Guide / Cooking Instructions",
+      "priority": "must_have",
+      "acceptance_criteria": [
+        "Owner can create and edit recipe guides for each menu item",
+        "Recipe shows ingredients, step-by-step instructions, and estimated cooking time",
+        "Chef can open recipe guide from Kitchen Display with one tap on a menu item",
+        "Recipe ingredients are linked to inventory items"
+      ],
+      "business_rules": [
+        { "rule": "Recipe ingredients must reference inventory items for stock deduction", "type": "constraint", "source": "F-006.business_rules[0]", "enforcement": "both" },
+        { "rule": "Only Owner or authorized chef can edit recipes", "type": "constraint", "source": "F-006.business_rules[1]", "enforcement": "update" },
+        { "rule": "Recipe is viewable from Kitchen Display per order item", "type": "constraint", "source": "F-006.business_rules[2]", "enforcement": "both" }
+      ]
+    }
+  ],
+
+  "cross_domain_contracts": [],
+
+  "state_dependencies": {
+    "owns_store": "useRecipeStore",
+    "writes_to_tables": ["recipes", "recipeIngredients", "recipeSteps"],
+    "reads_from_tables": ["menuItems", "inventoryItems"],
+    "calls_other_stores": ["useMenuStore", "useInventoryStore"]
+  },
+
+  "write_scope": [
+    "src/pages/kitchen/",
+    "src/pages/admin/",
+    "src/components/kitchen/",
+    "src/stores/useRecipeStore.ts",
+    "server/routes/recipe/",
+    "server/services/recipe/"
+  ]
+}

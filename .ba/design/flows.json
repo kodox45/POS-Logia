@@ -1,0 +1,371 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:50:00Z",
+  "flows": [
+    {
+      "id": "UF-001",
+      "name": "Complete Order-to-Payment Flow",
+      "description": "End-to-end flow from waiter taking an order to customer paying the bill. Involves waiter, chef, and waiter again.",
+      "actor": "waiter-cashier",
+      "trigger": "Customer is ready to order",
+      "steps": [
+        {
+          "order": 1,
+          "screen_ref": "S-005",
+          "action": "Waiter taps on an available table from the Table Map",
+          "result": "System opens Create Order screen pre-filled with selected table"
+        },
+        {
+          "order": 2,
+          "screen_ref": "S-003",
+          "action": "Waiter browses menu, selects items, adjusts quantities, adds special notes",
+          "result": "Order summary updates in real-time with running total"
+        },
+        {
+          "order": 3,
+          "screen_ref": "S-003",
+          "action": "Waiter taps Submit Order",
+          "result": "Order is saved with status 'pending' and sent to Kitchen Display"
+        },        {
+          "order": 4,
+          "screen_ref": "S-006",
+          "actor_switch": "chef",
+          "action": "Chef sees new order appear in Kitchen Order Queue with items and special notes",
+          "result": "Order card appears with 'pending' status and timer starts"
+        },
+        {
+          "order": 5,
+          "screen_ref": "S-006",
+          "action": "Chef taps 'Start Cooking' on the order card",
+          "result": "Order status changes to 'cooking', waiter is notified"
+        },
+        {
+          "order": 6,
+          "screen_ref": "S-007",
+          "action": "Chef taps on a menu item name to view recipe guide if needed",
+          "result": "Recipe Viewer opens showing ingredients, steps, and cooking time"
+        },
+        {
+          "order": 7,
+          "screen_ref": "S-006",
+          "action": "Chef taps 'Mark Ready' when food is prepared",
+          "result": "Order status changes to 'ready', waiter receives notification"
+        },
+        {
+          "order": 8,
+          "screen_ref": "S-002",
+          "actor_switch": "waiter-cashier",
+          "action": "Waiter sees order status changed to 'ready' in Order List",
+          "result": "Order card shows green 'Siap' badge"
+        },
+        {
+          "order": 9,
+          "screen_ref": "S-002",
+          "action": "Waiter serves food to customer and marks order as 'served'",
+          "result": "Order status updates to 'served'"
+        },
+        {
+          "order": 10,
+          "screen_ref": "S-004",
+          "action": "Waiter opens Payment Screen for the table, inputs amount received via numpad",
+          "result": "System shows itemized bill, calculates change automatically"
+        },
+        {
+          "order": 11,
+          "screen_ref": "S-004",
+          "action": "Waiter confirms payment and taps Print Receipt",
+          "result": "Transaction recorded, receipt printed, order status set to 'paid', table becomes available, stock auto-deducted"
+        }
+      ],
+      "feature_refs": ["F-001", "F-002", "F-003", "F-004", "F-006", "F-010"],
+      "type": "primary"
+    },    {
+      "id": "UF-002",
+      "name": "Menu & Recipe Setup",
+      "description": "Owner adds a new menu item and creates its recipe guide with ingredients linked to inventory.",
+      "actor": "owner",
+      "trigger": "Owner wants to add a new dish to the menu",
+      "steps": [
+        {
+          "order": 1,
+          "screen_ref": "S-009",
+          "action": "Owner navigates to Menu Management and taps 'Add New Item'",
+          "result": "Menu item form modal opens"
+        },
+        {
+          "order": 2,
+          "screen_ref": "S-009",
+          "action": "Owner fills in name, price, category, description, uploads image, sets availability to on",
+          "result": "Menu item is saved and appears in the menu list"
+        },
+        {
+          "order": 3,
+          "screen_ref": "S-010",
+          "action": "Owner navigates to Recipe Management and taps 'Add New Recipe'",
+          "result": "Recipe editor form opens"
+        },
+        {
+          "order": 4,
+          "screen_ref": "S-010",
+          "action": "Owner selects the menu item, adds ingredients from inventory with quantities, writes step-by-step cooking instructions, sets cooking time",
+          "result": "Recipe is saved and linked to the menu item. Ingredients are linked to inventory for auto-deduction."
+        }
+      ],
+      "feature_refs": ["F-005", "F-006"],
+      "type": "primary"
+    },    {
+      "id": "UF-003",
+      "name": "Inventory Restock & Monitoring",
+      "description": "Owner checks stock levels, sees low stock alerts, and restocks items.",
+      "actor": "owner",
+      "trigger": "Owner sees low stock notification on dashboard or checks inventory",
+      "steps": [
+        {
+          "order": 1,
+          "screen_ref": "S-008",
+          "action": "Owner sees low stock alert cards on Dashboard showing items below threshold",
+          "result": "Alert cards display item name, current qty, and threshold"
+        },
+        {
+          "order": 2,
+          "screen_ref": "S-011",
+          "action": "Owner navigates to Inventory and reviews stock levels, filters by low stock",
+          "result": "Table shows all items with low/critical badges highlighted"
+        },
+        {
+          "order": 3,
+          "screen_ref": "S-011",
+          "action": "Owner taps on an item and selects 'Restock'",
+          "result": "Restock modal opens with quantity input"
+        },
+        {
+          "order": 4,
+          "screen_ref": "S-011",
+          "action": "Owner inputs restock quantity and confirms",
+          "result": "Stock updated, movement logged in history, alert cleared if above threshold"
+        }
+      ],
+      "feature_refs": ["F-004", "F-007", "F-012"],
+      "type": "primary"
+    },    {
+      "id": "UF-004",
+      "name": "User Creation & Access Configuration",
+      "description": "Owner creates a new staff account and configures their module access via permission checklist.",
+      "actor": "owner",
+      "trigger": "New staff member joins or existing permissions need adjustment",
+      "steps": [
+        {
+          "order": 1,
+          "screen_ref": "S-013",
+          "action": "Owner navigates to User & Access Control and taps 'Add User'",
+          "result": "User creation form modal opens"
+        },
+        {
+          "order": 2,
+          "screen_ref": "S-013",
+          "action": "Owner fills in display name, username, password, selects role (waiter-cashier or chef)",
+          "result": "User account is created with default role permissions"
+        },
+        {
+          "order": 3,
+          "screen_ref": "S-013",
+          "action": "Owner taps on the new user and opens Permission Checklist Panel",
+          "result": "Checklist shows all toggleable permissions with defaults pre-set based on role"
+        },
+        {
+          "order": 4,
+          "screen_ref": "S-013",
+          "action": "Owner toggles specific permissions on/off (e.g., enables View Stock and View Recipe for this waiter)",
+          "result": "Custom permissions saved. User can now access those modules on next login."
+        }
+      ],
+      "feature_refs": ["F-008", "F-009"],
+      "type": "primary"
+    },
+    {
+      "id": "UF-005",
+      "name": "Login & Dashboard Hub Navigation",
+      "description": "User logs in and arrives at Main Dashboard Hub, then selects role-appropriate module to enter.",
+      "actor": "waiter-cashier",
+      "trigger": "User opens the application",
+      "steps": [
+        {
+          "order": 1,
+          "screen_ref": "S-001",
+          "action": "User enters username and password on Login Screen",
+          "result": "System validates credentials"
+        },
+        {
+          "order": 2,
+          "screen_ref": "S-016",
+          "action": "System routes ALL users to Main Dashboard Hub",
+          "result": "Dashboard shows role-appropriate menu cards: cashier sees Open Shift/POS/Close Shift/Atur Menu/Cek Stok, chef sees Kitchen Display/Resep/Cek Stok, owner sees all modules"
+        },
+        {
+          "order": 3,
+          "screen_ref": "S-016",
+          "action": "User taps on desired module card to enter that section",
+          "result": "User navigates to the selected screen. Can always return to Dashboard Hub via logo/home button."
+        }
+      ],
+      "feature_refs": ["F-009"],
+      "type": "primary"
+    },    {
+      "id": "UF-006",
+      "name": "Insufficient Stock Warning",
+      "description": "System prevents or warns when an order would deplete stock below zero.",
+      "actor": "waiter-cashier",
+      "trigger": "Waiter submits an order containing items with insufficient stock",
+      "steps": [
+        {
+          "order": 1,
+          "screen_ref": "S-003",
+          "action": "Waiter selects menu items and taps Submit Order",
+          "result": "System checks stock levels against recipe ingredients"
+        },
+        {
+          "order": 2,
+          "screen_ref": "S-003",
+          "action": "System detects insufficient stock for one or more ingredients",
+          "result": "Warning dialog appears showing which items have low/no stock. Waiter can proceed or modify order."
+        }
+      ],
+      "feature_refs": ["F-001", "F-004"],
+      "type": "error"
+    },
+    {
+      "id": "UF-007",
+      "name": "Full Cashier Journey: Prep → Open Shift → Operations → Close Shift",
+      "description": "Complete cashier daily journey from login through preparation, PIN-verified shift opening, operational period, to one-way closing session with mandatory reconciliation.",
+      "actor": "waiter-cashier",
+      "trigger": "Cashier arrives to start their work day",
+      "steps": [
+        {
+          "order": 1,
+          "screen_ref": "S-001",
+          "action": "PIC Cashier prepares physical cash (modal) for restaurant operations, then logs into the POS application",
+          "result": "Routed to Main Dashboard Hub (S-016)"
+        },
+        {
+          "order": 2,
+          "screen_ref": "S-016",
+          "action": "Cashier sees Dashboard Hub with menu options. Before opening shift, cashier can do pre-opening preparation: tap 'Atur Menu' to check/update menu availability, tap 'Cek Stok' to verify inventory levels",
+          "result": "Cashier ensures menu and stock are ready for the day"
+        },
+        {
+          "order": 3,
+          "screen_ref": "S-016",
+          "action": "When ready to start operations, cashier taps 'Buka Kasir (Open Shift)'",
+          "result": "Open Shift screen (S-014) is displayed"
+        },
+        {
+          "order": 4,
+          "screen_ref": "S-014",
+          "action": "Cashier enters their 4-6 digit PIN via numpad for identity verification",
+          "result": "PIN verified. Opening balance input becomes accessible."
+        },
+        {
+          "order": 5,
+          "screen_ref": "S-014",
+          "action": "Cashier counts physical cash and inputs the opening balance (modal awal operasional) via numpad",
+          "result": "Amount displayed in Rupiah format"
+        },
+        {
+          "order": 6,
+          "screen_ref": "S-014",
+          "action": "Cashier confirms to start the shift",
+          "result": "Shift opened. System records opening balance, PIC, and start time. Cashier is routed to POS operational interface (S-002) with active shift indicator in header."
+        },
+        {
+          "order": 7,
+          "screen_ref": "S-002",
+          "action": "During shift, cashier processes orders, manages tables, and handles payments as normal",
+          "result": "All cash and digital transactions are tracked under this shift. Shift status bar visible in header."
+        },
+        {
+          "order": 8,
+          "screen_ref": "S-015",
+          "action": "At end of operations, cashier taps shift status bar and selects Close Shift. System shows confirmation: 'Anda tidak bisa kembali ke operasional setelah memulai closing.'",
+          "result": "ONE-WAY closing session begins. Navigation back to operations is completely disabled."
+        },
+        {
+          "order": 9,
+          "screen_ref": "S-015",
+          "action": "Cashier reviews shift summary: duration, total transactions, cash vs digital breakdown, opening balance, expected cash total",
+          "result": "All figures displayed clearly"
+        },
+        {
+          "order": 10,
+          "screen_ref": "S-015",
+          "action": "Cashier taps 'Print Laporan Transaksi' to print the detailed line-by-line transaction report",
+          "result": "Report printed showing each transaction with time, order ID, items, amount, and payment method. Cashier uses this to physically trace and verify cash."
+        },
+        {
+          "order": 11,
+          "screen_ref": "S-015",
+          "action": "Cashier counts physical cash in register and enters actual amount via numpad",
+          "result": "System calculates discrepancy (actual - expected) and shows color-coded indicator"
+        },
+        {
+          "order": 12,
+          "screen_ref": "S-015",
+          "action": "If discrepancy is GREEN (match ±Rp1000): cashier confirms and closes shift. If YELLOW/RED (discrepancy exists): notes field appears as MANDATORY — cashier must type explanation of the discrepancy.",
+          "result": "Close button enabled only when conditions are met (no discrepancy, or discrepancy with notes filled)"
+        },
+        {
+          "order": 13,
+          "screen_ref": "S-015",
+          "action": "Cashier confirms and closes the shift",
+          "result": "Shift permanently closed and locked. All data immutable. Cashier returns to Main Dashboard Hub (S-016). Summary available for owner audit."
+        }
+      ],
+      "feature_refs": ["F-015", "F-003", "F-005", "F-004"],
+      "type": "primary"
+    },
+    {
+      "id": "UF-008",
+      "name": "Kitchen Ready → Waiter Serve Flow",
+      "description": "Complete flow from kitchen marking order as ready to waiter confirming food has been served to the table.",
+      "actor": "chef",
+      "trigger": "Chef finishes cooking an order",
+      "steps": [
+        { "order": 1, "screen_ref": "S-006", "action": "Chef finishes cooking and taps 'Siap Diantar' on the order card in Kitchen Display", "result": "Order status changes to 'ready'. MUST push notification to appState.kitchenReadyNotifications array: { orderId, tableNumber, items, timestamp }. Order card moves to 'Ready' column." },
+        { "order": 2, "screen_ref": "S-002", "action": "Waiter navigates to Daftar Pesanan. Notification bar at top shows all items in kitchenReadyNotifications: 'Meja [X] - Pesanan Siap!' with items and 'Sudah Diantar' button. Also, the order card in active list updates status badge to 'Siap'.", "result": "Notification is prominent and visible. Order card badge reflects new status." },
+        { "order": 3, "screen_ref": "S-002", "action": "Waiter brings food to the table and taps 'Sudah Diantar' on the notification", "result": "Notification removed from array. Order status changes to 'served'. Order card badge updates to 'Disajikan'." }
+      ],
+      "prototype_state_flow": "CRITICAL for single-page prototype: S-006 and S-002 share appState. When chef taps 'Siap Diantar' on S-006, the order object in appState.orders must update status='ready' AND push to appState.kitchenReadyNotifications[]. When S-002 renders, it reads kitchenReadyNotifications[] to show the notification bar. Both screens react to the same state.",
+      "feature_refs": ["F-002", "F-001"],
+      "type": "primary"
+    },
+    {
+      "id": "UF-009",
+      "name": "Add Items to Existing Order",
+      "description": "Customer at a table with active order wants to add more items.",
+      "actor": "waiter-cashier",
+      "trigger": "Customer requests additional menu items",
+      "steps": [
+        { "order": 1, "screen_ref": "S-002", "action": "Waiter finds the active order for the table and taps 'Tambah Item'", "result": "Opens S-003 in 'Tambah Pesanan' mode with table pre-selected and existing items shown" },
+        { "order": 2, "screen_ref": "S-003", "action": "Waiter sees 'Pesanan Sebelumnya' section showing existing items. Selects additional menu items from the grid.", "result": "New items added to order summary sidebar, labeled as 'Tambahan'" },
+        { "order": 3, "screen_ref": "S-003", "action": "Waiter confirms and sends the additional items", "result": "New items appended to existing order. Kitchen receives additional items with 'Tambahan' badge on the same order card. Order total recalculated." }
+      ],
+      "feature_refs": ["F-001"],
+      "type": "primary"
+    },
+    {
+      "id": "UF-010",
+      "name": "Void Paid Transaction",
+      "description": "Cashier needs to void a transaction that has already been paid (e.g., customer complaint, wrong order charged).",
+      "actor": "waiter-cashier",
+      "trigger": "Error discovered after payment or customer disputes charge",
+      "steps": [
+        { "order": 1, "screen_ref": "S-002", "action": "Cashier finds the paid order and opens transaction detail", "result": "Transaction detail shown with 'Void Transaksi' button" },
+        { "order": 2, "screen_ref": "S-004", "action": "Cashier taps 'Void Transaksi'. System requests PIN verification.", "result": "PIN gate modal appears" },
+        { "order": 3, "screen_ref": "S-004", "action": "Cashier enters correct PIN", "result": "Void form opens" },
+        { "order": 4, "screen_ref": "S-004", "action": "Cashier selects void type (full/partial), selects mandatory reason, adds optional notes", "result": "Void amount and cash impact displayed" },
+        { "order": 5, "screen_ref": "S-004", "action": "Cashier confirms void", "result": "Transaction marked as voided. Cash expected in shift reduced by void amount. Void logged for audit. Owner can see in reports." }
+      ],
+      "feature_refs": ["F-017", "F-003"],
+      "type": "exception"
+    }
+  ]
+}

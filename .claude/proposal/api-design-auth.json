@@ -1,0 +1,166 @@
+{
+  "domain": "auth",
+  "endpoints": [
+    {
+      "id": "EP-001",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "description": "Authenticate user with username and password. Validates credentials against local bcrypt hash in IndexedDB. Returns session token stored locally.",
+      "source_features": ["F-009"],
+      "auth_required": false,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "username", "type": "string", "required": true, "description": "Unique username" },
+          { "name": "password", "type": "string", "required": true, "description": "Plain-text password for bcrypt comparison" }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "user": { "id": "uuid", "username": "string", "role": "enum", "displayName": "string", "isActive": "boolean" },
+            "sessionToken": "string",
+            "permissions": ["string"]
+          }
+        },
+        "errors": [
+          { "status": 401, "code": "INVALID_CREDENTIALS", "message": "Username or password is incorrect" },
+          { "status": 403, "code": "ACCOUNT_DEACTIVATED", "message": "User account has been deactivated" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Each user must have a unique username",
+          "type": "constraint",
+          "field": "username",
+          "validation": "unique",
+          "source": "F-009.business_rules[0]"
+        },
+        {
+          "rule": "After login, ALL users are routed to the Main Dashboard Hub",
+          "type": "constraint",
+          "source": "F-009.business_rules[1]"
+        },
+        {
+          "rule": "Failed login attempts are logged",
+          "type": "constraint",
+          "source": "F-009.business_rules[4]"
+        }
+      ],
+      "related_entity": "User",
+      "related_entity_id": "E-001",
+      "domain_group": "auth"
+    },
+    {
+      "id": "EP-002",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "description": "End the current user session. Clears session token from IndexedDB.",
+      "source_features": ["F-009"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": { "status": 200, "body": { "message": "Logged out successfully" } },
+        "errors": [
+          { "status": 401, "code": "NOT_AUTHENTICATED", "message": "No active session" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "User",
+      "related_entity_id": "E-001",
+      "domain_group": "auth"
+    },
+    {
+      "id": "EP-003",
+      "method": "POST",
+      "path": "/api/auth/verify-pin",
+      "description": "Verify a user's PIN for shift operations, POS entry gate, or void operations. Compares input against local bcrypt pinHash.",
+      "source_features": ["F-015", "F-017"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "userId", "type": "uuid", "required": true, "description": "ID of the user whose PIN is being verified" },
+          { "name": "pin", "type": "string", "required": true, "description": "4-6 digit PIN for verification" },
+          { "name": "context", "type": "enum", "required": true, "description": "Context of PIN verification", "values": ["shift_open", "pos_entry", "void_operation"] }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "verified": true, "verifiedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 401, "code": "INVALID_PIN", "message": "PIN is incorrect" },
+          { "status": 404, "code": "PIN_NOT_SET", "message": "User does not have a PIN configured" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Cashier MUST verify PIN before opening a shift",
+          "type": "constraint",
+          "source": "F-015.business_rules[0]"
+        },
+        {
+          "rule": "Cashier MUST re-verify PIN every time they enter POS operational screens from outside POS",
+          "type": "constraint",
+          "source": "F-015.business_rules[1]"
+        },
+        {
+          "rule": "PIN verification required before any void operation",
+          "type": "constraint",
+          "source": "F-017.business_rules[0]"
+        }
+      ],
+      "related_entity": "User",
+      "related_entity_id": "E-001",
+      "domain_group": "auth"
+    },
+    {
+      "id": "EP-004",
+      "method": "GET",
+      "path": "/api/auth/session",
+      "description": "Get the current authenticated user session including role, permissions, and active shift status.",
+      "source_features": ["F-009", "F-008"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "user": { "id": "uuid", "username": "string", "role": "enum", "displayName": "string" },
+            "permissions": ["string"],
+            "activeShift": { "id": "uuid", "shiftNumber": "string", "startTime": "ISO-8601" }
+          }
+        },
+        "errors": [
+          { "status": 401, "code": "NOT_AUTHENTICATED", "message": "No active session" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "User",
+      "related_entity_id": "E-001",
+      "domain_group": "auth"
+    }
+  ],
+  "summary": {
+    "endpoint_count": 4,
+    "by_method": { "GET": 1, "POST": 3, "PATCH": 0, "DELETE": 0 }
+  }
+}

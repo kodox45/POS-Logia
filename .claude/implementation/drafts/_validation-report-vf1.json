@@ -1,0 +1,90 @@
+{
+  "checkpoint": "vf1",
+  "timestamp": "2026-03-06T10:30:00.000Z",
+  "files_validated": [
+    "_project-analysis.json",
+    "foundation-manifest.json",
+    "entities.json",
+    "architecture.json",
+    "tech-stack.json",
+    "src/types/entities.ts",
+    "src/types/enums.ts",
+    "src/types/index.ts",
+    "src/stores/index.ts",
+    "src/stores/useAuthStore.ts",
+    "src/stores/useMenuStore.ts",
+    "src/stores/useOrderManagementStore.ts",
+    "src/stores/useKitchenStore.ts",
+    "src/stores/usePaymentStore.ts",
+    "src/stores/useInventoryStore.ts",
+    "src/stores/useReportingStore.ts",
+    "src/stores/useSettingsStore.ts",
+    "src/App.tsx",
+    "src/db/database.ts",
+    "src/db/seed.ts",
+    "prisma/seed.ts",
+    "prisma/schema.prisma",
+    "src/components/common/ErrorBoundary.tsx",
+    "src/components/common/LoadingSpinner.tsx",
+    "src/components/navigation/AuthGuard.tsx",
+    "src/components/navigation/RoleGuard.tsx",
+    "src/components/navigation/PermissionGuard.tsx",
+    "src/components/navigation/PinGateModal.tsx",
+    "src/components/navigation/ShiftGuard.tsx",
+    "src/components/layout/DashboardHubLayout.tsx",
+    "src/components/layout/WaiterCashierLayout.tsx",
+    "src/components/layout/KitchenLayout.tsx",
+    "src/components/layout/AdminLayout.tsx",
+    "src/lib/persist-storage.ts",
+    "src/lib/constants.ts",
+    "src/pages/auth/LoginPage.tsx",
+    "src/pages/pos/OrderListPage.tsx",
+    "src/pages/admin/MenuManagementPage.tsx",
+    "src/pages/shift/OpenShiftPage.tsx",
+    "src/pages/UnauthorizedPage.tsx",
+    "package.json",
+    "server/package.json",
+    "public/manifest.json"
+  ],
+  "checks_passed": 44,
+  "checks_failed": 1,
+  "checks_total": 45,
+  "fixes_applied": [
+    {
+      "file": "_project-analysis.json",
+      "check": "VF1-A5",
+      "issue": "counts.entities was 22 but entities.json has 19 entities",
+      "field": "counts.entities",
+      "before": "22",
+      "after": "19",
+      "rule": "counts_match_source_data"
+    }
+  ],
+  "issues_unfixed": [
+    {
+      "file": "src/App.tsx",
+      "check": "VF1-C3",
+      "issue": "PermissionGuard is in guard_chain[] but is NOT imported or used in App.tsx routing tree. It exists as a file at src/components/navigation/PermissionGuard.tsx but is only referenced in comments. Comment on line 88 states: 'cross-role access via PermissionGuard handled per-page in Session 2'.",
+      "severity": "low",
+      "reason": "Intentional design deferral. PermissionGuard is designed for per-page granular access control (e.g., waiter accessing admin menu with permission), not route-level wrapping. Wiring it into the route tree would require business decisions about which pages need which permissions. Session 2 builders will apply PermissionGuard per-page as needed. This is not a bug — it is a correct architectural pattern for permission-gated access."
+    }
+  ],
+  "reasoning_checks": [
+    {
+      "id": "G1",
+      "name": "Functional coherence — routing to layout to guard to page flow",
+      "result": "pass",
+      "reasoning": "The routing tree correctly chains AuthGuard (outermost for all protected routes) then RoleGuard (per interface group) then PinGateModal and ShiftGuard (POS-specific). Layouts render <Outlet/> for nested routes. Guard nesting follows guard_chain[] order: AuthGuard > RoleGuard > PinGateModal > ShiftGuard. PermissionGuard is intentionally deferred to per-page application in Session 2. A user navigating to /pos/orders would pass through AuthGuard > RoleGuard > PinGateModal > ShiftGuard > WaiterCashierLayout > OrderListPage — a coherent render path.",
+      "files_analyzed": ["src/App.tsx", "src/components/layout/DashboardHubLayout.tsx", "src/components/navigation/AuthGuard.tsx", "src/components/navigation/RoleGuard.tsx", "src/components/navigation/ShiftGuard.tsx"]
+    },
+    {
+      "id": "G2",
+      "name": "Store-entity alignment — do stores manage the right data?",
+      "result": "pass",
+      "reasoning": "useOrderManagementStore manages Order, OrderItem, and Table entities with CRUD actions (createOrder, addItemsToOrder, updateOrderStatus, cancelOrder) and a status-filtered getter (getActiveOrders filters out paid/cancelled/voided). usePaymentStore manages Transaction and EwalletProvider with processPayment, calculatePPN, applyDiscount, voidTransaction actions — the calculatePPN getter uses the business formula (subtotal - discount) * ppnRate/100. Both stores have Dexie-backed persistence via dexieStorage, import db correctly, and reference appropriate table operations in comments. Initial states use sensible defaults (empty arrays, null, false).",
+      "files_analyzed": ["src/stores/useOrderManagementStore.ts", "src/stores/usePaymentStore.ts", ".claude/proposal/entities.json"]
+    }
+  ],
+  "blocking": false,
+  "summary": "44/45 checks passed. 1 issue found and fixed directly (counts.entities 22->19). 1 informational issue unfixed (PermissionGuard intentionally deferred to Session 2 per-page application). Reasoning: 2/2 pass. No blocking issues. Foundation is well-structured and ready for T-DOMAIN."
+}

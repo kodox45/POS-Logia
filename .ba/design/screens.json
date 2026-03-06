@@ -1,0 +1,704 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:40:00Z",
+  "screens": [
+    {
+      "id": "S-001",
+      "name": "Login Screen",
+      "purpose": "Authenticate users and route them to the Main Dashboard Hub (S-016)",
+      "priority": "high",
+      "interface": "shared",
+      "feature_refs": ["F-009"],
+      "role_access": ["owner", "waiter-cashier", "chef"],
+      "sections": [
+        {
+          "name": "Brand Header",
+          "position": "top",
+          "description": "LogiaInitiative logo and app name (POS Restoran UMKM Logia)",
+          "components": ["logo-display", "app-title"]
+        },
+        {
+          "name": "Login Form",
+          "position": "center",
+          "description": "Username and password fields with login button",
+          "components": ["text-input", "password-input", "login-button"]
+        },
+        {
+          "name": "Error Message",
+          "position": "center-bottom",
+          "description": "Displays login error messages (wrong credentials, account deactivated)",
+          "components": ["alert-message"]
+        }
+      ]
+    },    {
+      "id": "S-002",
+      "name": "Order List",
+      "purpose": "View all active orders with status, kitchen-ready notifications, add items to existing orders, and cancel/void options.",
+      "priority": "high",
+      "interface": "waiter-cashier-ui",
+      "feature_refs": ["F-001", "F-002", "F-017"],
+      "role_access": ["waiter-cashier", "owner"],
+      "sections": [
+        {
+          "name": "Kitchen Ready Notification Bar",
+          "position": "top-fixed",
+          "description": "Alert bar that shows orders marked 'ready' by kitchen. Reads from appState.kitchenReadyNotifications array. Shows: 'Meja [X] - Pesanan Siap!' with items list and 'Sudah Diantar' button. Multiple notifications stack vertically. When waiter taps 'Sudah Diantar': notification removed, order status → 'served'.",
+          "prototype_behavior": "CRITICAL: This bar MUST be visible when kitchenReadyNotifications.length > 0. The array is populated when chef taps 'Siap Diantar' on S-006. Flow: (1) Login as chef → S-006 → tap 'Mulai Masak' → tap 'Siap Diantar' → notification pushed to shared state, (2) Switch to cashier (login as waiter or use role switcher) → S-002 → notification bar appears showing ready orders, (3) Tap 'Sudah Diantar' → notification removed. Also: order cards in Active Orders List should update their status badge to 'Siap' when chef marks ready.",
+          "components": ["notification-toast", "confirm-serve-button"]
+        },
+        {
+          "name": "Active Orders List",
+          "position": "center",
+          "description": "List of all active orders showing table number, items summary, order total, status badge (pending/cooking/ready/served), and elapsed time since ordered. Each order card has actions: 'Tambah Item' (add to existing), 'Bayar' (go to payment), 'Batalkan' (cancel order — requires confirmation).",
+          "components": ["order-card", "status-badge", "elapsed-timer", "action-buttons"]
+        },
+        {
+          "name": "New Order FAB",
+          "position": "floating",
+          "description": "Floating action button to create a new order",
+          "components": ["fab-button"]
+        },
+        {
+          "name": "Filter Tabs",
+          "position": "top",
+          "description": "Filter orders by status: All, Pending, Cooking, Ready, Served",
+          "components": ["tab-filter"]
+        },
+        {
+          "name": "Cancel Order Confirmation",
+          "position": "modal",
+          "description": "When cashier taps 'Batalkan' on unpaid order: confirmation dialog with reason select (customer batal, salah input, item habis, lainnya). Cancel is logged but no cash impact since unpaid.",
+          "components": ["confirm-dialog", "reason-select"]
+        }
+      ]
+    },
+    {
+      "id": "S-003",
+      "name": "Create / Edit / Add to Order",
+      "purpose": "Create a new order OR add items to an existing active order. When adding to existing, shows current items + new items being added.",
+      "priority": "high",
+      "interface": "waiter-cashier-ui",
+      "feature_refs": ["F-001", "F-005", "F-018"],
+      "role_access": ["waiter-cashier", "owner"],
+      "sections": [
+        {
+          "name": "Order Mode Header",
+          "position": "top",
+          "description": "Shows current mode: 'Pesanan Baru - Meja [X]' for new order, or 'Tambah Pesanan - Meja [X] (ORD-XXX)' for adding to existing. If adding to existing, shows summary of current items in a collapsible section labeled 'Pesanan Sebelumnya' so cashier knows what's already ordered.",
+          "components": ["mode-indicator", "existing-items-summary"]
+        },
+        {
+          "name": "Table Selector",
+          "position": "top",
+          "description": "Dropdown to select table. If opened from 'Tambah Item' on existing order, table is pre-selected and locked. Tables with active orders show indicator.",
+          "components": ["table-selector"]
+        },
+        {
+          "name": "Active Promo Banner",
+          "position": "above-menu",
+          "description": "Horizontal scrollable banner showing all currently active discounts/promos. Each promo card shows: promo name, type (e.g., 'Diskon 10%' or 'Potongan Rp 5.000'), and brief description. Tappable to apply promo to the current order. If a promo is applied, it shows as selected with checkmark. Only one promo can be active per order. This helps customers who came specifically for a promo to see it upfront.",
+          "components": ["promo-banner-card", "promo-applied-badge"]
+        },
+        {
+          "name": "Menu Browser",
+          "position": "center-left",
+          "description": "Grid/list of available menu items with category filter, search, image, price. Tap to add to order. Takes full height of viewport. Scrollable independently from order summary.",
+          "components": ["menu-item-card", "category-filter", "search-bar"]
+        },
+        {
+          "name": "Order Summary",
+          "position": "right-sidebar",
+          "description": "SIDE PANEL. On tablet/desktop: fixed right sidebar (300-350px) showing selected items with quantities. If promo is applied, shows discount line. Shows: subtotal, diskon (if applied), PPN, total, special notes, and submit button. On mobile: collapsible bottom sheet.",
+          "layout_notes": {
+            "tablet_desktop": "Fixed right sidebar, menu grid takes remaining left space",
+            "mobile": "Collapsible bottom sheet — minimized state shows '2 item | Rp 30.000 ▲', expanded state shows full item list with quantities",
+            "key_fix": "Order summary MUST NOT overlay/cover the menu grid on any screen size"
+          },
+          "components": ["order-summary-sidebar", "quantity-stepper", "discount-line", "text-input", "submit-button"]
+        }
+      ]
+    },    {
+      "id": "S-004",
+      "name": "Payment Screen",
+      "purpose": "Process payment with discount, PPN, multiple payment methods (Tunai/QRIS/E-Wallet/Transfer), success popup, and void capability for paid transactions.",
+      "priority": "high",
+      "interface": "waiter-cashier-ui",
+      "feature_refs": ["F-003", "F-016", "F-017", "F-018"],
+      "role_access": ["waiter-cashier", "owner"],
+      "sections": [
+        {
+          "name": "Order Detail",
+          "position": "top",
+          "description": "Itemized list of order items. Price breakdown: Subtotal → Diskon (if applied) → Subtotal setelah diskon → PPN amount → Grand Total.",
+          "components": ["order-item-row", "subtotal-display", "discount-display", "ppn-display", "grandtotal-display"]
+        },
+        {
+          "name": "Discount Selector",
+          "position": "above-payment",
+          "description": "'Tambah Diskon' button opens picker with all active discount options. Shows discount name and calculated amount. Remove button to clear applied discount. Only one discount per order.",
+          "components": ["discount-picker", "discount-badge", "remove-button"]
+        },
+        {
+          "name": "Payment Method Tabs",
+          "position": "center-top",
+          "description": "Four payment method tabs: Tunai, QRIS, E-Wallet, Transfer Bank. Each tab shows different input UI.",
+          "tabs": {
+            "tunai": { "description": "Cash: Quick amount buttons (Rp 50K, 100K, 150K, etc.) + numpad for custom amount. Shows 'Kembalian' (change) calculation.", "components": ["quick-amount-buttons", "numpad", "change-display"] },
+            "qris": { "description": "QRIS: Shows static QR code image (uploaded by owner in S-017 settings). Instruction text: 'Minta customer scan QR'. Cashier taps 'Pembayaran Diterima' to confirm.", "components": ["qris-display", "confirm-received-button"] },
+            "e_wallet": { "description": "E-Wallet: Dropdown to select provider (GoPay, OVO, Dana, ShopeePay, Lainnya). After selecting provider, display the QR code image for that specific provider (uploaded by owner in S-017 settings per provider). Optional reference number input. Cashier confirms payment received.", "components": ["provider-select", "provider-qr-display", "ref-number-input", "confirm-received-button"] },
+            "transfer_bank": { "description": "Transfer Bank: Shows bank account info (from settings). Optional reference number input. PHOTO UPLOAD for bukti transfer — cashier can take photo or upload image of customer's transfer proof. Cashier confirms transfer received.", "components": ["bank-info-display", "ref-number-input", "photo-upload-bukti", "confirm-received-button"] }
+          }
+        },
+        {
+          "name": "Action Bar",
+          "position": "bottom",
+          "description": "Confirm payment button. For Tunai: disabled if amount < grand total. For digital: disabled until 'Diterima' confirmed.",
+          "components": ["confirm-button"]
+        },
+        {
+          "name": "Payment Success Popup",
+          "position": "modal-overlay",
+          "description": "After successful payment: full-screen success modal with checkmark animation, transaction summary (order ID, items, discount, subtotal, PPN, grand total, SPECIFIC payment method name e.g. 'GoPay' or 'Transfer BCA' or 'QRIS' or 'Tunai' — NOT generic 'Digital', ref number if applicable, bukti transfer thumbnail if uploaded, change amount if cash), 'Print Struk' button + 'Selesai' button. Cannot dismiss by tapping outside.",
+          "components": ["success-icon", "transaction-summary", "print-button", "done-button"]
+        },
+        {
+          "name": "Void Transaction Modal",
+          "position": "modal",
+          "description": "Accessible from transaction detail (paid order). Requires PIN verification first. Then: select void type (full/partial), select reason (salah_input, customer_batal, item_habis, lainnya), optional notes. Shows void amount impact. Confirm void button.",
+          "components": ["pin-gate-modal", "void-type-select", "reason-select", "text-input", "confirm-button"]
+        }
+      ]
+    },
+    {
+      "id": "S-005",
+      "name": "Table Map",
+      "purpose": "Visual overview of all tables with real-time status (available, occupied, needs payment)",
+      "priority": "medium",
+      "interface": "waiter-cashier-ui",
+      "feature_refs": ["F-010"],
+      "role_access": ["waiter-cashier", "owner"],
+      "sections": [
+        {
+          "name": "Table Grid",
+          "position": "center",
+          "description": "Grid of table cards with color-coded status: green (available), blue (occupied/active order), orange (ready to pay). Tap to view order or create new.",
+          "components": ["table-card", "status-indicator"]
+        },
+        {
+          "name": "Summary Bar",
+          "position": "top",
+          "description": "Quick stats: total tables, available, occupied count",
+          "components": ["stat-chip"]
+        }
+      ]
+    },    {
+      "id": "S-006",
+      "name": "Kitchen Order Queue",
+      "purpose": "Real-time queue of incoming orders for kitchen staff to cook and mark as ready",
+      "priority": "high",
+      "interface": "kitchen-display",
+      "feature_refs": ["F-002"],
+      "role_access": ["chef", "owner"],
+      "sections": [
+        {
+          "name": "New Order Alert",
+          "position": "top-fixed",
+          "description": "Audio chime + visual flash when new order arrives. Shows 'Pesanan Baru! Meja [X]' banner for 5 seconds. Draws chef attention immediately.",
+          "components": ["alert-banner", "audio-chime"]
+        },
+        {
+          "name": "Order Queue",
+          "position": "center",
+          "description": "Kanban-style columns: Pending → Cooking → Ready. Each card shows: table number, items with quantities, special notes (highlighted if present), elapsed timer since order placed (live counter), 'Tambahan' badge if additional items were added. Cards in Pending flash for first 30 seconds. Orders exceeding 15 min target time get RED border and '⚠ Terlambat' badge.",
+          "components": ["kitchen-order-card", "status-badge", "elapsed-timer", "late-indicator", "tambahan-badge"]
+        },
+        {
+          "name": "Quick Actions",
+          "position": "card-footer",
+          "description": "Large tap targets for busy/wet hands: 'Mulai Masak' (pending→cooking), 'Siap Diantar' (cooking→ready). CRITICAL: When chef taps 'Siap Diantar', the order status changes to 'ready' AND a notification MUST be pushed to the kitchenReadyNotifications array in appState. This notification will appear on S-002 (Daftar Pesanan) as Kitchen Ready Notification Bar.",
+          "prototype_behavior": "On 'Siap Diantar' click: (1) Move order card to 'Ready' column, (2) Push to appState.kitchenReadyNotifications array: { orderId, tableNumber, items, timestamp }, (3) When user navigates to S-002, notification bar shows all pending ready notifications. (4) Waiter taps 'Sudah Diantar' on notification → removes from array, order status → 'served'.",
+          "components": ["action-button"]
+        },
+        {
+          "name": "Recipe Quick Access",
+          "position": "card-inline",
+          "description": "Tap on any menu item name to open recipe guide modal",
+          "components": ["recipe-link"]
+        },
+        {
+          "name": "Stats Bar",
+          "position": "bottom",
+          "description": "Today stats: total orders completed, average cooking time, currently pending count, currently cooking count.",
+          "components": ["stat-chip"]
+        }
+      ]
+    },
+    {
+      "id": "S-007",
+      "name": "Recipe Viewer",
+      "purpose": "Detailed cooking guide for a specific menu item — ingredients, steps, time, tips",
+      "priority": "high",
+      "interface": "kitchen-display",
+      "feature_refs": ["F-006"],
+      "role_access": ["chef", "owner"],
+      "sections": [
+        {
+          "name": "Recipe Header",
+          "position": "top",
+          "description": "Menu item name, image, difficulty level, estimated cooking time",
+          "components": ["recipe-header"]
+        },
+        {
+          "name": "Ingredients List",
+          "position": "center-left",
+          "description": "List of required ingredients with quantities and units",
+          "components": ["ingredient-row"]
+        },
+        {
+          "name": "Cooking Steps",
+          "position": "center-right",
+          "description": "Numbered step-by-step cooking instructions with clear, large text for kitchen readability",
+          "components": ["step-card"]
+        },
+        {
+          "name": "Notes & Tips",
+          "position": "bottom",
+          "description": "Additional tips, warnings, or variations",
+          "components": ["note-box"]
+        }
+      ]
+    },    {
+      "id": "S-008",
+      "name": "Admin Dashboard (Laporan Bisnis)",
+      "purpose": "Comprehensive business intelligence dashboard — real-time and historical performance metrics with actionable insights for restaurant owner.",
+      "priority": "high",
+      "interface": "admin-panel",
+      "feature_refs": ["F-007", "F-012"],
+      "role_access": ["owner"],
+      "sections": [
+        {
+          "name": "Date Range Selector",
+          "position": "top-right",
+          "description": "Filter all dashboard data by: Hari Ini, Minggu Ini, Bulan Ini, Custom Range. Default: Hari Ini.",
+          "components": ["date-range-picker"]
+        },
+        {
+          "name": "KPI Summary Cards",
+          "position": "top",
+          "description": "Row of key metric cards with comparison to previous period. Cards: (1) Total Pendapatan (revenue) with +/-% vs yesterday/last week, (2) Jumlah Transaksi (transaction count), (3) Rata-rata per Transaksi (average order value), (4) Pendapatan Tunai vs Digital (cash vs digital split), (5) Total Void (void count + amount), (6) Total Diskon diberikan.",
+          "components": ["kpi-card", "trend-indicator"]
+        },
+        {
+          "name": "Revenue Chart",
+          "position": "center-left",
+          "description": "Line/bar chart showing revenue trend over selected period. Toggle between daily, weekly, monthly view. Shows cash vs digital breakdown in stacked bars. Hoverable data points with exact values.",
+          "components": ["chart-area", "toggle-tabs"]
+        },
+        {
+          "name": "Peak Hours Heatmap",
+          "position": "center-right",
+          "description": "Heatmap or bar chart showing transaction volume by hour of day. Helps owner identify rush hours for staffing. Highlights peak hour.",
+          "components": ["heatmap-chart"]
+        },
+        {
+          "name": "Top Selling Items",
+          "position": "below-charts-left",
+          "description": "Ranked list of top 10 best-selling menu items in selected period. Shows: rank, item name, qty sold, total revenue from item. Sorted by qty sold.",
+          "components": ["ranked-list"]
+        },
+        {
+          "name": "Payment Method Breakdown",
+          "position": "below-charts-right",
+          "description": "Donut/pie chart showing payment method distribution: Tunai, QRIS, E-Wallet, Transfer. Shows both count and percentage.",
+          "components": ["donut-chart", "legend"]
+        },
+        {
+          "name": "Shift Performance Table",
+          "position": "bottom-section",
+          "description": "Table of recent shifts: Shift ID, PIC Kasir, Date, Duration, Transaction Count, Revenue, Discrepancy amount and status (match/selisih). Tap to view shift detail.",
+          "components": ["data-table", "discrepancy-indicator"]
+        },
+        {
+          "name": "Low Stock Alerts",
+          "position": "sidebar-widget",
+          "description": "Compact widget listing inventory items below minimum threshold with status badges (Rendah/Kritis). Count badge on header. Quick link to Stock Management.",
+          "components": ["alert-card", "stock-badge"]
+        }
+      ]
+    },    {
+      "id": "S-009",
+      "name": "Menu Management",
+      "purpose": "CRUD operations for menu items — add, edit, delete, toggle availability, set pricing",
+      "priority": "high",
+      "interface": "admin-panel",
+      "feature_refs": ["F-005", "F-014"],
+      "role_access": ["owner"],
+      "sections": [
+        {
+          "name": "Menu List",
+          "position": "center",
+          "description": "Table/grid of all menu items with columns: name, category, price, availability toggle, actions (edit/delete)",
+          "components": ["data-table", "availability-toggle", "action-buttons"]
+        },
+        {
+          "name": "Toolbar",
+          "position": "top",
+          "description": "Add new item button, search bar, category filter dropdown",
+          "components": ["add-button", "search-bar", "category-filter"]
+        },
+        {
+          "name": "Menu Item Form",
+          "position": "modal",
+          "description": "Form to add/edit menu item: name, price, category, description, image upload, availability, link to recipe",
+          "components": ["form-input", "image-upload", "category-select", "recipe-link-select"]
+        }
+      ]
+    },
+    {
+      "id": "S-010",
+      "name": "Recipe Management",
+      "purpose": "Create and manage cooking guides for each menu item — ingredients, steps, cooking time. Includes inline recipe viewer with back navigation and working edit functionality.",
+      "priority": "high",
+      "interface": "admin-panel",
+      "feature_refs": ["F-006"],
+      "role_access": ["owner", "waiter-cashier", "chef"],
+      "sections": [
+        {
+          "name": "Recipe List",
+          "position": "center",
+          "description": "List of all recipes linked to menu items, showing item name, ingredient count, cooking time, difficulty. Action buttons: 'Lihat' (view), 'Edit' (edit), 'Hapus' (delete). All action buttons must be functional.",
+          "components": ["data-table", "action-buttons"]
+        },
+        {
+          "name": "Toolbar",
+          "position": "top",
+          "description": "Add new recipe button, search bar",
+          "components": ["add-button", "search-bar"]
+        },
+        {
+          "name": "Recipe Viewer Panel",
+          "position": "inline-detail",
+          "description": "When user clicks 'Lihat' on a recipe: the recipe list is replaced by a detailed recipe view (same screen, not a new page). Shows: recipe header (dish name, image, difficulty, cooking time), ingredients list with quantities, step-by-step cooking instructions, and tips/notes. MUST have a prominent BACK BUTTON at top-left (← Kembali ke Daftar Resep) to return to the recipe list. This is critical for usability — user must always be able to go back.",
+          "components": ["back-button", "recipe-header", "ingredient-list", "step-card"],
+          "navigation_fix": "Back button returns to Recipe List view within S-010. Works like a toggle between list view and detail view."
+        },
+        {
+          "name": "Recipe Editor Form",
+          "position": "modal",
+          "description": "Full modal form for creating/editing recipes. Opened by 'Tambah Resep' button or 'Edit' action on a recipe row. Fields: select menu item link, add/remove ingredients (name, qty, unit — linked to inventory), add/reorder/remove cooking steps, set cooking time (minutes), difficulty (easy/medium/hard), and notes. All fields must be pre-populated when editing an existing recipe. Save and Cancel buttons at bottom.",
+          "components": ["menu-item-select", "ingredient-row-editor", "step-editor", "form-input", "save-button", "cancel-button"],
+          "edit_fix": "Edit button in recipe list MUST open this modal with all existing data pre-filled. The modal must be fully functional for both create and edit operations."
+        }
+      ]
+    },    {
+      "id": "S-011",
+      "name": "Inventory / Stock Management",
+      "purpose": "View and manage all inventory items — current stock, restock, movement history",
+      "priority": "high",
+      "interface": "admin-panel",
+      "feature_refs": ["F-004", "F-012"],
+      "role_access": ["owner"],
+      "sections": [
+        {
+          "name": "Stock Overview",
+          "position": "center",
+          "description": "Table of all inventory items: name, current qty, unit, minimum threshold, status badge (ok/low/critical)",
+          "components": ["data-table", "stock-status-badge"]
+        },
+        {
+          "name": "Toolbar",
+          "position": "top",
+          "description": "Add new item button, search bar, filter (all/low stock only)",
+          "components": ["add-button", "search-bar", "filter-toggle"]
+        },
+        {
+          "name": "Stock Item Form",
+          "position": "modal",
+          "description": "Add/edit inventory item: name, unit, current quantity, minimum threshold",
+          "components": ["form-input"]
+        },
+        {
+          "name": "Restock / Adjust Modal",
+          "position": "modal",
+          "description": "Quick action to add stock (restock) or adjust stock with reason",
+          "components": ["quantity-input", "reason-select", "confirm-button"]
+        },
+        {
+          "name": "Movement History",
+          "position": "drawer",
+          "description": "Log of all stock movements for selected item: date, type (auto-deduction/restock/adjustment), qty change, reason",
+          "components": ["history-list"]
+        }
+      ]
+    },    {
+      "id": "S-012",
+      "name": "Transaction History (Laporan Penjualan)",
+      "purpose": "Complete sales report — browse, search, filter all transactions with Shift and PIC info. Export to Excel for external reporting.",
+      "priority": "medium",
+      "interface": "admin-panel",
+      "feature_refs": ["F-011", "F-013"],
+      "role_access": ["owner", "waiter-cashier"],
+      "sections": [
+        {
+          "name": "Transaction Table",
+          "position": "center",
+          "description": "Full table of all transactions with columns: Tanggal/Waktu, ID Transaksi, Meja, Shift ID, PIC Kasir, Subtotal, PPN, Total (Grand), Metode Bayar (SPECIFIC: Tunai, QRIS, GoPay, OVO, Dana, ShopeePay, Transfer BCA, etc. — NOT generic 'Digital'), Aksi (Detail). Sorted by newest first.",
+          "columns": ["date_time", "transaction_id", "table", "shift_id", "pic_cashier", "subtotal", "ppn_amount", "grand_total", "payment_method_detail", "actions"],
+          "components": ["data-table"]
+        },
+        {
+          "name": "Filter Bar",
+          "position": "top",
+          "description": "Comprehensive filter system with: date range picker (dari-sampai), search by Transaction ID, filter by PIC Kasir (dropdown of all cashiers), filter by Shift ID, filter by payment method (Semua/Tunai/Digital), filter by total range (min-max). All filters combinable. Reset filters button.",
+          "filters": [
+            { "name": "date_range", "type": "date-range-picker", "label": "Tanggal" },
+            { "name": "transaction_id", "type": "search-input", "label": "Cari ID Transaksi" },
+            { "name": "pic_cashier", "type": "dropdown", "label": "PIC Kasir", "options": "dynamic from users" },
+            { "name": "shift_id", "type": "dropdown", "label": "Shift", "options": "dynamic from shifts" },
+            { "name": "payment_method", "type": "dropdown", "label": "Metode", "options": ["Semua", "Tunai", "QRIS", "GoPay", "OVO", "Dana", "ShopeePay", "Transfer Bank"] },
+            { "name": "total_range", "type": "min-max-input", "label": "Range Total" }
+          ],
+          "components": ["date-range-picker", "search-bar", "filter-select", "reset-button"]
+        },
+        {
+          "name": "Export Bar",
+          "position": "top-right",
+          "description": "Export button to download filtered transaction data as Excel (.xlsx) file. Export respects active filters — only exports what is currently displayed. Shows loading indicator during export generation.",
+          "components": ["export-excel-button"]
+        },
+        {
+          "name": "Summary Stats",
+          "position": "above-table",
+          "description": "Quick summary of filtered results: total transactions count, total revenue, total cash, total digital. Updates when filters change.",
+          "components": ["stat-chip"]
+        },
+        {
+          "name": "Transaction Detail Modal",
+          "position": "modal",
+          "description": "Full detail of selected transaction: order ID, table, date/time, Shift ID, PIC cashier name, itemized list (item name, qty, unit price, line total), subtotal, discount (if any), PPN percentage and amount, grand total, SPECIFIC payment method (e.g., 'GoPay', 'Transfer BCA', 'QRIS', 'Tunai'), reference number (if applicable), bukti transfer photo thumbnail (if transfer payment — tappable to view full size), amount received, change given. Includes prominent 'Print Struk' button to reprint the receipt.",
+          "components": ["detail-card", "order-item-row", "ppn-display", "print-button"]
+        }
+      ]
+    },
+    {
+      "id": "S-013",
+      "name": "User & Access Control",
+      "purpose": "Manage user accounts and configure per-user permissions via checklist toggle",
+      "priority": "high",
+      "interface": "admin-panel",
+      "feature_refs": ["F-008", "F-009"],
+      "role_access": ["owner"],
+      "sections": [
+        {
+          "name": "User List",
+          "position": "center",
+          "description": "List of all users: display name, username, role, status (active/inactive), last login",
+          "components": ["data-table", "status-badge", "action-buttons"]
+        },
+        {
+          "name": "Toolbar",
+          "position": "top",
+          "description": "Add new user button, search bar, role filter",
+          "components": ["add-button", "search-bar", "role-filter"]
+        },
+        {
+          "name": "User Form",
+          "position": "modal",
+          "description": "Create/edit user: display name, username, password, role selector, active/inactive toggle",
+          "components": ["form-input", "role-select", "active-toggle"]
+        },
+        {
+          "name": "Permission Checklist Panel",
+          "position": "modal",
+          "description": "Checklist of all module permissions for selected user. Each permission is a toggle checkbox. Shows default for role and current override.",
+          "components": ["permission-checklist", "toggle-checkbox", "save-button"]
+        }
+      ]
+    },
+    {
+      "id": "S-014",
+      "name": "Open Shift (Buka Kasir)",
+      "purpose": "Cashier opens a new shift with PIN verification and opening cash balance input. Only accessible from Main Dashboard Hub.",
+      "priority": "high",
+      "interface": "waiter-cashier-ui",
+      "feature_refs": ["F-015"],
+      "role_access": ["waiter-cashier", "owner"],
+      "sections": [
+        {
+          "name": "Shift Header",
+          "position": "top",
+          "description": "Date, time, and cashier name auto-filled. Shows shift status info.",
+          "components": ["info-display"]
+        },
+        {
+          "name": "PIN Verification",
+          "position": "center-top",
+          "description": "4-6 digit PIN input via numpad. Cashier must verify PIN before proceeding to enter opening balance. PIN is set per-user by owner.",
+          "components": ["pin-input", "numpad"]
+        },
+        {
+          "name": "Opening Balance Input",
+          "position": "center",
+          "description": "After PIN verified: large numpad input for cashier to enter the starting cash amount (modal awal untuk operasional). Clear display of entered amount in Rupiah format.",
+          "components": ["numpad", "currency-display"]
+        },
+        {
+          "name": "Confirm Button",
+          "position": "bottom",
+          "description": "Button to confirm and start the shift. Disabled until PIN is verified and valid amount is entered. After confirm, user is routed to waiter-cashier operational interface.",
+          "components": ["confirm-button"]
+        }
+      ]
+    },
+    {
+      "id": "S-015",
+      "name": "Close Shift / Cash Reconciliation (Tutup Kasir)",
+      "purpose": "One-way closing session. Cashier cannot return to operations after initiating close. Must reconcile physical cash with system records, can print detailed transaction report, and must provide notes if discrepancy exists.",
+      "priority": "high",
+      "interface": "waiter-cashier-ui",
+      "feature_refs": ["F-015"],
+      "role_access": ["waiter-cashier", "owner"],
+      "sections": [
+        {
+          "name": "Closing Lock Banner",
+          "position": "top-fixed",
+          "description": "Prominent banner indicating this is a closing session and the cashier cannot return to operations. No back button available.",
+          "components": ["warning-banner"]
+        },
+        {
+          "name": "Shift Summary",
+          "position": "top",
+          "description": "Full shift overview: shift duration, PIC name, opening balance, total transactions count, total revenue, breakdown of cash sales vs digital sales, void count and void total amount, discount total given, and total cash expected (opening + cash_sales - cash_voids).",
+          "components": ["kpi-card", "summary-row"]
+        },
+        {
+          "name": "Transaction Report",
+          "position": "center-top",
+          "description": "Detailed line-by-line transaction list for the entire shift. Each row: time, order ID, items, amount, payment method. Print button to print this report for physical tracing against real cash.",
+          "components": ["data-table", "print-button"]
+        },
+        {
+          "name": "Cash Reconciliation",
+          "position": "center",
+          "description": "Shows system-calculated expected cash (opening + cash_sales). Numpad input for cashier to enter actual physically-counted cash. Discrepancy auto-calculated in real-time.",
+          "components": ["expected-display", "numpad", "currency-display", "discrepancy-indicator"]
+        },
+        {
+          "name": "Discrepancy Result & Notes",
+          "position": "center-bottom",
+          "description": "Color-coded discrepancy result: green (match ±Rp1000), yellow (minor ±Rp10000), red (major >Rp10000). If discrepancy exists (not green), notes field is MANDATORY — cashier must explain the difference before closing. If match (green), notes are optional.",
+          "components": ["discrepancy-badge", "text-input", "mandatory-indicator"]
+        },
+        {
+          "name": "Close Shift Action",
+          "position": "bottom",
+          "description": "Confirm close shift button. Disabled if: actual cash not entered, or discrepancy exists but notes are empty. Shows final confirmation dialog before locking the shift permanently.",
+          "components": ["confirm-button"]
+        }
+      ]
+    },
+    {
+      "id": "S-016",
+      "name": "Main Dashboard Hub",
+      "purpose": "Post-login landing screen for ALL users. Shows role-based menu options. Users choose what to do from here rather than being auto-routed to a specific interface.",
+      "priority": "high",
+      "interface": "shared",
+      "feature_refs": ["F-009"],
+      "role_access": ["owner", "waiter-cashier", "chef"],
+      "sections": [
+        {
+          "name": "Welcome Header",
+          "position": "top",
+          "description": "LogiaInitiative logo, greeting with user display name, current date/time, and active shift indicator (if any).",
+          "components": ["logo-display", "greeting-text", "shift-status-bar"]
+        },
+        {
+          "name": "Role Menu Grid",
+          "position": "center",
+          "description": "Large, clear menu cards based on user role. Each card is a gateway to a specific module. Cards shown depend on role and permissions.",
+          "role_menus": {
+            "waiter-cashier": [
+              { "label": "Buka Kasir (Open Shift)", "icon": "banknote", "target": "S-014", "condition": "no active shift", "description": "Mulai shift dengan input modal awal" },
+              { "label": "POS Kasir", "icon": "shopping-cart", "target": "S-002", "condition": "active shift required + PIN", "description": "Kelola pesanan dan pembayaran" },
+              { "label": "Tutup Kasir (Close Shift)", "icon": "lock", "target": "S-015", "condition": "active shift exists", "description": "Rekonsiliasi dan tutup shift" },
+              { "label": "Atur Menu", "icon": "utensils", "target": "S-009", "condition": "permission: view_menu", "description": "Cek dan update ketersediaan menu" },
+              { "label": "Cek Stok", "icon": "package", "target": "S-011", "condition": "permission: view_stock", "description": "Periksa stok inventori" },
+              { "label": "Peta Meja", "icon": "grid", "target": "S-005", "condition": "always", "description": "Lihat status meja" }
+            ],
+            "chef": [
+              { "label": "Dapur (Kitchen Display)", "icon": "flame", "target": "S-006", "description": "Lihat antrian pesanan dapur" },
+              { "label": "Resep Masakan", "icon": "book-open", "target": "S-007", "description": "Panduan resep masakan" },
+              { "label": "Cek Stok", "icon": "package", "target": "S-011", "condition": "permission: view_stock", "description": "Periksa stok bahan" }
+            ],
+            "owner": [
+              { "label": "Dashboard Bisnis", "icon": "bar-chart-2", "target": "S-008", "description": "Laporan penjualan dan performa" },
+              { "label": "Buka Kasir (Open Shift)", "icon": "banknote", "target": "S-014", "description": "Mulai shift kasir" },
+              { "label": "POS Kasir", "icon": "shopping-cart", "target": "S-002", "description": "Operasional pesanan" },
+              { "label": "Dapur (Kitchen Display)", "icon": "flame", "target": "S-006", "description": "Monitor antrian dapur" },
+              { "label": "Kelola Menu", "icon": "utensils", "target": "S-009", "description": "Tambah/edit menu" },
+              { "label": "Kelola Resep", "icon": "book-open", "target": "S-010", "description": "Buat dan edit resep" },
+              { "label": "Kelola Stok", "icon": "package", "target": "S-011", "description": "Inventori dan restock" },
+              { "label": "Riwayat Transaksi", "icon": "receipt", "target": "S-012", "description": "Semua transaksi" },
+              { "label": "Kelola Pengguna", "icon": "users", "target": "S-013", "description": "User dan hak akses" },
+              { "label": "Pengaturan POS", "icon": "settings", "target": "S-017", "description": "PPN, info restoran, struk" }
+            ]
+          },
+          "components": ["menu-card-large"]
+        },
+        {
+          "name": "Quick Info Bar",
+          "position": "bottom",
+          "description": "For owner: today quick stats (revenue, orders). For cashier: shift status. For chef: pending order count.",
+          "components": ["stat-chip", "shift-status-bar"]
+        }
+      ]
+    },
+    {
+      "id": "S-017",
+      "name": "POS System Settings (Pengaturan POS)",
+      "purpose": "System-wide configuration: PPN/tax, QRIS/payment methods, discount/promo management, restaurant info, and receipt settings.",
+      "priority": "high",
+      "interface": "admin-panel",
+      "feature_refs": ["F-016", "F-018"],
+      "role_access": ["owner"],
+      "sections": [
+        {
+          "name": "Tax / PPN Settings",
+          "position": "section",
+          "description": "Toggle PPN on/off. Input PPN rate percentage (default 11%). Preview calculation example.",
+          "components": ["toggle-switch", "number-input", "preview-calc"]
+        },
+        {
+          "name": "Payment Method Settings",
+          "position": "section",
+          "description": "Configure available payment methods. QRIS: upload static QR code image shown during QRIS payment. Bank Transfer: input bank name, account number, account holder name. E-Wallet: toggle available providers (GoPay, OVO, Dana, ShopeePay) AND upload QR code image PER PROVIDER — each provider can have its own QR displayed during payment. Enable/disable each payment method globally.",
+          "components": ["image-upload", "text-input", "toggle-switch", "per-provider-qr-upload"]
+        },
+        {
+          "name": "Discount / Promo Management",
+          "position": "section",
+          "description": "Create, edit, activate/deactivate discount rules. Table showing all discounts: name, type (percentage/fixed), value, status (active/inactive). Add button to create new. Each row has edit and toggle active. Only one discount applicable per order.",
+          "components": ["data-table", "add-button", "toggle-switch", "form-modal"]
+        },
+        {
+          "name": "Restaurant Info",
+          "position": "section",
+          "description": "Restaurant name, address — shown on printed receipts. Optional logo upload for receipt header.",
+          "components": ["text-input", "image-upload"]
+        },
+        {
+          "name": "Receipt Settings",
+          "position": "section",
+          "description": "Custom footer text for receipts. Toggle to show/hide PPN breakdown on receipt.",
+          "components": ["text-input", "toggle-switch"]
+        },
+        {
+          "name": "Save Action",
+          "position": "bottom",
+          "description": "Save settings button. Changes apply to new transactions immediately.",
+          "components": ["save-button"]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:30:00Z",
+  "performance": {
+    "page_load": "< 2 seconds on device (offline-first, no network dependency)",
+    "concurrent_users": 5,
+    "api_response": "< 300ms for local operations"
+  },
+  "security": {
+    "authentication": true,
+    "auth_method": "username/password (local authentication, no internet required)",
+    "sensitive_data": ["sales transactions", "inventory records", "user credentials"],
+    "requirements": [
+      "Passwords must be hashed and stored securely on local device",
+      "Only Owner can create/manage user accounts",
+      "Session timeout after period of inactivity"
+    ],
+    "compliance": []
+  },
+  "usability": {
+    "responsive": true,
+    "primary_device": "tablet",
+    "secondary_device": "smartphone",
+    "accessibility": "Basic",
+    "requirements": [
+      "Tablet-first UI design optimized for touch interaction",
+      "Must work on smartphone screens as fallback",
+      "Large touch targets for busy restaurant environment",      "Simple and intuitive UI for staff with medium tech comfort",
+      "Minimal steps to complete common tasks (order, pay, update status)",
+      "Bahasa Indonesia as primary language for UI"
+    ]
+  },
+  "reliability": {
+    "uptime": "99% — system must work reliably offline",
+    "backup": "Local data backup with cloud sync when internet available",
+    "requirements": [
+      "System must function fully offline — all core features work without internet",
+      "Data persists locally on device even after app restart",
+      "Auto-sync to cloud/server when internet connection is available",
+      "No data loss during offline-to-online transition"
+    ]
+  },
+  "integrations": [
+    {
+      "name": "Thermal Receipt Printer",
+      "type": "hardware",
+      "required": true,
+      "description": "Support for Bluetooth or USB thermal receipt printers for printing customer receipts"
+    }
+  ],
+  "infrastructure": {
+    "priority": "high",
+    "requirements": [
+      "Offline-first architecture — all data stored locally on device",
+      "Local database on device (e.g., SQLite, IndexedDB, or equivalent)",
+      "Cloud sync layer for backup and multi-device sync when online",
+      "Must work for street food vendors with no stable internet access",
+      "Lightweight — must run smoothly on mid-range Android tablets and smartphones"
+    ]
+  }
+}

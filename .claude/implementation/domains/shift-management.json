@@ -1,0 +1,527 @@
+{
+  "domain": "shift-management",
+  "version": "1.0",
+  "wave": 3,
+  "depends_on_domains": ["auth", "payment"],
+
+  "entities": {
+    "owns": [
+      {
+        "name": "Shift",
+        "id": "E-014",
+        "table_name": "shifts",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "shiftNumber", "type": "string", "category": "business", "required": true, "unique": true, "default": null, "max_length": 20, "source": "F-015.fields[0]" },
+          { "name": "picCashierId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-015.fields[1]" },
+          { "name": "pinVerified", "type": "boolean", "category": "business", "required": true, "unique": false, "default": false, "source": "F-015.fields[2]" },
+          { "name": "pinVerifiedAt", "type": "timestamp", "category": "business", "required": false, "unique": false, "default": null, "source": "F-015.business_rules[0]" },
+          { "name": "openingBalance", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-015.fields[3]" },
+          { "name": "shiftStartTime", "type": "timestamp", "category": "business", "required": true, "unique": false, "default": null, "source": "F-015.fields[4]" },
+          { "name": "shiftEndTime", "type": "timestamp", "category": "business", "required": false, "unique": false, "default": null, "source": "F-015.fields[5]" },
+          { "name": "expectedCash", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "F-015.fields[6]" },
+          { "name": "actualCash", "type": "decimal", "category": "business", "required": false, "unique": false, "default": null, "source": "F-015.fields[7]" },
+          { "name": "discrepancy", "type": "decimal", "category": "business", "required": false, "unique": false, "default": null, "source": "F-015.fields[8]" },
+          { "name": "digitalSalesTotal", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "F-015.fields[9]" },
+          { "name": "cashSalesTotal", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "inferred:structural" },
+          { "name": "totalRevenue", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "F-015.fields[10]" },
+          { "name": "totalTransactions", "type": "integer", "category": "business", "required": true, "unique": false, "default": 0, "source": "inferred:structural" },
+          { "name": "voidCount", "type": "integer", "category": "business", "required": true, "unique": false, "default": 0, "source": "F-017.business_rules[5]" },
+          { "name": "voidTotalAmount", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "F-017.business_rules[6]" },
+          { "name": "discountTotalGiven", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "inferred:structural" },
+          { "name": "shiftStatus", "type": "enum", "category": "business", "required": true, "unique": false, "default": "open", "values": ["open", "closed"], "source": "F-015.fields[11]" },
+          { "name": "closingNotes", "type": "text", "category": "business", "required": false, "unique": false, "default": null, "source": "F-015.fields[12]" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "User", "type": "many-to-one", "foreign_key": "picCashierId", "cascade_delete": false },
+          { "target": "Transaction", "type": "one-to-many", "foreign_key": "shiftId", "cascade_delete": false },
+          { "target": "Order", "type": "one-to-many", "foreign_key": "shiftId", "cascade_delete": false },
+          { "target": "VoidRecord", "type": "one-to-many", "foreign_key": "shiftId", "cascade_delete": false }
+        ],
+        "indexes": [
+          { "fields": ["shiftNumber"], "unique": true },
+          { "fields": ["picCashierId"], "unique": false },
+          { "fields": ["shiftStatus"], "unique": false },
+          { "fields": ["shiftStartTime"], "unique": false }
+        ],
+        "state_machine": {
+          "states": ["open", "closed"],
+          "transitions": [
+            { "from": "open", "to": "closed", "trigger": "cashier_closes_shift", "allowed_roles": ["waiter-cashier", "owner"] }
+          ],
+          "initial": "open",
+          "terminal": ["closed"]
+        },
+        "business_rules": [
+          { "rule": "Cashier MUST verify PIN before opening a shift", "type": "constraint", "source": "F-015.business_rules[0]", "enforcement": "create" },
+          { "rule": "Cashier MUST open a shift before processing any payment", "type": "constraint", "source": "F-015.business_rules[4]", "enforcement": "create" },
+          { "rule": "Only one active shift per cashier at a time", "type": "constraint", "source": "F-015.business_rules[5]", "enforcement": "create" },
+          { "rule": "Expected cash = opening_balance + cash_sales - cash_refunds_from_voids", "type": "formula", "source": "F-015.business_rules[9]", "inputs": ["Shift.openingBalance", "Shift.cashSalesTotal", "Shift.voidTotalAmount"], "output": "Shift.expectedCash", "enforcement": "both" },
+          { "rule": "Closing is a ONE-WAY session - cashier cannot return to operations after initiating close", "type": "constraint", "source": "F-015.business_rules[10]", "enforcement": "update" },
+          { "rule": "If discrepancy exists (not match), notes are MANDATORY - cashier must explain before closing", "type": "constraint", "source": "F-015.business_rules[14]", "enforcement": "update" },
+          { "rule": "Closed shift data is immutable and logged for audit", "type": "constraint", "source": "F-015.business_rules[16]", "enforcement": "update" }
+        ]
+      }
+    ],
+    "reads": [
+      {
+        "name": "User",
+        "id": "E-001",
+        "read_fields": ["id", "displayName", "role", "pinHash"]
+      },
+      {
+        "name": "Transaction",
+        "id": "E-013",
+        "read_fields": ["id", "shiftId", "grandTotal", "paymentMethod", "transactionNumber"]
+      },
+      {
+        "name": "VoidRecord",
+        "id": "E-015",
+        "read_fields": ["id", "shiftId", "voidAmount"]
+      },
+      {
+        "name": "Order",
+        "id": "E-010",
+        "read_fields": ["id", "shiftId"]
+      }
+    ]
+  },
+
+  "endpoints": [
+    {
+      "id": "EP-056",
+      "method": "POST",
+      "path": "/api/shifts/open",
+      "description": "Open a new cashier shift. Requires PIN verification. Records opening balance and PIC cashier.",
+      "source_features": ["F-015"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "openingBalance", "type": "decimal", "required": true, "description": "Cash amount at shift start (modal awal operasional)" },
+          { "name": "pinVerified", "type": "boolean", "required": true, "description": "Must be true (PIN verified via /api/auth/verify-pin first)" }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 201,
+          "body": {
+            "id": "uuid",
+            "shiftNumber": "string",
+            "picCashierId": "uuid",
+            "picCashierName": "string",
+            "openingBalance": "decimal",
+            "shiftStartTime": "ISO-8601",
+            "shiftStatus": "open"
+          }
+        },
+        "errors": [
+          { "status": 400, "code": "SHIFT_ALREADY_OPEN", "message": "Only one active shift per cashier at a time" },
+          { "status": 400, "code": "PIN_NOT_VERIFIED", "message": "PIN verification required before opening shift" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Cashier MUST verify PIN before opening a shift", "type": "constraint", "source": "F-015.business_rules[0]" },
+        { "rule": "Only one active shift per cashier at a time", "type": "constraint", "source": "F-015.business_rules[5]" },
+        { "rule": "Opening balance is the starting cash in the register (modal awal operasional)", "type": "constraint", "source": "F-015.business_rules[6]" }
+      ],
+      "related_entity": "Shift",
+      "related_entity_id": "E-014",
+      "domain_group": "shift-management"
+    },
+    {
+      "id": "EP-057",
+      "method": "GET",
+      "path": "/api/shifts/active",
+      "description": "Get the current active shift for the logged-in cashier. Returns null if no active shift.",
+      "source_features": ["F-015"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "shift": {
+              "id": "uuid",
+              "shiftNumber": "string",
+              "openingBalance": "decimal",
+              "shiftStartTime": "ISO-8601",
+              "cashSalesTotal": "decimal",
+              "digitalSalesTotal": "decimal",
+              "totalRevenue": "decimal",
+              "totalTransactions": "number",
+              "voidCount": "number",
+              "voidTotalAmount": "decimal",
+              "expectedCash": "decimal",
+              "shiftStatus": "open"
+            }
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        { "rule": "During active shift, current shift info is visible in header", "type": "constraint", "source": "F-015.acceptance_criteria[3]" }
+      ],
+      "related_entity": "Shift",
+      "related_entity_id": "E-014",
+      "domain_group": "shift-management"
+    },
+    {
+      "id": "EP-058",
+      "method": "GET",
+      "path": "/api/shifts/:id/summary",
+      "description": "Get detailed shift summary for closing. Includes transaction breakdown, cash vs digital totals, void summary, and expected cash calculation.",
+      "source_features": ["F-015"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Shift ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "shiftNumber": "string",
+            "picCashierName": "string",
+            "shiftStartTime": "ISO-8601",
+            "duration": "string",
+            "openingBalance": "decimal",
+            "cashSalesTotal": "decimal",
+            "digitalSalesTotal": "decimal",
+            "totalRevenue": "decimal",
+            "totalTransactions": "number",
+            "voidCount": "number",
+            "voidTotalAmount": "decimal",
+            "discountTotalGiven": "decimal",
+            "expectedCash": "decimal",
+            "transactions": [{ "id": "uuid", "transactionNumber": "string", "time": "ISO-8601", "orderNumber": "string", "items": "string", "grandTotal": "decimal", "paymentMethod": "enum" }]
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "SHIFT_NOT_FOUND", "message": "Shift not found" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Expected cash calculation", "formula": "openingBalance + cashSalesTotal - voidTotalAmount (for cash voids only)", "inputs": ["Shift.openingBalance", "Shift.cashSalesTotal", "Shift.voidTotalAmount"], "output": "Shift.expectedCash", "example": "500000 + 1200000 - 50000 = 1650000", "source": "F-015.business_rules[9]" }
+      ],
+      "related_entity": "Shift",
+      "related_entity_id": "E-014",
+      "domain_group": "shift-management"
+    },
+    {
+      "id": "EP-059",
+      "method": "POST",
+      "path": "/api/shifts/:id/close",
+      "description": "Close a shift with actual cash count and reconciliation. If discrepancy exists, closing notes are mandatory. Shift becomes immutable after closing.",
+      "source_features": ["F-015"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Shift ID" }],
+        "body": [
+          { "name": "actualCash", "type": "decimal", "required": true, "description": "Physical cash counted by cashier" },
+          { "name": "closingNotes", "type": "string", "required": false, "description": "Notes explaining discrepancy (mandatory if discrepancy exists)" }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "shiftNumber": "string",
+            "shiftStatus": "closed",
+            "shiftEndTime": "ISO-8601",
+            "expectedCash": "decimal",
+            "actualCash": "decimal",
+            "discrepancy": "decimal",
+            "closingNotes": "string|null"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "SHIFT_NOT_FOUND", "message": "Shift not found" },
+          { "status": 400, "code": "SHIFT_ALREADY_CLOSED", "message": "Shift is already closed" },
+          { "status": 400, "code": "NOTES_REQUIRED", "message": "Closing notes are mandatory when discrepancy exists" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Closing is a ONE-WAY session - cashier cannot return to operations after initiating close", "type": "constraint", "source": "F-015.business_rules[10]" },
+        { "rule": "If discrepancy exists (not match), notes are MANDATORY - cashier must explain before closing", "type": "constraint", "source": "F-015.business_rules[14]" },
+        { "rule": "Closed shift data is immutable and logged for audit", "type": "constraint", "source": "F-015.business_rules[16]" }
+      ],
+      "related_entity": "Shift",
+      "related_entity_id": "E-014",
+      "domain_group": "shift-management"
+    },
+    {
+      "id": "EP-060",
+      "method": "GET",
+      "path": "/api/shifts",
+      "description": "List all shifts (open and closed) with filtering. Used by owner for shift history and audit review.",
+      "source_features": ["F-015"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [
+          { "name": "shiftStatus", "type": "enum", "required": false, "description": "Filter by status", "values": ["open", "closed"] },
+          { "name": "picCashierId", "type": "uuid", "required": false, "description": "Filter by cashier" },
+          { "name": "dateFrom", "type": "date", "required": false, "description": "Start date" },
+          { "name": "dateTo", "type": "date", "required": false, "description": "End date" },
+          { "name": "hasDiscrepancy", "type": "boolean", "required": false, "description": "Filter shifts with cash discrepancy" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "shifts": [{ "id": "uuid", "shiftNumber": "string", "picCashierName": "string", "shiftStartTime": "ISO-8601", "shiftEndTime": "ISO-8601|null", "shiftStatus": "enum", "openingBalance": "decimal", "totalRevenue": "decimal", "expectedCash": "decimal", "actualCash": "decimal|null", "discrepancy": "decimal|null", "voidCount": "number", "totalTransactions": "number" }],
+            "total": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        { "rule": "Owner can view all shift history and discrepancy reports", "type": "constraint", "source": "F-015.business_rules[17]" }
+      ],
+      "related_entity": "Shift",
+      "related_entity_id": "E-014",
+      "domain_group": "shift-management"
+    },
+    {
+      "id": "EP-061",
+      "method": "GET",
+      "path": "/api/shifts/:id",
+      "description": "Get full shift details including opening/closing data and discrepancy info.",
+      "source_features": ["F-015"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Shift ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "shiftNumber": "string",
+            "picCashierId": "uuid",
+            "picCashierName": "string",
+            "pinVerified": true,
+            "pinVerifiedAt": "ISO-8601",
+            "openingBalance": "decimal",
+            "shiftStartTime": "ISO-8601",
+            "shiftEndTime": "ISO-8601|null",
+            "expectedCash": "decimal",
+            "actualCash": "decimal|null",
+            "discrepancy": "decimal|null",
+            "digitalSalesTotal": "decimal",
+            "cashSalesTotal": "decimal",
+            "totalRevenue": "decimal",
+            "totalTransactions": "number",
+            "voidCount": "number",
+            "voidTotalAmount": "decimal",
+            "discountTotalGiven": "decimal",
+            "shiftStatus": "enum",
+            "closingNotes": "string|null",
+            "createdAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "SHIFT_NOT_FOUND", "message": "Shift not found" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "Shift",
+      "related_entity_id": "E-014",
+      "domain_group": "shift-management"
+    }
+  ],
+
+  "screens": [
+    {
+      "screen_id": "S-014",
+      "name": "Open Shift (Buka Kasir)",
+      "page_component": "OpenShiftPage",
+      "route": "/shift/open",
+      "interface": "waiter-cashier-ui",
+      "layout": "none",
+      "guards": ["AuthGuard"],
+      "sections": [
+        {
+          "name": "Shift Header",
+          "position": "top",
+          "description": "Date, time, and cashier name auto-filled. Shows shift status info.",
+          "components": ["info-display"]
+        },
+        {
+          "name": "PIN Verification",
+          "position": "center-top",
+          "description": "4-6 digit PIN input via numpad. Cashier must verify PIN before proceeding to enter opening balance. PIN is set per-user by owner.",
+          "components": ["pin-input", "numpad"]
+        },
+        {
+          "name": "Opening Balance Input",
+          "position": "center",
+          "description": "After PIN verified: large numpad input for cashier to enter the starting cash amount (modal awal untuk operasional). Clear display of entered amount in Rupiah format.",
+          "components": ["numpad", "currency-display"]
+        },
+        {
+          "name": "Confirm Button",
+          "position": "bottom",
+          "description": "Button to confirm and start the shift. Disabled until PIN is verified and valid amount is entered. After confirm, user is routed to waiter-cashier operational interface.",
+          "components": ["confirm-button"]
+        }
+      ]
+    },
+    {
+      "screen_id": "S-015",
+      "name": "Close Shift / Cash Reconciliation (Tutup Kasir)",
+      "page_component": "CloseShiftPage",
+      "route": "/shift/close",
+      "interface": "waiter-cashier-ui",
+      "layout": "none",
+      "guards": ["AuthGuard", "ShiftGuard"],
+      "sections": [
+        {
+          "name": "Closing Lock Banner",
+          "position": "top-fixed",
+          "description": "Prominent banner indicating this is a closing session and the cashier cannot return to operations. No back button available.",
+          "components": ["warning-banner"]
+        },
+        {
+          "name": "Shift Summary",
+          "position": "top",
+          "description": "Full shift overview: shift duration, PIC name, opening balance, total transactions count, total revenue, breakdown of cash sales vs digital sales, void count and void total amount, discount total given, and total cash expected.",
+          "components": ["kpi-card", "summary-row"]
+        },
+        {
+          "name": "Transaction Report",
+          "position": "center-top",
+          "description": "Detailed line-by-line transaction list for the entire shift. Each row: time, order ID, items, amount, payment method. Print button to print this report for physical tracing against real cash.",
+          "components": ["data-table", "print-button"]
+        },
+        {
+          "name": "Cash Reconciliation",
+          "position": "center",
+          "description": "Shows system-calculated expected cash (opening + cash_sales). Numpad input for cashier to enter actual physically-counted cash. Discrepancy auto-calculated in real-time.",
+          "components": ["expected-display", "numpad", "currency-display", "discrepancy-indicator"]
+        },
+        {
+          "name": "Discrepancy Result & Notes",
+          "position": "center-bottom",
+          "description": "Color-coded discrepancy result: green (match), yellow (minor), red (major). If discrepancy exists (not green), notes field is MANDATORY. If match (green), notes are optional.",
+          "components": ["discrepancy-badge", "text-input", "mandatory-indicator"]
+        },
+        {
+          "name": "Close Shift Action",
+          "position": "bottom",
+          "description": "Confirm close shift button. Disabled if: actual cash not entered, or discrepancy exists but notes are empty. Shows final confirmation dialog before locking the shift permanently.",
+          "components": ["confirm-button"]
+        }
+      ]
+    }
+  ],
+
+  "features": [
+    {
+      "id": "F-015",
+      "title": "Cash Register Shift Management (Open/Close Kasir)",
+      "priority": "must_have",
+      "acceptance_criteria": [
+        "Cashier sees Open Shift option on Main Dashboard Hub",
+        "Cashier must enter correct PIN before accessing shift opening",
+        "Cashier enters opening cash balance and confirms to start shift",
+        "During active shift, current shift info is visible in header",
+        "Entering POS screens from outside POS always requires PIN re-verification",
+        "Navigating within POS screens does not require PIN",
+        "Cashier can initiate Close Shift -- this enters a one-way closing session",
+        "In closing session, cashier CANNOT navigate back to operations",
+        "Close Shift screen shows full shift summary and line-by-line transaction detail",
+        "Cashier can print the transaction report for physical tracing",
+        "System calculates and displays discrepancy with color indicator",
+        "If discrepancy exists, notes field is mandatory and close button is disabled until filled",
+        "If cash matches, closing completes directly",
+        "Owner can view shift history with all opening/closing data and discrepancies",
+        "Non-owner users see quick-access bar on admin screens to return to Hub or their primary workspace"
+      ],
+      "business_rules": [
+        { "rule": "Cashier MUST verify PIN before opening a shift", "type": "constraint", "source": "F-015.business_rules[0]", "enforcement": "create" },
+        { "rule": "Cashier MUST re-verify PIN every time they enter POS operational screens from outside POS", "type": "constraint", "source": "F-015.business_rules[1]", "enforcement": "both" },
+        { "rule": "PIN is NOT required when navigating WITHIN POS screens", "type": "constraint", "source": "F-015.business_rules[2]", "enforcement": "both" },
+        { "rule": "Cashier MUST open a shift before processing any payment", "type": "constraint", "source": "F-015.business_rules[4]", "enforcement": "create" },
+        { "rule": "Only one active shift per cashier at a time", "type": "constraint", "source": "F-015.business_rules[5]", "enforcement": "create" },
+        { "rule": "Expected cash = opening_balance + cash_sales - cash_refunds_from_voids", "type": "formula", "source": "F-015.business_rules[9]", "enforcement": "both" },
+        { "rule": "Closing is a ONE-WAY session", "type": "constraint", "source": "F-015.business_rules[10]", "enforcement": "update" },
+        { "rule": "If discrepancy exists, notes are MANDATORY", "type": "constraint", "source": "F-015.business_rules[14]", "enforcement": "update" },
+        { "rule": "Closed shift data is immutable and logged for audit", "type": "constraint", "source": "F-015.business_rules[16]", "enforcement": "update" }
+      ]
+    }
+  ],
+
+  "cross_domain_contracts": [
+    {
+      "flow_id": "UF-007",
+      "flow_name": "Full Cashier Journey: Prep to Close Shift",
+      "your_steps": [4, 7],
+      "context": "Cashier has logged in (auth step 1), PIN verified (auth step 3). Now opens shift with opening balance.",
+      "triggers_to": [],
+      "receives_from": [
+        { "domain": "auth", "data": "PIN verification result" },
+        { "domain": "payment", "data": "Transaction totals during shift" }
+      ],
+      "timing_notes": ["Shift tracks all transactions", "Discrepancy calculated at close", "Shift data immutable after close"]
+    },
+    {
+      "flow_id": "UF-010",
+      "flow_name": "Void Paid Transaction",
+      "your_steps": [],
+      "context": "When a void is processed by payment domain, shift expected cash is reduced. Void count and void total amount are updated on the active shift.",
+      "triggers_to": [],
+      "receives_from": [
+        { "domain": "payment", "data": "Void amount to reduce expected cash, update void count and total" }
+      ],
+      "timing_notes": ["Shift totals adjusted after void"]
+    }
+  ],
+
+  "state_dependencies": {
+    "owns_store": "useShiftManagementStore",
+    "writes_to_tables": ["shifts"],
+    "reads_from_tables": ["users", "transactions", "voidRecords", "orders"],
+    "calls_other_stores": ["useAuthStore", "usePaymentStore"]
+  },
+
+  "write_scope": [
+    "src/pages/shift/OpenShiftPage.tsx",
+    "src/pages/shift/CloseShiftPage.tsx",
+    "src/components/shift/",
+    "src/stores/useShiftManagementStore.ts",
+    "server/routes/shift-management/",
+    "server/services/shift-management/"
+  ]
+}

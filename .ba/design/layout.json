@@ -1,0 +1,132 @@
+{
+  "version": "1.1",
+  "created_at": "2026-02-18T12:35:00Z",
+  "updated_at": "2026-02-18T13:30:00Z",
+  "navigation_architecture": {
+    "flow": "Login (S-001) → Dashboard Hub (S-016) → Role-specific modules",
+    "description": "All users land on a shared Dashboard Hub after login. From there, they choose modules based on their role. Each module may open in a role-specific interface layout (bottom-tabs for waiter, fullscreen for kitchen, sidebar for admin). Users can always return to Dashboard Hub via home/logo button."
+  },
+  "interfaces": {
+    "dashboard-hub": {
+      "name": "Main Dashboard Hub",
+      "type": "fullscreen-grid",
+      "target_roles": ["owner", "waiter-cashier", "chef"],
+      "screen_ref": "S-016",
+      "header": {
+        "height": "64px",
+        "content": ["logo-display", "user_profile", "shift_status_bar", "logout_button"]
+      },
+      "content": {
+        "max_width": "800px",
+        "padding": "comfortable"
+      },
+      "navigation": {
+        "primary": "role-based menu cards (defined in S-016 role_menus)",
+        "home_button": "always visible in all sub-interfaces to return here"
+      }
+    },
+    "waiter-cashier-ui": {
+      "name": "Waiter & Cashier Interface",
+      "type": "bottom-tabs",
+      "target_roles": ["waiter-cashier"],
+      "sidebar": null,
+      "header": {
+        "height": "56px",
+        "content": ["shift_status_bar", "user_profile", "notifications"]
+      },
+      "content": {
+        "max_width": "100%",
+        "padding": "comfortable"
+      },
+      "responsive": {
+        "mobile_first": true,
+        "breakpoints": {
+          "mobile": "< 640px",
+          "tablet": "640px - 1024px"
+        },
+        "mobile_navigation": "bottom-tabs"
+      },
+      "navigation": {
+        "primary": [
+          { "label": "Pesanan", "icon": "clipboard-list", "screen_ref": "S-002" },
+          { "label": "Meja", "icon": "grid", "screen_ref": "S-005" },
+          { "label": "Bayar", "icon": "credit-card", "screen_ref": "S-004" }
+        ],
+        "secondary": []
+      }
+    },    "kitchen-display": {
+      "name": "Kitchen Display System",
+      "type": "fullscreen",
+      "target_roles": ["chef"],
+      "sidebar": null,
+      "header": {
+        "height": "48px",
+        "content": ["user_profile", "order_count_badge"]
+      },
+      "content": {
+        "max_width": "100%",
+        "padding": "compact"
+      },
+      "responsive": {
+        "mobile_first": true,
+        "breakpoints": {
+          "mobile": "< 640px",
+          "tablet": "640px - 1024px"
+        },
+        "mobile_navigation": "minimal-tabs"
+      },
+      "navigation": {
+        "primary": [
+          { "label": "Antrian", "icon": "list-ordered", "screen_ref": "S-006" },
+          { "label": "Resep", "icon": "book-open", "screen_ref": "S-007" }
+        ],
+        "secondary": []
+      }
+    },    "admin-panel": {
+      "name": "Owner / Admin Panel",
+      "type": "sidebar",
+      "target_roles": ["owner"],
+      "cross_role_access": {
+        "enabled": true,
+        "description": "Non-owner users (cashier, chef) can access certain admin screens (Stok, Menu) from Dashboard Hub based on permissions. When they do, the admin layout renders with a role-quick-access-bar (C-023) at top for quick navigation back to Hub or their primary workspace.",
+        "quick_access_bar": "C-023",
+        "pin_gate_for_pos": "C-024"
+      },
+      "sidebar": {
+        "position": "left",
+        "width": "250px",
+        "behavior": "collapsible",
+        "mobile_behavior": "drawer"
+      },
+      "header": {
+        "height": "64px",
+        "content": ["user_profile", "notifications", "low_stock_badge"]
+      },
+      "content": {
+        "max_width": "1200px",
+        "padding": "comfortable"
+      },
+      "responsive": {
+        "mobile_first": true,
+        "breakpoints": {
+          "mobile": "< 640px",
+          "tablet": "640px - 1024px",
+          "desktop": "> 1024px"
+        },
+        "mobile_navigation": "drawer"
+      },
+      "navigation": {
+        "primary": [
+          { "label": "Dashboard", "icon": "bar-chart-2", "screen_ref": "S-008" },
+          { "label": "Menu", "icon": "utensils", "screen_ref": "S-009" },
+          { "label": "Resep", "icon": "book-open", "screen_ref": "S-010" },
+          { "label": "Stok", "icon": "package", "screen_ref": "S-011" },
+          { "label": "Transaksi", "icon": "receipt", "screen_ref": "S-012" },
+          { "label": "Pengguna", "icon": "users", "screen_ref": "S-013" },
+          { "label": "Pengaturan", "icon": "settings", "screen_ref": "S-017" }
+        ],
+        "secondary": []
+      }
+    }
+  }
+}

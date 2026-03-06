@@ -1,0 +1,292 @@
+{
+  "domain": "reporting",
+  "version": "1.0",
+  "wave": 3,
+  "depends_on_domains": ["payment", "order-management", "inventory", "shift-management"],
+
+  "entities": {
+    "owns": [
+      {
+        "name": "Transaction",
+        "id": "E-013",
+        "table_name": "transactions",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "transactionNumber", "type": "string", "category": "business", "required": true, "unique": true, "default": null, "max_length": 20, "source": "inferred:structural" },
+          { "name": "orderId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-003.fields[0]" },
+          { "name": "shiftId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "inferred:prototype-summary" },
+          { "name": "cashierId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "inferred:prototype-summary" },
+          { "name": "tableNumber", "type": "integer", "category": "business", "required": true, "unique": false, "default": null, "source": "inferred:prototype-summary" },
+          { "name": "subtotalAmount", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-003.fields[1]" },
+          { "name": "discountName", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 255, "source": "F-018.business_rules[6]" },
+          { "name": "discountAmount", "type": "decimal", "category": "business", "required": false, "unique": false, "default": 0, "source": "F-003.business_rules[0]" },
+          { "name": "ppnRate", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-003.fields[2]" },
+          { "name": "ppnAmount", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-003.fields[3]" },
+          { "name": "grandTotal", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-003.fields[4]" },
+          { "name": "paymentMethod", "type": "enum", "category": "business", "required": true, "unique": false, "default": null, "values": ["tunai", "qris", "gopay", "ovo", "dana", "shopeepay", "transfer_bank"], "source": "F-003.fields[5]" },
+          { "name": "digitalPaymentRef", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 255, "source": "F-003.fields[6]" },
+          { "name": "transferProofPhotoUrl", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 500, "source": "F-003.fields[7]" },
+          { "name": "amountPaid", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-003.fields[8]" },
+          { "name": "changeAmount", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "F-003.fields[9]" },
+          { "name": "transactionStatus", "type": "enum", "category": "business", "required": true, "unique": false, "default": "completed", "values": ["completed", "voided"], "source": "inferred:structural" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "Order", "type": "many-to-one", "foreign_key": "orderId", "cascade_delete": false },
+          { "target": "Shift", "type": "many-to-one", "foreign_key": "shiftId", "cascade_delete": false },
+          { "target": "User", "type": "many-to-one", "foreign_key": "cashierId", "cascade_delete": false }
+        ],
+        "indexes": [
+          { "fields": ["transactionNumber"], "unique": true },
+          { "fields": ["orderId"], "unique": false },
+          { "fields": ["shiftId"], "unique": false },
+          { "fields": ["cashierId"], "unique": false },
+          { "fields": ["paymentMethod"], "unique": false },
+          { "fields": ["createdAt"], "unique": false }
+        ],
+        "state_machine": {
+          "states": ["completed", "voided"],
+          "transitions": [
+            { "from": "completed", "to": "voided", "trigger": "void_processed", "allowed_roles": ["waiter-cashier", "owner"] }
+          ],
+          "initial": "completed",
+          "terminal": ["voided"]
+        },
+        "business_rules": [
+          { "rule": "Payment cannot be processed if amount paid is less than grand total", "type": "constraint", "source": "F-003.business_rules[3]", "enforcement": "create" },
+          { "rule": "Transaction stores SPECIFIC payment method name (e.g., GoPay, OVO, Transfer BCA) - NOT generic Digital", "type": "constraint", "source": "F-003.business_rules[9]", "enforcement": "create" },
+          { "rule": "PPN amount = (subtotal - discount) * (ppnRate / 100)", "type": "formula", "source": "F-003.business_rules[1]", "inputs": ["Transaction.subtotalAmount", "Transaction.discountAmount", "Transaction.ppnRate"], "output": "Transaction.ppnAmount", "enforcement": "create" },
+          { "rule": "Grand total = (subtotal - discount) + ppnAmount", "type": "formula", "source": "F-003.business_rules[1]", "inputs": ["Transaction.subtotalAmount", "Transaction.discountAmount", "Transaction.ppnAmount"], "output": "Transaction.grandTotal", "enforcement": "create" },
+          { "rule": "For digital payments: no change calculation needed (exact amount)", "type": "constraint", "source": "F-003.business_rules[8]", "enforcement": "create" },
+          { "rule": "Transaction is recorded in sales history with full PPN info", "type": "constraint", "source": "F-003.business_rules[11]", "enforcement": "create" }
+        ]
+      }
+    ],
+    "reads": [
+      {
+        "name": "Order",
+        "id": "E-010",
+        "read_fields": ["id", "orderNumber", "tableNumber"]
+      },
+      {
+        "name": "Shift",
+        "id": "E-014",
+        "read_fields": ["id", "shiftNumber", "picCashierId"]
+      },
+      {
+        "name": "User",
+        "id": "E-001",
+        "read_fields": ["id", "displayName"]
+      },
+      {
+        "name": "MenuItem",
+        "id": "E-003",
+        "read_fields": ["id", "itemName", "price"]
+      },
+      {
+        "name": "InventoryItem",
+        "id": "E-008",
+        "read_fields": ["id", "itemName", "currentQuantity", "minimumThreshold"]
+      }
+    ]
+  },
+
+  "endpoints": [
+    {
+      "id": "EP-062",
+      "method": "GET",
+      "path": "/api/reports/dashboard",
+      "description": "Get daily sales dashboard data. Shows total revenue, order count, top-selling items, and payment method breakdown. Used by Admin Dashboard (S-008).",
+      "source_features": ["F-007", "F-012"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": "perm-view-reports",
+      "params": {
+        "query": [
+          { "name": "dateFrom", "type": "date", "required": false, "description": "Start date (defaults to today)" },
+          { "name": "dateTo", "type": "date", "required": false, "description": "End date (defaults to today)" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "period": { "from": "date", "to": "date" },
+            "totalRevenue": "decimal",
+            "totalOrders": "number",
+            "averageOrderValue": "decimal",
+            "topSellingItems": [{ "menuItemId": "uuid", "itemName": "string", "quantitySold": "number", "revenue": "decimal" }],
+            "paymentMethodBreakdown": [{ "method": "enum", "count": "number", "total": "decimal", "percentage": "decimal" }],
+            "revenueByHour": [{ "hour": "number", "revenue": "decimal", "orderCount": "number" }],
+            "lowStockAlertCount": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        { "rule": "Report data updates in real-time as transactions are completed", "type": "constraint", "source": "F-007.business_rules[0]" },
+        { "rule": "Only completed (paid) orders are counted in revenue", "type": "constraint", "source": "F-007.business_rules[1]" }
+      ],
+      "related_entity": "Transaction",
+      "related_entity_id": "E-013",
+      "domain_group": "reporting"
+    },
+    {
+      "id": "EP-063",
+      "method": "GET",
+      "path": "/api/reports/sales-summary",
+      "description": "Get sales summary with date range filter. Aggregates revenue, order counts, and discount totals.",
+      "source_features": ["F-007"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": "perm-view-reports",
+      "params": {
+        "query": [
+          { "name": "dateFrom", "type": "date", "required": true, "description": "Start date" },
+          { "name": "dateTo", "type": "date", "required": true, "description": "End date" },
+          { "name": "groupBy", "type": "enum", "required": false, "description": "Group results by", "values": ["day", "week", "month"] }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "period": { "from": "date", "to": "date" },
+            "totalRevenue": "decimal",
+            "totalOrders": "number",
+            "totalDiscountGiven": "decimal",
+            "totalPpnCollected": "decimal",
+            "cashRevenue": "decimal",
+            "digitalRevenue": "decimal",
+            "voidTotal": "decimal",
+            "netRevenue": "decimal",
+            "dailyBreakdown": [{ "date": "date", "revenue": "decimal", "orderCount": "number" }]
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "Transaction",
+      "related_entity_id": "E-013",
+      "domain_group": "reporting"
+    }
+  ],
+
+  "screens": [
+    {
+      "screen_id": "S-008",
+      "name": "Admin Dashboard (Laporan Bisnis)",
+      "page_component": "AdminDashboardPage",
+      "route": "/admin/dashboard",
+      "interface": "admin-panel",
+      "layout": "AdminLayout",
+      "guards": ["AuthGuard", "RoleGuard"],
+      "sections": [
+        {
+          "name": "Date Range Selector",
+          "position": "top-right",
+          "description": "Filter all dashboard data by: Hari Ini, Minggu Ini, Bulan Ini, Custom Range. Default: Hari Ini.",
+          "components": ["date-range-picker"]
+        },
+        {
+          "name": "KPI Summary Cards",
+          "position": "top",
+          "description": "Row of key metric cards: Total Pendapatan (revenue), Jumlah Transaksi (count), Rata-rata per Transaksi (avg), Pendapatan Tunai vs Digital (split), Total Void (count + amount), Total Diskon diberikan.",
+          "components": ["kpi-card", "trend-indicator"]
+        },
+        {
+          "name": "Revenue Chart",
+          "position": "center-left",
+          "description": "Line/bar chart showing revenue trend over selected period. Toggle between daily, weekly, monthly view. Shows cash vs digital breakdown in stacked bars.",
+          "components": ["chart-area", "toggle-tabs"]
+        },
+        {
+          "name": "Peak Hours Heatmap",
+          "position": "center-right",
+          "description": "Heatmap or bar chart showing transaction volume by hour of day. Helps owner identify rush hours for staffing.",
+          "components": ["heatmap-chart"]
+        },
+        {
+          "name": "Top Selling Items",
+          "position": "below-charts-left",
+          "description": "Ranked list of top 10 best-selling menu items in selected period. Shows: rank, item name, qty sold, total revenue from item.",
+          "components": ["ranked-list"]
+        },
+        {
+          "name": "Payment Method Breakdown",
+          "position": "below-charts-right",
+          "description": "Donut/pie chart showing payment method distribution: Tunai, QRIS, E-Wallet, Transfer. Shows both count and percentage.",
+          "components": ["donut-chart", "legend"]
+        },
+        {
+          "name": "Shift Performance Table",
+          "position": "bottom-section",
+          "description": "Table of recent shifts: Shift ID, PIC Kasir, Date, Duration, Transaction Count, Revenue, Discrepancy amount and status.",
+          "components": ["data-table", "discrepancy-indicator"]
+        },
+        {
+          "name": "Low Stock Alerts",
+          "position": "sidebar-widget",
+          "description": "Compact widget listing inventory items below minimum threshold with status badges. Count badge on header. Quick link to Stock Management.",
+          "components": ["alert-card", "stock-badge"]
+        }
+      ]
+    }
+  ],
+
+  "features": [
+    {
+      "id": "F-007",
+      "title": "Daily Sales Report & Dashboard",
+      "priority": "must_have",
+      "acceptance_criteria": [
+        "Owner can view todays sales summary on a dashboard",
+        "Dashboard shows total revenue, order count, and top-selling items",
+        "Owner can filter reports by date range",
+        "Data refreshes automatically without manual action"
+      ],
+      "business_rules": [
+        { "rule": "Report data updates in real-time as transactions are completed", "type": "constraint", "source": "F-007.business_rules[0]", "enforcement": "both" },
+        { "rule": "Only completed (paid) orders are counted in revenue", "type": "constraint", "source": "F-007.business_rules[1]", "enforcement": "both" },
+        { "rule": "Dashboard is accessible from any device", "type": "constraint", "source": "F-007.business_rules[2]", "enforcement": "both" }
+      ]
+    },
+    {
+      "id": "F-012",
+      "title": "Low Stock Notification",
+      "priority": "should_have",
+      "acceptance_criteria": [
+        "System shows a warning badge when any item is below threshold",
+        "Owner can set minimum threshold per inventory item",
+        "Low stock items are highlighted in the inventory view",
+        "Dashboard shows count of low-stock items"
+      ],
+      "business_rules": []
+    }
+  ],
+
+  "cross_domain_contracts": [],
+
+  "state_dependencies": {
+    "owns_store": "useReportingStore",
+    "writes_to_tables": [],
+    "reads_from_tables": ["transactions", "orders", "orderItems", "menuItems", "inventoryItems", "shifts"],
+    "calls_other_stores": ["useInventoryStore"]
+  },
+
+  "write_scope": [
+    "src/pages/admin/AdminDashboardPage.tsx",
+    "src/components/reporting/",
+    "src/stores/useReportingStore.ts",
+    "server/routes/reporting/",
+    "server/services/reporting/"
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "checkpoint": "v3",
+  "timestamp": "2026-03-04T12:00:00Z",
+  "files_validated": [
+    ".claude/proposal/entities.json",
+    ".claude/proposal/api-design.json",
+    ".claude/proposal/api-design-auth.json",
+    ".claude/proposal/api-design-user-management.json",
+    ".claude/proposal/api-design-menu.json",
+    ".claude/proposal/api-design-recipe.json",
+    ".claude/proposal/api-design-inventory.json",
+    ".claude/proposal/api-design-order-management.json",
+    ".claude/proposal/api-design-kitchen.json",
+    ".claude/proposal/api-design-payment.json",
+    ".claude/proposal/api-design-shift-management.json",
+    ".claude/proposal/api-design-reporting.json",
+    ".claude/proposal/api-design-settings.json",
+    ".claude/proposal/api-design-sync.json",
+    ".claude/proposal/tech-stack.json",
+    ".claude/proposal/architecture.json",
+    ".claude/proposal/integration-map.json"
+  ],
+  "checks_passed": 14,
+  "checks_failed": 0,
+  "checks_total": 14,
+  "fixes_applied": [],
+  "issues_unfixed": [],
+  "blocking": false,
+  "details": {
+    "V3-A1": {
+      "name": "Entity ID cross-references still valid",
+      "status": "PASS",
+      "details": "All related_entity_id values in api-design split files (E-001, E-002, E-003, E-004, E-005, E-008, E-009, E-010, E-011, E-013, E-014, E-015, E-016, E-017, E-018, E-019) match valid entity IDs in entities.json (E-001 through E-019). Junction entities E-006 (RecipeIngredient), E-007 (RecipeStep), E-012 (OrderItem) are correctly accessed via parent endpoints, not directly referenced as related_entity_id."
+    },
+    "V3-A2": {
+      "name": "Naming consistency across all files",
+      "status": "PASS",
+      "details": "Entity names in entities.json (19 entities: User, UserPermission, MenuItem, MenuCategory, Recipe, RecipeIngredient, RecipeStep, InventoryItem, StockMovement, Table, Order, OrderItem, Transaction, Shift, VoidRecord, Discount, KitchenNotification, PosSettings, EwalletProvider) match exactly with related_entity names in api-design split files and entity references in integration-map.json (both cross_domain_flows and store_service_map). All PascalCase. No case mismatches detected."
+    },
+    "V3-A3": {
+      "name": "Auth model still aligned",
+      "status": "PASS",
+      "details": "Auth model is consistent across all three files: tech-stack.json backend.auth.choice = 'local-auth-hash', architecture.json auth_flow.type = 'local-auth-hash', api-design.json auth.type = 'local-auth-hash'. All three agree on local-first bcrypt authentication with no JWT dependency."
+    },
+    "V3-B1": {
+      "name": "EP-xxx references valid in cross_domain_flows",
+      "status": "PASS",
+      "details": "All EP-xxx references in integration-map.json cross_domain_flows steps (EP-040, EP-011, EP-037, EP-045, EP-046, EP-021, EP-047, EP-048, EP-049, EP-036, EP-050, EP-034, EP-001, EP-003, EP-056, EP-058, EP-059, EP-051) match valid endpoint IDs in api-design split files. 74 endpoints total (EP-001 through EP-074), all referenced endpoints exist."
+    },
+    "V3-B2": {
+      "name": "Entity names match entities.json in integration-map",
+      "status": "PASS",
+      "details": "All entity names in cross_domain_flows (Table, MenuItem, Order, Recipe, KitchenNotification, Transaction, InventoryItem, User, Shift, VoidRecord) and store_service_map (all 19 entity names) match exactly with entities.json. No case mismatches."
+    },
+    "V3-B3": {
+      "name": "store_service_map matches domain_groups",
+      "status": "PASS",
+      "details": "All 10 domain_groups from key_signals (auth, menu, recipe, inventory, order-management, kitchen, payment, shift-management, reporting, settings) have corresponding entries in store_service_map. Two additional domains exist in store_service_map (user-management, sync) which are valid sub-domains/infrastructure not in the core domain_groups list. No major domain missing."
+    },
+    "V3-B4": {
+      "name": "timing_resolutions reference valid endpoints",
+      "status": "PASS",
+      "details": "timing_resolutions[0].affected_endpoints contains EP-037, EP-039, EP-051. All three exist in api-design split files: EP-037 (order-management), EP-039 (order-management), EP-051 (payment). Valid references."
+    },
+    "V3-B5": {
+      "name": "D-xxx uniqueness across ALL files",
+      "status": "PASS",
+      "details": "22 unique D-xxx IDs found across all files. Entity range (D-001..D-029): D-001, D-002, D-003, D-004. API range (D-030..D-049): D-030, D-031, D-032, D-033. System range (D-050..D-099): D-050 through D-056, D-060 through D-066. No duplicate definitions. Cross-references (D-001, D-030, D-064 appearing in integration-map.json) are valid references to decisions defined in their respective source files."
+    },
+    "V3-B6": {
+      "name": "No placeholder text in integration-map.json",
+      "status": "PASS",
+      "details": "Scanned integration-map.json for TODO, TBD, FIXME, placeholder, and '...' patterns. None found."
+    },
+    "V3-C1": {
+      "name": "per_feature coverage accuracy",
+      "status": "PASS",
+      "details": "All 18 features from features.json (12 must_have + 5 should_have + 1 could_have) have entries in integration-map.json per_feature[]. per_feature.length == 18. Every must_have feature (F-001, F-002, F-003, F-004, F-005, F-006, F-007, F-008, F-009, F-015, F-016, F-017) is present. Every should_have (F-010, F-011, F-012, F-013, F-018) is present. F-014 (could_have) is present. Priority values in per_feature match features.json exactly."
+    },
+    "V3-C2": {
+      "name": "Must-have gaps in blocking_gaps",
+      "status": "PASS",
+      "details": "No must_have features have status='gap' in per_feature. All 12 must_have features are 'fully_covered'. blocking_gaps[] is empty, which is correct since there are no gaps."
+    },
+    "V3-C3": {
+      "name": "Coverage summary counts",
+      "status": "PASS",
+      "details": "coverage.must_have.total = 12 matches actual count of must_have features in features.json (12). coverage.should_have.total = 5 matches (5). coverage.could_have.total = 1 matches (1). Per-feature counts by priority also match: 12 must, 5 should, 1 could in per_feature array."
+    },
+    "V3-D1": {
+      "name": "All expected output files exist",
+      "status": "PASS",
+      "details": "All 5 required output files exist in .claude/proposal/: entities.json, api-design.json (index + 12 split files), tech-stack.json, architecture.json, integration-map.json. Note: technical-proposal.json and .md are written by Lead AFTER V3."
+    },
+    "V3-E1": {
+      "name": "No placeholder text in ANY output file",
+      "status": "PASS",
+      "details": "Scanned all .json files in .claude/proposal/ (entities.json, api-design.json, all 12 api-design split files, tech-stack.json, architecture.json, integration-map.json) for TODO, TBD, FIXME, placeholder, and '...' patterns in string values. None found in any file."
+    }
+  },
+  "summary": "V3 final comprehensive validation: ALL 14 checks PASSED. No fixes needed. No issues found. All cross-references between entities.json, api-design.json (index + 12 split files), tech-stack.json, architecture.json, and integration-map.json are valid and consistent. Auth model aligned across all layers (local-auth-hash). D-xxx IDs unique with correct ranges. Coverage complete for all 18 features (12 must, 5 should, 1 could). No placeholder text anywhere. Output is ready for Lead to generate technical-proposal.json and .md."
+}

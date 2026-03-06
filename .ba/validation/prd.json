@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-19T08:30:00Z",
+  "overview": {
+    "vision": "Fully digitalize UMKM restaurant operations — from order taking to kitchen management, payment processing, inventory tracking, and business analytics — replacing manual notebook-based processes with an offline-first POS system.",
+    "goals": [
+      "Eliminate manual recording errors and untracked inventory loss",
+      "Provide real-time visibility into business performance (revenue, top items, shift accountability)",
+      "Streamline order-to-payment-to-kitchen workflow with digital automation",
+      "Enable financial accountability through shift management with cash reconciliation",
+      "Support multiple payment methods (Cash, QRIS, E-Wallet, Transfer) with proper tracking"
+    ]
+  },
+  "scope": {
+    "in_scope": [
+      "F-001: Order creation with additional item support",
+      "F-002: Kitchen Display System with real-time chef-waiter notifications",
+      "F-003: Multi-method payment processing (Tunai/QRIS/E-Wallet/Transfer) with PPN, discount, success popup, receipt print",
+      "F-004: Inventory management with auto-deduction and low stock alerts",
+      "F-005: Menu management (CRUD, categories, availability)",
+      "F-006: Recipe management with viewer and editor",
+      "F-007: Owner dashboard with KPI cards, revenue charts, peak hours, top items, shift performance",
+      "F-008: User management with role-based access (owner, waiter-cashier, chef)",
+      "F-009: Authentication with PIN security for shift and POS access",
+      "F-015: Cash register shift management with PIN, one-way closing, mandatory reconciliation",
+      "F-016: POS system settings (PPN/tax, restaurant info, receipt config)",
+      "F-017: Void/cancel transactions with PIN verification and audit trail",
+      "F-010: Table management with visual map",
+      "F-011: Transaction history with Shift/PIC, comprehensive filters, export to Excel",
+      "F-012: Low stock notification alerts",
+      "F-013: Report export to Excel",
+      "F-018: Discount/promo management with order-level application",
+      "F-014: Menu categorization"
+    ],
+    "out_of_scope": [
+      "F-W01: Online customer ordering (out of scope for MVP)",
+      "F-W02: Multi-branch support (single location only)"
+    ]
+  },
+  "references": {
+    "problem": ".ba/discovery/problem.json",
+    "stakeholders": ".ba/discovery/stakeholders.json",
+    "constraints": ".ba/discovery/constraints.json",
+    "success_metrics": ".ba/discovery/success-metrics.json",
+    "features": ".ba/requirements/features.json",
+    "roles": ".ba/requirements/roles.json",
+    "nfr": ".ba/requirements/nfr.json",
+    "layout": ".ba/design/layout.json",
+    "style": ".ba/design/style.json",
+    "screens": ".ba/design/screens.json",
+    "components": ".ba/design/components.json",
+    "flows": ".ba/design/flows.json",
+    "prototype": "prototype/index.html"
+  },
+  "approval": {
+    "prototype_approved": true,
+    "prototype_iteration": 9,
+    "approved_at": "2026-02-19T08:25:00Z"
+  }
+}

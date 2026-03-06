@@ -1,0 +1,53 @@
+{
+  "id": "V-T-002",
+  "subject": "Validate: Set up backend infrastructure with database schema and server",
+  "owner": "validator-backend",
+  "builder_task_id": "T-002",
+  "layer": 1,
+  "wave": 1,
+  "goal": "Validate builder output for Set up backend infrastructure with database schema and server",
+  "write_scope": [
+    ".claude/implementation/validation-backend.json"
+  ],
+  "acceptance": {
+    "infra": [
+      "Server starts on configured port",
+      "Prisma client connects to PostgreSQL",
+      "Auth middleware validates session tokens",
+      "Error handling returns structured JSON errors",
+      "CORS allows configured origins",
+      "Base route structure responds to health check"
+    ]
+  },
+  "business_rules": [],
+  "cross_domain_contracts": [],
+  "_foundation_files": [
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  },
+  "validation_targets": {
+    "builder_write_scope": [
+      "server/src/",
+      "server/middleware/",
+      "server/config/"
+    ],
+    "domain_packages": []
+  }
+}

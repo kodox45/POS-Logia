@@ -1,0 +1,492 @@
+{
+  "domain": "settings",
+  "version": "1.0",
+  "wave": 1,
+  "depends_on_domains": [],
+
+  "entities": {
+    "owns": [
+      {
+        "name": "PosSettings",
+        "id": "E-018",
+        "table_name": "posSettings",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "ppnEnabled", "type": "boolean", "category": "business", "required": true, "unique": false, "default": true, "source": "F-016.fields[0]" },
+          { "name": "ppnRate", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 11, "source": "F-016.fields[1]" },
+          { "name": "restaurantName", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 255, "source": "F-016.fields[2]" },
+          { "name": "restaurantAddress", "type": "text", "category": "business", "required": false, "unique": false, "default": null, "source": "F-016.fields[3]" },
+          { "name": "receiptFooter", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 500, "source": "F-016.fields[4]" },
+          { "name": "showPpnOnReceipt", "type": "boolean", "category": "business", "required": true, "unique": false, "default": true, "source": "inferred:prototype-summary" },
+          { "name": "qrisImageUrl", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 500, "source": "F-003.business_rules[5]" },
+          { "name": "bankName", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 255, "source": "inferred:prototype-summary" },
+          { "name": "bankAccountNumber", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 50, "source": "inferred:prototype-summary" },
+          { "name": "bankAccountHolder", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 255, "source": "inferred:prototype-summary" },
+          { "name": "restaurantLogoUrl", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 500, "source": "inferred:structural" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "EwalletProvider", "type": "one-to-many", "foreign_key": "posSettingsId", "cascade_delete": true }
+        ],
+        "indexes": [],
+        "state_machine": null,
+        "business_rules": [
+          { "rule": "PPN rate is configurable by owner in system settings", "type": "constraint", "source": "F-016.business_rules[0]", "enforcement": "update" },
+          { "rule": "PPN applies to all transactions when enabled", "type": "constraint", "source": "F-016.business_rules[3]", "enforcement": "both" },
+          { "rule": "Changes to PPN rate apply to new transactions only, not retroactively", "type": "constraint", "source": "F-016.business_rules[5]", "enforcement": "update" }
+        ]
+      },
+      {
+        "name": "EwalletProvider",
+        "id": "E-019",
+        "table_name": "ewalletProviders",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "posSettingsId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "inferred:structural" },
+          { "name": "providerName", "type": "string", "category": "business", "required": true, "unique": true, "default": null, "max_length": 100, "source": "inferred:prototype-summary" },
+          { "name": "isEnabled", "type": "boolean", "category": "business", "required": true, "unique": false, "default": false, "source": "inferred:prototype-summary" },
+          { "name": "qrImageUrl", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 500, "source": "inferred:prototype-summary" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "PosSettings", "type": "many-to-one", "foreign_key": "posSettingsId", "cascade_delete": true }
+        ],
+        "indexes": [
+          { "fields": ["providerName"], "unique": true },
+          { "fields": ["isEnabled"], "unique": false }
+        ],
+        "state_machine": null,
+        "business_rules": [
+          { "rule": "E-Wallet provider shows specific QR code for that provider during payment", "type": "constraint", "source": "F-003.business_rules[6]", "enforcement": "both" }
+        ]
+      },
+      {
+        "name": "Discount",
+        "id": "E-016",
+        "table_name": "discounts",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "discountName", "type": "string", "category": "business", "required": true, "unique": false, "default": null, "max_length": 255, "source": "F-018.fields[2]" },
+          { "name": "discountType", "type": "enum", "category": "business", "required": true, "unique": false, "default": null, "values": ["percentage", "fixed_amount"], "source": "F-018.fields[0]" },
+          { "name": "discountValue", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-018.fields[1]" },
+          { "name": "appliedTo", "type": "enum", "category": "business", "required": true, "unique": false, "default": "whole_order", "values": ["whole_order", "specific_items"], "source": "F-018.fields[3]" },
+          { "name": "isActive", "type": "boolean", "category": "business", "required": true, "unique": false, "default": true, "source": "F-018.fields[4]" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "Order", "type": "one-to-many", "foreign_key": "discountId", "cascade_delete": false }
+        ],
+        "indexes": [
+          { "fields": ["isActive"], "unique": false }
+        ],
+        "state_machine": null,
+        "business_rules": [
+          { "rule": "Owner creates and manages discount/promo options in settings", "type": "constraint", "source": "F-018.business_rules[0]", "enforcement": "both" },
+          { "rule": "Discount applied BEFORE PPN calculation: Grand Total = (Subtotal - Discount) + PPN", "type": "formula", "source": "F-018.business_rules[3]", "enforcement": "both" },
+          { "rule": "Only one discount per order (prevent stacking)", "type": "constraint", "source": "F-018.business_rules[4]", "enforcement": "both" },
+          { "rule": "Owner can activate/deactivate discounts anytime", "type": "constraint", "source": "F-018.business_rules[7]", "enforcement": "update" }
+        ]
+      }
+    ],
+    "reads": [
+      {
+        "name": "Order",
+        "id": "E-010",
+        "read_fields": ["id", "discountId"]
+      }
+    ]
+  },
+
+  "endpoints": [
+    {
+      "id": "EP-064",
+      "method": "GET",
+      "path": "/api/settings",
+      "description": "Get current POS system settings including PPN configuration, restaurant info, and receipt settings.",
+      "source_features": ["F-016"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "ppnEnabled": "boolean",
+            "ppnRate": "decimal",
+            "restaurantName": "string|null",
+            "restaurantAddress": "string|null",
+            "receiptFooter": "string|null",
+            "showPpnOnReceipt": "boolean",
+            "qrisImageUrl": "string|null",
+            "bankName": "string|null",
+            "bankAccountNumber": "string|null",
+            "bankAccountHolder": "string|null",
+            "restaurantLogoUrl": "string|null",
+            "ewalletProviders": [{ "id": "uuid", "providerName": "string", "isEnabled": "boolean", "qrImageUrl": "string|null" }]
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "PosSettings",
+      "related_entity_id": "E-018",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-065",
+      "method": "PATCH",
+      "path": "/api/settings",
+      "description": "Update POS system settings. Only owner can modify. PPN rate changes apply to new transactions only.",
+      "source_features": ["F-016"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "ppnEnabled", "type": "boolean", "required": false, "description": "Toggle PPN on/off" },
+          { "name": "ppnRate", "type": "decimal", "required": false, "description": "PPN percentage (e.g., 11 for 11%)" },
+          { "name": "restaurantName", "type": "string", "required": false, "description": "Name on receipts" },
+          { "name": "restaurantAddress", "type": "string", "required": false, "description": "Address on receipts" },
+          { "name": "receiptFooter", "type": "string", "required": false, "description": "Custom footer text" },
+          { "name": "showPpnOnReceipt", "type": "boolean", "required": false, "description": "Show PPN on receipt" },
+          { "name": "qrisImageUrl", "type": "string", "required": false, "description": "QRIS QR code image URL" },
+          { "name": "bankName", "type": "string", "required": false, "description": "Bank name for transfers" },
+          { "name": "bankAccountNumber", "type": "string", "required": false, "description": "Bank account number" },
+          { "name": "bankAccountHolder", "type": "string", "required": false, "description": "Account holder name" },
+          { "name": "restaurantLogoUrl", "type": "string", "required": false, "description": "Logo URL for receipts" }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 403, "code": "FORBIDDEN", "message": "Only owner can modify settings" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "PPN rate is configurable by owner in system settings", "type": "constraint", "source": "F-016.business_rules[0]" },
+        { "rule": "Changes to PPN rate apply to new transactions only, not retroactively", "type": "constraint", "source": "F-016.business_rules[5]" }
+      ],
+      "related_entity": "PosSettings",
+      "related_entity_id": "E-018",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-066",
+      "method": "GET",
+      "path": "/api/settings/ewallet-providers",
+      "description": "List all configured e-wallet payment providers with their enabled status and QR images.",
+      "source_features": ["F-003", "F-016"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [
+          { "name": "isEnabled", "type": "boolean", "required": false, "description": "Filter by enabled status" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "providers": [{ "id": "uuid", "providerName": "string", "isEnabled": "boolean", "qrImageUrl": "string|null" }]
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "EwalletProvider",
+      "related_entity_id": "E-019",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-067",
+      "method": "PATCH",
+      "path": "/api/settings/ewallet-providers/:id",
+      "description": "Update an e-wallet provider configuration. Enable/disable provider or update QR code image.",
+      "source_features": ["F-003", "F-016"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "E-wallet provider ID" }],
+        "body": [
+          { "name": "isEnabled", "type": "boolean", "required": false, "description": "Enable/disable" },
+          { "name": "qrImageUrl", "type": "string", "required": false, "description": "QR code image URL" }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "providerName": "string", "isEnabled": "boolean", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 404, "code": "PROVIDER_NOT_FOUND", "message": "E-wallet provider not found" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "E-Wallet provider shows specific QR code for that provider during payment", "type": "constraint", "source": "F-003.business_rules[6]" }
+      ],
+      "related_entity": "EwalletProvider",
+      "related_entity_id": "E-019",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-068",
+      "method": "GET",
+      "path": "/api/discounts",
+      "description": "List all discount/promo rules. Active discounts shown on order creation screen as banner cards.",
+      "source_features": ["F-018"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [
+          { "name": "isActive", "type": "boolean", "required": false, "description": "Filter by active status" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "discounts": [{ "id": "uuid", "discountName": "string", "discountType": "enum", "discountValue": "decimal", "appliedTo": "enum", "isActive": "boolean" }],
+            "total": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        { "rule": "Active promos are displayed as banner on order creation screen", "type": "constraint", "source": "F-018.business_rules[1]" }
+      ],
+      "related_entity": "Discount",
+      "related_entity_id": "E-016",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-069",
+      "method": "POST",
+      "path": "/api/discounts",
+      "description": "Create a new discount/promo rule.",
+      "source_features": ["F-018"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "discountName", "type": "string", "required": true, "description": "Display label (e.g., 'Promo Weekday 10%')" },
+          { "name": "discountType", "type": "enum", "required": true, "description": "Type", "values": ["percentage", "fixed_amount"] },
+          { "name": "discountValue", "type": "decimal", "required": true, "description": "Value (e.g., 10 for 10% or 5000 for Rp 5.000)" },
+          { "name": "appliedTo", "type": "enum", "required": true, "description": "Scope", "values": ["whole_order", "specific_items"] },
+          { "name": "isActive", "type": "boolean", "required": false, "description": "Active status, defaults to true" }
+        ]
+      },
+      "response": {
+        "success": { "status": 201, "body": { "id": "uuid", "discountName": "string", "discountType": "enum", "discountValue": "decimal", "isActive": "boolean", "createdAt": "ISO-8601" } },
+        "errors": []
+      },
+      "business_rules": [
+        { "rule": "Owner creates and manages discount/promo options in settings", "type": "constraint", "source": "F-018.business_rules[0]" }
+      ],
+      "related_entity": "Discount",
+      "related_entity_id": "E-016",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-070",
+      "method": "PATCH",
+      "path": "/api/discounts/:id",
+      "description": "Update a discount/promo rule. Owner can activate/deactivate discounts anytime.",
+      "source_features": ["F-018"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Discount ID" }],
+        "body": [
+          { "name": "discountName", "type": "string", "required": false, "description": "Updated name" },
+          { "name": "discountType", "type": "enum", "required": false, "description": "Updated type" },
+          { "name": "discountValue", "type": "decimal", "required": false, "description": "Updated value" },
+          { "name": "appliedTo", "type": "enum", "required": false, "description": "Updated scope" },
+          { "name": "isActive", "type": "boolean", "required": false, "description": "Activate/deactivate" }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "discountName": "string", "isActive": "boolean", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 404, "code": "DISCOUNT_NOT_FOUND", "message": "Discount not found" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Owner can activate/deactivate discounts anytime", "type": "constraint", "source": "F-018.business_rules[7]" }
+      ],
+      "related_entity": "Discount",
+      "related_entity_id": "E-016",
+      "domain_group": "settings"
+    },
+    {
+      "id": "EP-071",
+      "method": "DELETE",
+      "path": "/api/discounts/:id",
+      "description": "Delete a discount/promo rule. Only if not currently applied to any active orders.",
+      "source_features": ["F-018"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Discount ID" }],
+        "body": []
+      },
+      "response": {
+        "success": { "status": 200, "body": { "message": "Discount deleted successfully" } },
+        "errors": [
+          { "status": 404, "code": "DISCOUNT_NOT_FOUND", "message": "Discount not found" },
+          { "status": 409, "code": "DISCOUNT_IN_USE", "message": "Cannot delete discount applied to active orders" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "Discount",
+      "related_entity_id": "E-016",
+      "domain_group": "settings"
+    }
+  ],
+
+  "screens": [
+    {
+      "screen_id": "S-017",
+      "name": "POS System Settings (Pengaturan POS)",
+      "page_component": "SystemSettingsPage",
+      "route": "/admin/settings",
+      "interface": "admin-panel",
+      "layout": "AdminLayout",
+      "guards": ["AuthGuard", "RoleGuard"],
+      "sections": [
+        {
+          "name": "Tax / PPN Settings",
+          "position": "section",
+          "description": "Toggle PPN on/off. Input PPN rate percentage (default 11%). Preview calculation example.",
+          "components": ["toggle-switch", "number-input", "preview-calc"]
+        },
+        {
+          "name": "Payment Method Settings",
+          "position": "section",
+          "description": "Configure available payment methods. QRIS: upload static QR code image shown during QRIS payment. Bank Transfer: input bank name, account number, account holder name. E-Wallet: toggle available providers (GoPay, OVO, Dana, ShopeePay) AND upload QR code image PER PROVIDER. Enable/disable each payment method globally.",
+          "components": ["image-upload", "text-input", "toggle-switch", "per-provider-qr-upload"]
+        },
+        {
+          "name": "Discount / Promo Management",
+          "position": "section",
+          "description": "Create, edit, activate/deactivate discount rules. Table showing all discounts: name, type (percentage/fixed), value, status (active/inactive). Add button to create new. Each row has edit and toggle active. Only one discount applicable per order.",
+          "components": ["data-table", "add-button", "toggle-switch", "form-modal"]
+        },
+        {
+          "name": "Restaurant Info",
+          "position": "section",
+          "description": "Restaurant name, address -- shown on printed receipts. Optional logo upload for receipt header.",
+          "components": ["text-input", "image-upload"]
+        },
+        {
+          "name": "Receipt Settings",
+          "position": "section",
+          "description": "Custom footer text for receipts. Toggle to show/hide PPN breakdown on receipt.",
+          "components": ["text-input", "toggle-switch"]
+        },
+        {
+          "name": "Save Action",
+          "position": "bottom",
+          "description": "Save settings button. Changes apply to new transactions immediately.",
+          "components": ["save-button"]
+        }
+      ]
+    }
+  ],
+
+  "features": [
+    {
+      "id": "F-016",
+      "title": "POS System Settings (Tax/PPN Configuration)",
+      "priority": "must_have",
+      "acceptance_criteria": [
+        "Owner can access POS Settings from admin panel or Dashboard Hub",
+        "Owner can toggle PPN on/off",
+        "Owner can set PPN rate percentage",
+        "Payment screen shows subtotal, PPN amount, and grand total",
+        "Printed receipt includes PPN breakdown",
+        "Transaction history shows PPN info per transaction"
+      ],
+      "business_rules": [
+        { "rule": "PPN rate is configurable by owner in system settings", "type": "constraint", "source": "F-016.business_rules[0]", "enforcement": "update" },
+        { "rule": "PPN is calculated as: ppn_amount = subtotal * (ppn_rate / 100)", "type": "formula", "source": "F-016.business_rules[1]", "enforcement": "both" },
+        { "rule": "Grand total = subtotal + ppn_amount", "type": "formula", "source": "F-016.business_rules[2]", "enforcement": "both" },
+        { "rule": "PPN applies to all transactions when enabled", "type": "constraint", "source": "F-016.business_rules[3]", "enforcement": "both" },
+        { "rule": "PPN breakdown must be visible on payment screen and on printed receipt", "type": "constraint", "source": "F-016.business_rules[4]", "enforcement": "both" },
+        { "rule": "Changes to PPN rate apply to new transactions only, not retroactively", "type": "constraint", "source": "F-016.business_rules[5]", "enforcement": "update" }
+      ]
+    },
+    {
+      "id": "F-018",
+      "title": "Discount / Promo Management",
+      "priority": "should_have",
+      "acceptance_criteria": [
+        "Owner can create/edit/deactivate discount rules in settings",
+        "Active promos shown as banner cards on order creation screen (S-003)",
+        "Cashier can tap promo banner to apply discount during order creation",
+        "Applied promo carries through to payment screen automatically",
+        "Cashier can also add/change discount from payment screen",
+        "Discount picker shows all active discounts with calculated amount",
+        "Payment shows: Subtotal -> Diskon -> Subtotal setelah diskon -> PPN -> Grand Total",
+        "Receipt includes discount line",
+        "Transaction history shows discount info"
+      ],
+      "business_rules": [
+        { "rule": "Owner creates and manages discount/promo options in settings", "type": "constraint", "source": "F-018.business_rules[0]", "enforcement": "both" },
+        { "rule": "Active promos are displayed as banner on order creation screen (S-003)", "type": "constraint", "source": "F-018.business_rules[1]", "enforcement": "both" },
+        { "rule": "Cashier can apply discount from order creation screen OR from payment screen", "type": "constraint", "source": "F-018.business_rules[2]", "enforcement": "both" },
+        { "rule": "Discount applied BEFORE PPN calculation: Grand Total = (Subtotal - Discount) + PPN", "type": "formula", "source": "F-018.business_rules[3]", "enforcement": "both" },
+        { "rule": "Only one discount per order (prevent stacking)", "type": "constraint", "source": "F-018.business_rules[4]", "enforcement": "both" },
+        { "rule": "Owner can activate/deactivate discounts anytime", "type": "constraint", "source": "F-018.business_rules[7]", "enforcement": "update" }
+      ]
+    }
+  ],
+
+  "cross_domain_contracts": [],
+
+  "state_dependencies": {
+    "owns_store": "useSettingsStore",
+    "writes_to_tables": ["posSettings", "ewalletProviders", "discounts"],
+    "reads_from_tables": [],
+    "calls_other_stores": []
+  },
+
+  "write_scope": [
+    "src/pages/admin/SystemSettingsPage.tsx",
+    "src/components/settings/",
+    "src/stores/useSettingsStore.ts",
+    "server/routes/settings/",
+    "server/services/settings/"
+  ]
+}

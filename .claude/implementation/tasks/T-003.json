@@ -1,0 +1,80 @@
+{
+  "id": "T-003",
+  "subject": "Implement sync engine with offline queue and conflict resolution",
+  "owner": "builder-sync",
+  "builder_role": "sync",
+  "layer": 1,
+  "wave": 1,
+  "goal": "Implement the sync queue for batched push/pull of IndexedDB changes to PostgreSQL, conflict resolution (last-write-wins for most entities, append-only for financial records), service worker for PWA offline support, and online status detection hook.",
+  "domain_packages": [],
+  "write_scope": [
+    "src/sync/",
+    "src/hooks/useOnlineStatus.ts",
+    "public/sw.js"
+  ],
+  "read_sources": {
+    "ba_files": [
+      ".ba/requirements/nfr.json"
+    ],
+    "entities": [],
+    "endpoints": {},
+    "features": [],
+    "screens": [],
+    "flows": [],
+    "components": []
+  },
+  "cross_domain_contracts": [],
+  "business_rules": [],
+  "state_dependencies": {
+    "owns_store": null,
+    "writes_to_tables": [],
+    "reads_from_tables": [],
+    "calls_other_stores": []
+  },
+  "db_scope": null,
+  "acceptance": {
+    "infra": [
+      "Sync queue processes batched changes",
+      "Service worker registers and caches app shell",
+      "Online status hook detects connectivity changes",
+      "Conflict resolution applies last-write-wins correctly",
+      "Financial records (Transaction, Shift, VoidRecord) use append-only semantics",
+      "No data loss during offline-to-online transition"
+    ]
+  },
+  "depends_on": [],
+  "on_critical_path": true,
+  "_foundation_files": [
+    {
+      "path": "src/hooks/useOnlineStatus.ts",
+      "category": "new",
+      "lines": 0,
+      "action": "CREATE_NEW"
+    },
+    {
+      "path": "public/sw.js",
+      "category": "new",
+      "lines": 0,
+      "action": "CREATE_NEW"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  }
+}

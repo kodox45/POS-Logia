@@ -1,0 +1,64 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:35:00Z",
+  "feel": "modern-minimal",
+  "brand": {
+    "name": "LogiaInitiative",
+    "logo_file": "logo.jpg",
+    "logo_note": "Blue gradient swirl icon + LogiaInitiative wordmark on dark navy background"
+  },
+  "colors": {
+    "primary": "#2D8CF0",
+    "primary_light": "#5BA8F5",
+    "primary_dark": "#1A6FC4",
+    "secondary": "#0D1B2A",
+    "accent": "#42B4F5",
+    "background": "#0F1923",
+    "surface": "#162433",
+    "surface_elevated": "#1C2E42",
+    "text_primary": "#E8F1FA",
+    "text_secondary": "#8BA3BC",
+    "border": "#253545",
+    "error": "#EF4444",
+    "warning": "#F59E0B",
+    "success": "#22C55E",
+    "info": "#3B82F6"
+  },  "dark_mode": {
+    "enabled": true,
+    "default": true,
+    "note": "Dark theme is the primary theme based on brand identity. Light mode optional for kitchen display readability."
+  },
+  "typography": {
+    "style": "sans-serif",
+    "font_family": "'Inter', 'Segoe UI', 'Roboto', sans-serif",
+    "base_size": "16px",
+    "heading_style": "light",
+    "scale": 1.25,
+    "note": "Light font weight to match LogiaInitiative wordmark style"
+  },
+  "spacing": {
+    "unit": "4px",
+    "scale": [1, 2, 3, 4, 6, 8, 12, 16]
+  },
+  "borders": {
+    "radius": "10px",
+    "radius_sm": "6px",
+    "radius_lg": "14px",
+    "radius_full": "9999px",
+    "width": "1px"
+  },
+  "shadows": {
+    "sm": "0 1px 3px rgba(0,0,0,0.3)",
+    "md": "0 4px 8px rgba(0,0,0,0.35)",
+    "lg": "0 10px 20px rgba(0,0,0,0.4)"
+  },  "components": {
+    "buttons": "filled",
+    "corners": "rounded",
+    "cards": "bordered with subtle glow on dark surface",
+    "inputs": "bordered, rounded, dark fill"
+  },
+  "gradient": {
+    "primary": "linear-gradient(135deg, #1A6FC4, #42B4F5)",
+    "note": "Used for primary CTAs, logo accents, and highlights — matches LogiaInitiative logo gradient"
+  }
+}

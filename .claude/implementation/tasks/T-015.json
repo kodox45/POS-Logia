@@ -1,0 +1,163 @@
+{
+  "id": "T-015",
+  "subject": "Implement backend kitchen and notification APIs",
+  "owner": "builder-backend-logic",
+  "builder_role": "backend",
+  "layer": 2,
+  "wave": 3,
+  "goal": "Implement kitchen order queue endpoint with elapsed time and late order detection, start-cooking and mark-ready endpoints with order state transitions, kitchen notification creation on mark-ready, notification query for waiter display, and notification acknowledge endpoint that updates order to served.",
+  "domain_packages": [
+    ".claude/implementation/domains/kitchen.json"
+  ],
+  "write_scope": [
+    "server/routes/kitchen/",
+    "server/services/kitchen/"
+  ],
+  "read_sources": {
+    "primary": ".claude/implementation/domains/kitchen.json",
+    "entities": [
+      "Order",
+      "KitchenNotification"
+    ],
+    "endpoints": {
+      "domains": [
+        "kitchen"
+      ],
+      "ids": [
+        "EP-045",
+        "EP-046",
+        "EP-047",
+        "EP-048",
+        "EP-049"
+      ]
+    },
+    "features": [
+      "F-002"
+    ],
+    "screens": [],
+    "flows": [
+      "UF-001",
+      "UF-008"
+    ],
+    "components": []
+  },
+  "cross_domain_contracts": [
+    {
+      "flow_id": "UF-001",
+      "your_steps": [
+        4,
+        7,
+        9
+      ],
+      "context": "Order-management submits order (step 3), kitchen receives it.",
+      "timing_notes": [],
+      "next_domain": "Notification sent to waiter when ready"
+    },
+    {
+      "flow_id": "UF-008",
+      "your_steps": [
+        1,
+        2,
+        3
+      ],
+      "context": "Chef marks order ready, notification created, waiter acknowledges served.",
+      "timing_notes": [],
+      "next_domain": "Order status updated to served"
+    }
+  ],
+  "business_rules": [
+    {
+      "rule": "New orders appear at the top of the queue with audio/visual alert",
+      "type": "constraint",
+      "source": "F-002"
+    },
+    {
+      "rule": "Chef taps to change status: pending -> cooking -> ready",
+      "type": "constraint",
+      "source": "F-002"
+    },
+    {
+      "rule": "When chef marks ready: notification sent to waiter/cashier POS screen immediately",
+      "type": "constraint",
+      "source": "F-002"
+    },
+    {
+      "rule": "Orders exceeding target time (15 min) are highlighted in red as late",
+      "type": "constraint",
+      "source": "F-002"
+    },
+    {
+      "rule": "Kitchen display auto-removes served orders after confirmation",
+      "type": "constraint",
+      "source": "F-002"
+    }
+  ],
+  "state_dependencies": null,
+  "db_scope": {
+    "writes": [
+      "orders",
+      "kitchenNotifications"
+    ],
+    "reads": [
+      "orders",
+      "orderItems",
+      "tables",
+      "users",
+      "kitchenNotifications",
+      "recipes"
+    ]
+  },
+  "acceptance": {
+    "F-002": [
+      "Kitchen queue returns orders with elapsed time and late flag",
+      "Start-cooking updates order status and cookingStartedAt",
+      "Mark-ready creates KitchenNotification and sets readyAt",
+      "Notification query returns unacknowledged notifications",
+      "Acknowledge updates notification and order status to served"
+    ]
+  },
+  "depends_on": [
+    "T-002",
+    "T-014"
+  ],
+  "on_critical_path": false,
+  "_foundation_files": [
+    {
+      "path": "src/types/entities.ts",
+      "category": "types",
+      "lines": 413,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/enums.ts",
+      "category": "types",
+      "lines": 100,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/index.ts",
+      "category": "types",
+      "lines": 2,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  }
+}

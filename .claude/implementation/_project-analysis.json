@@ -1,0 +1,294 @@
+{
+  "version": "5.0",
+  "classification": {
+    "app_type": "offline-first",
+    "complexity_tier": "complex",
+    "foundation_type": "offline-first",
+    "validation_approach": "hybrid"
+  },
+  "counts": {
+    "entities": 19,
+    "screens": 17,
+    "roles": 3,
+    "interfaces": 4,
+    "domains": 12,
+    "features": { "must": 12, "should": 5, "could": 1 },
+    "endpoints": 74
+  },
+  "domain_clusters": [
+    {
+      "domain": "auth",
+      "entity_names": ["User", "UserPermission"],
+      "store_name": "useAuthStore",
+      "endpoint_ids": ["EP-001", "EP-002", "EP-003", "EP-004"],
+      "endpoint_count": 4,
+      "screen_ids": ["S-001", "S-016"],
+      "feature_ids": ["F-009"],
+      "sync_strategy": "offline-first",
+      "wave": 1
+    },
+    {
+      "domain": "user-management",
+      "entity_names": ["User", "UserPermission"],
+      "store_name": "useAuthStore",
+      "endpoint_ids": ["EP-005", "EP-006", "EP-007", "EP-008", "EP-009", "EP-010"],
+      "endpoint_count": 6,
+      "screen_ids": ["S-013"],
+      "feature_ids": ["F-008", "F-009"],
+      "sync_strategy": "offline-first",
+      "wave": 2
+    },
+    {
+      "domain": "menu",
+      "entity_names": ["MenuItem", "MenuCategory"],
+      "store_name": "useMenuStore",
+      "endpoint_ids": ["EP-011", "EP-012", "EP-013", "EP-014", "EP-015", "EP-016", "EP-017", "EP-018", "EP-019"],
+      "endpoint_count": 9,
+      "screen_ids": ["S-009"],
+      "feature_ids": ["F-005", "F-014"],
+      "sync_strategy": "offline-first",
+      "wave": 2
+    },
+    {
+      "domain": "recipe",
+      "entity_names": ["Recipe", "RecipeIngredient", "RecipeStep"],
+      "store_name": "useRecipeStore",
+      "endpoint_ids": ["EP-020", "EP-021", "EP-022", "EP-023", "EP-024"],
+      "endpoint_count": 5,
+      "screen_ids": ["S-007", "S-010"],
+      "feature_ids": ["F-006"],
+      "sync_strategy": "offline-first",
+      "wave": 2
+    },
+    {
+      "domain": "inventory",
+      "entity_names": ["InventoryItem", "StockMovement"],
+      "store_name": "useInventoryStore",
+      "endpoint_ids": ["EP-025", "EP-026", "EP-027", "EP-028", "EP-029", "EP-030", "EP-031", "EP-032", "EP-033", "EP-034"],
+      "endpoint_count": 10,
+      "screen_ids": ["S-011"],
+      "feature_ids": ["F-004", "F-012"],
+      "sync_strategy": "offline-first",
+      "wave": 2
+    },
+    {
+      "domain": "order-management",
+      "entity_names": ["Order", "OrderItem", "Table"],
+      "store_name": "useOrderManagementStore",
+      "endpoint_ids": ["EP-035", "EP-036", "EP-037", "EP-038", "EP-039", "EP-040", "EP-041", "EP-042", "EP-043", "EP-044"],
+      "endpoint_count": 10,
+      "screen_ids": ["S-002", "S-003", "S-005"],
+      "feature_ids": ["F-001", "F-010", "F-017"],
+      "sync_strategy": "offline-first",
+      "wave": 3
+    },
+    {
+      "domain": "kitchen",
+      "entity_names": ["Order", "KitchenNotification"],
+      "store_name": "useKitchenStore",
+      "endpoint_ids": ["EP-045", "EP-046", "EP-047", "EP-048", "EP-049"],
+      "endpoint_count": 5,
+      "screen_ids": ["S-006"],
+      "feature_ids": ["F-002"],
+      "sync_strategy": "offline-first",
+      "wave": 3
+    },
+    {
+      "domain": "payment",
+      "entity_names": ["Transaction", "VoidRecord"],
+      "store_name": "usePaymentStore",
+      "endpoint_ids": ["EP-050", "EP-051", "EP-052", "EP-053", "EP-054", "EP-055"],
+      "endpoint_count": 6,
+      "screen_ids": ["S-004", "S-012"],
+      "feature_ids": ["F-003", "F-011", "F-013", "F-017"],
+      "sync_strategy": "offline-first",
+      "wave": 3
+    },
+    {
+      "domain": "shift-management",
+      "entity_names": ["Shift"],
+      "store_name": "useShiftManagementStore",
+      "endpoint_ids": ["EP-056", "EP-057", "EP-058", "EP-059", "EP-060", "EP-061"],
+      "endpoint_count": 6,
+      "screen_ids": ["S-014", "S-015"],
+      "feature_ids": ["F-015"],
+      "sync_strategy": "offline-first",
+      "wave": 3
+    },
+    {
+      "domain": "reporting",
+      "entity_names": ["Transaction"],
+      "store_name": "useReportingStore",
+      "endpoint_ids": ["EP-062", "EP-063"],
+      "endpoint_count": 2,
+      "screen_ids": ["S-008"],
+      "feature_ids": ["F-007", "F-012"],
+      "sync_strategy": "offline-first",
+      "wave": 3
+    },
+    {
+      "domain": "settings",
+      "entity_names": ["PosSettings", "EwalletProvider", "Discount"],
+      "store_name": "useSettingsStore",
+      "endpoint_ids": ["EP-064", "EP-065", "EP-066", "EP-067", "EP-068", "EP-069", "EP-070", "EP-071"],
+      "endpoint_count": 8,
+      "screen_ids": ["S-017"],
+      "feature_ids": ["F-016", "F-018"],
+      "sync_strategy": "offline-first",
+      "wave": 1
+    },
+    {
+      "domain": "sync",
+      "entity_names": [],
+      "store_name": null,
+      "endpoint_ids": ["EP-072", "EP-073", "EP-074"],
+      "endpoint_count": 3,
+      "screen_ids": [],
+      "feature_ids": [],
+      "sync_strategy": "sync-infrastructure",
+      "wave": 1
+    }
+  ],
+  "wave_assignments": {
+    "wave_1": ["auth", "settings", "sync"],
+    "wave_2": ["user-management", "menu", "recipe", "inventory"],
+    "wave_3": ["order-management", "kitchen", "payment", "shift-management", "reporting"]
+  },
+  "team_composition": [
+    { "name": "builder-frontend-core", "role": "builder", "domain": "infrastructure + shared screens (S-001, S-016, S-014, S-015)" },
+    { "name": "builder-frontend-waiter-cashier", "role": "builder", "domain": "waiter-cashier-ui interface (S-002, S-003, S-004, S-005)" },
+    { "name": "builder-frontend-kitchen", "role": "builder", "domain": "kitchen-display interface (S-006, S-007)" },
+    { "name": "builder-frontend-admin", "role": "builder", "domain": "admin-panel interface (S-008, S-009, S-010, S-011, S-012, S-013, S-017)" },
+    { "name": "builder-backend-crud", "role": "builder", "domain": "CRUD domains: auth, user-management, menu, recipe, settings" },
+    { "name": "builder-backend-logic", "role": "builder", "domain": "complex domains: inventory, order-management, kitchen, payment, shift-management, reporting" },
+    { "name": "builder-sync", "role": "builder", "domain": "sync infrastructure: sync engine, conflict resolver, change tracker, PWA/service worker" },
+    { "name": "validator-frontend", "role": "validator", "domain": "frontend validation" },
+    { "name": "validator-backend", "role": "validator", "domain": "backend validation" }
+  ],
+  "guard_chain": ["AuthGuard", "RoleGuard", "PermissionGuard", "PinGateModal", "ShiftGuard"],
+  "interface_map": {
+    "dashboard-hub": { "layout": "DashboardHubLayout", "screens": ["S-016"] },
+    "waiter-cashier-ui": { "layout": "WaiterCashierLayout", "screens": ["S-002", "S-003", "S-004", "S-005"] },
+    "kitchen-display": { "layout": "KitchenLayout", "screens": ["S-006", "S-007"] },
+    "admin-panel": { "layout": "AdminLayout", "screens": ["S-008", "S-009", "S-010", "S-011", "S-012", "S-013", "S-017"] },
+    "shared": { "layout": "none", "screens": ["S-001", "S-014", "S-015"] }
+  },
+  "cross_domain_contracts": [
+    {
+      "flow_id": "UF-001",
+      "flow_name": "Complete Order-to-Payment Flow",
+      "domains_involved": ["order-management", "menu", "kitchen", "recipe", "payment", "inventory"],
+      "steps": [
+        { "order": 1, "domain": "order-management", "action": "Select table" },
+        { "order": 2, "domain": "menu", "action": "Browse menu items" },
+        { "order": 3, "domain": "order-management", "action": "Submit order", "side_effects": ["Stock deduction", "Kitchen queue push"] },
+        { "order": 4, "domain": "kitchen", "action": "View and cook order" },
+        { "order": 7, "domain": "kitchen", "action": "Mark order ready", "side_effects": ["KitchenNotification created"] },
+        { "order": 9, "domain": "kitchen", "action": "Confirm served" },
+        { "order": 11, "domain": "payment", "action": "Process payment", "side_effects": ["Order paid", "Table released", "Shift totals updated"] }
+      ],
+      "side_effects": ["Stock deduction at order submission", "Kitchen notification on ready", "Table release on payment"],
+      "timing_notes": ["Stock deduction at order submission (D-001, D-030, D-064)"]
+    },
+    {
+      "flow_id": "UF-006",
+      "flow_name": "Insufficient Stock Warning",
+      "domains_involved": ["order-management", "inventory"],
+      "steps": [
+        { "order": 1, "domain": "inventory", "action": "Check stock against recipe ingredients" },
+        { "order": 2, "domain": "inventory", "action": "Return warning if insufficient" }
+      ],
+      "side_effects": ["Warning dialog shown to waiter"],
+      "timing_notes": []
+    },
+    {
+      "flow_id": "UF-007",
+      "flow_name": "Full Cashier Journey: Prep to Close Shift",
+      "domains_involved": ["auth", "menu", "shift-management", "payment"],
+      "steps": [
+        { "order": 1, "domain": "auth", "action": "Cashier logs in" },
+        { "order": 3, "domain": "auth", "action": "PIN verification for shift" },
+        { "order": 4, "domain": "shift-management", "action": "Open shift with opening balance" },
+        { "order": 5, "domain": "payment", "action": "Process orders and payments during shift" },
+        { "order": 7, "domain": "shift-management", "action": "Close shift with cash reconciliation" }
+      ],
+      "side_effects": ["Shift tracks all transactions", "Discrepancy calculated at close", "Shift data immutable after close"],
+      "timing_notes": []
+    },
+    {
+      "flow_id": "UF-008",
+      "flow_name": "Kitchen Ready to Waiter Serve",
+      "domains_involved": ["kitchen", "order-management"],
+      "steps": [
+        { "order": 1, "domain": "kitchen", "action": "Chef marks order ready" },
+        { "order": 2, "domain": "kitchen", "action": "Waiter sees notification" },
+        { "order": 3, "domain": "kitchen", "action": "Waiter confirms served" }
+      ],
+      "side_effects": ["KitchenNotification created", "Order status updated to served"],
+      "timing_notes": []
+    },
+    {
+      "flow_id": "UF-010",
+      "flow_name": "Void Paid Transaction",
+      "domains_involved": ["order-management", "auth", "payment", "shift-management"],
+      "steps": [
+        { "order": 1, "domain": "order-management", "action": "Find paid order" },
+        { "order": 2, "domain": "auth", "action": "PIN verification for void" },
+        { "order": 3, "domain": "payment", "action": "Process void", "side_effects": ["VoidRecord created", "Order voided", "Shift expected cash reduced", "Stock reversal"] }
+      ],
+      "side_effects": ["VoidRecord immutable audit trail", "Stock reversal StockMovement entries", "Shift totals adjusted"],
+      "timing_notes": []
+    }
+  ],
+  "key_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  },
+  "timing_resolutions": [
+    {
+      "issue": "Stock deduction timing conflict",
+      "resolution": "Deduct at order submission (status=pending)",
+      "sources_agree": ["D-001 (entities)", "D-030 (api)", "D-064 (architecture)"],
+      "affected_endpoints": ["EP-037", "EP-039", "EP-051"]
+    }
+  ],
+  "approval_modifications": [],
+  "source_paths": {
+    "entities": ".claude/proposal/entities.json",
+    "api_design_index": ".claude/proposal/api-design.json",
+    "api_splits": {
+      "auth": ".claude/proposal/api-design-auth.json",
+      "user-management": ".claude/proposal/api-design-user-management.json",
+      "menu": ".claude/proposal/api-design-menu.json",
+      "recipe": ".claude/proposal/api-design-recipe.json",
+      "inventory": ".claude/proposal/api-design-inventory.json",
+      "order-management": ".claude/proposal/api-design-order-management.json",
+      "kitchen": ".claude/proposal/api-design-kitchen.json",
+      "payment": ".claude/proposal/api-design-payment.json",
+      "shift-management": ".claude/proposal/api-design-shift-management.json",
+      "reporting": ".claude/proposal/api-design-reporting.json",
+      "settings": ".claude/proposal/api-design-settings.json",
+      "sync": ".claude/proposal/api-design-sync.json"
+    },
+    "tech_stack": ".claude/proposal/tech-stack.json",
+    "architecture": ".claude/proposal/architecture.json",
+    "integration_map": ".claude/proposal/integration-map.json",
+    "features": ".ba/requirements/features.json",
+    "roles": ".ba/requirements/roles.json",
+    "layout": ".ba/design/layout.json",
+    "screens": ".ba/design/screens.json",
+    "nfr": ".ba/requirements/nfr.json",
+    "style": ".ba/design/style.json",
+    "constraints": ".ba/discovery/constraints.json",
+    "approval": ".claude/approval/approval-response.json"
+  }
+}

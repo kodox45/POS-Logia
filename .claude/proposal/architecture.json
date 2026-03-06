@@ -1,0 +1,525 @@
+{
+  "version": "1.0",
+  "pattern": "offline-first-with-sync",
+  "description": "Offline-first PWA architecture where all data lives in IndexedDB (via Dexie.js) on the device. The frontend is a React SPA with Zustand stores backed by Dexie tables. A lightweight Express.js server acts as a sync target for cloud backup and multi-device data consistency. Core operations (ordering, payment, inventory, auth) work entirely offline. Sync is opportunistic -- data is pushed to server when internet is available.",
+  "app_type": "offline-first",
+  "complexity_tier": "complex",
+  "folder_structure": {
+    "src/": "Frontend application root",
+    "src/app/": "App entry point, router configuration, PWA registration",
+    "src/pages/": "Page components mapped to routes (one per screen)",
+    "src/pages/auth/": "Login page (S-001)",
+    "src/pages/dashboard/": "Main Dashboard Hub (S-016)",
+    "src/pages/pos/": "POS operational pages: Order List, Create Order, Payment, Table Map (S-002, S-003, S-004, S-005)",
+    "src/pages/kitchen/": "Kitchen Display pages: Order Queue, Recipe Viewer (S-006, S-007)",
+    "src/pages/admin/": "Admin panel pages: Dashboard, Menu, Recipe, Stock, Transactions, Users, Settings (S-008 to S-013, S-017)",
+    "src/pages/shift/": "Shift management pages: Open Shift, Close Shift (S-014, S-015)",
+    "src/components/": "Reusable UI components organized by domain",
+    "src/components/common/": "Shared components: buttons, badges, modals, search bars, data tables",
+    "src/components/order/": "Order-specific components: order-card, order-summary-sidebar, kitchen-ready-notification",
+    "src/components/kitchen/": "Kitchen-specific components: kitchen-order-card, elapsed-timer, recipe-header",
+    "src/components/payment/": "Payment components: numpad, currency-display, payment-success-modal, discount-picker, qris-display",
+    "src/components/shift/": "Shift components: pin-input, shift-status-bar, discrepancy-indicator, warning-banner",
+    "src/components/admin/": "Admin components: kpi-card, data-table, permission-checklist, date-range-picker",
+    "src/components/layout/": "Layout shells: WaiterCashierLayout (bottom-tabs), KitchenLayout (fullscreen), AdminLayout (sidebar), DashboardHubLayout (fullscreen-grid)",
+    "src/components/navigation/": "Navigation components: bottom-tab-bar, sidebar-nav, role-quick-access-bar, pin-gate-modal",
+    "src/stores/": "Zustand stores (one per domain group)",
+    "src/stores/useAuthStore.ts": "Auth store: user session, login/logout, PIN verification",
+    "src/stores/useMenuStore.ts": "Menu store: menu items CRUD, categories, availability",
+    "src/stores/useRecipeStore.ts": "Recipe store: recipes CRUD, ingredients, cooking steps",
+    "src/stores/useInventoryStore.ts": "Inventory store: stock items, levels, movements, thresholds",
+    "src/stores/useOrderManagementStore.ts": "Order store: orders CRUD, status transitions, additional items",
+    "src/stores/useKitchenStore.ts": "Kitchen store: order queue, cooking status, ready notifications",
+    "src/stores/usePaymentStore.ts": "Payment store: transactions, payment processing, receipt data",
+    "src/stores/useShiftManagementStore.ts": "Shift store: open/close shift, cash reconciliation, discrepancy",
+    "src/stores/useReportingStore.ts": "Reporting store: dashboard data, charts, aggregations",
+    "src/stores/useSettingsStore.ts": "Settings store: PPN config, payment methods, restaurant info, discounts",
+    "src/db/": "Dexie database definition, table schemas, migrations",
+    "src/db/database.ts": "Dexie database instance with all table definitions",
+    "src/db/tables/": "Per-entity table schema definitions",
+    "src/sync/": "Sync layer: online detection, change queue, push/pull, conflict resolution",
+    "src/sync/syncEngine.ts": "Core sync orchestrator: detect online, queue changes, batch sync",
+    "src/sync/conflictResolver.ts": "Conflict resolution strategies per entity type",
+    "src/sync/changeTracker.ts": "Track local changes for sync queue",
+    "src/types/": "Shared TypeScript type definitions",
+    "src/utils/": "Utility functions: date formatting, currency formatting, validation helpers",
+    "src/utils/auth.ts": "Auth utilities: bcrypt hash/compare, session management, PIN validation",
+    "src/utils/print.ts": "Print utilities: receipt formatting for thermal printers",
+    "src/utils/currency.ts": "Currency formatting for Rupiah (IDR)",
+    "src/hooks/": "Custom React hooks for common patterns",
+    "src/hooks/useOnlineStatus.ts": "Hook to detect online/offline state",
+    "src/hooks/useDexieQuery.ts": "Hook wrapper for Dexie reactive queries",
+    "src/assets/": "Static assets: icons, images, PWA manifest icons",
+    "server/": "Express.js sync server",
+    "server/src/": "Server source code",
+    "server/src/routes/": "Sync API routes",
+    "server/src/routes/sync.ts": "POST /sync/push, GET /sync/pull endpoints",
+    "server/src/routes/auth.ts": "POST /auth/register (initial setup only)",
+    "server/src/middleware/": "Express middleware: cors, error handler, sync auth",
+    "server/src/services/": "Business logic for sync processing",
+    "server/src/types/": "Server-side type definitions",
+    "prisma/": "Prisma schema and migrations for PostgreSQL sync target",
+    "prisma/schema.prisma": "Database schema mirroring Dexie table structure",
+    "prisma/seed.ts": "Seed data: default owner account, default roles, initial settings",
+    "tests/": "Test suites",
+    "tests/unit/": "Unit tests for stores, utilities, sync logic",
+    "tests/component/": "Component tests with React Testing Library",
+    "tests/integration/": "API integration tests for sync endpoints",
+    "tests/e2e/": "End-to-end tests with Playwright",
+    "public/": "Static files: PWA manifest, service worker, favicon"
+  },
+  "auth_flow": {
+    "type": "local-auth-hash",
+    "description": "All authentication happens locally on-device without server dependency. Credentials stored as bcrypt hashes in IndexedDB. Session managed via IndexedDB-stored session token. PIN verification for shift operations uses separate PIN hash per user.",
+    "steps": [
+      "User enters username and password on Login screen (S-001)",
+      "System retrieves user record from Dexie 'users' table by username",
+      "bcrypt.compare(inputPassword, storedHash) validates credentials locally",
+      "On success: generate session token, store in Dexie 'sessions' table with userId and expiry",
+      "Session token also stored in Zustand useAuthStore for in-memory access",
+      "User routed to Main Dashboard Hub (S-016) with role-appropriate menu cards",
+      "PIN verification (for shift operations): bcrypt.compare(inputPin, storedPinHash)",
+      "PIN gate modal (C-024) triggers when entering POS screens from non-POS context",
+      "Session timeout: check expiry on navigation, redirect to login if expired",
+      "Logout: clear session from Dexie and Zustand, redirect to S-001"
+    ],
+    "middleware": {
+      "type": "route-guard",
+      "description": "React Router route guards check for valid session in useAuthStore. Protected routes redirect to /login if no valid session. Role-based guards check user role against route requirements. PIN gate is a modal overlay, not a route guard.",
+      "guards": [
+        {
+          "name": "AuthGuard",
+          "protects": "All routes except /login",
+          "check": "Valid session token in useAuthStore"
+        },
+        {
+          "name": "RoleGuard",
+          "protects": "Role-specific routes (admin, kitchen)",
+          "check": "User role matches route role_access requirement"
+        },
+        {
+          "name": "PermissionGuard",
+          "protects": "Permission-gated routes (stock, menu for non-owners)",
+          "check": "User has required permission in permission_checklist"
+        },
+        {
+          "name": "PinGateModal",
+          "protects": "POS screens (S-002, S-003, S-004, S-005) when entering from non-POS context",
+          "check": "PIN hash comparison via bcrypt. Triggered by navigation context, not route."
+        },
+        {
+          "name": "ShiftGuard",
+          "protects": "Payment processing routes",
+          "check": "Active shift exists in useShiftManagementStore"
+        }
+      ]
+    }
+  },
+  "data_flow": {
+    "frontend": "Component -> Zustand store action -> Dexie table write (primary) -> Zustand state update -> UI re-render. All reads come from Dexie via dexie-react-hooks (useLiveQuery) or Zustand store selectors. Writes go to Dexie first (source of truth), then Zustand is hydrated from Dexie. Sync queue tracks all local changes.",
+    "backend": "Sync server receives batched changes from client via POST /sync/push. Server applies changes to PostgreSQL via Prisma. Server responds with server-side changes via GET /sync/pull. Client merges server changes into Dexie with conflict resolution. Sync is triggered on: app startup (if online), periodic interval (every 5 minutes if online), and manual user trigger.",
+    "stores": [
+      {
+        "store_name": "useAuthStore",
+        "domain_group": "auth",
+        "entities": ["User", "Session", "UserPermission"],
+        "dexie_tables": ["users", "sessions", "userPermissions"],
+        "key_operations": ["login", "logout", "verifyPin", "checkSession", "updatePermissions"]
+      },
+      {
+        "store_name": "useMenuStore",
+        "domain_group": "menu",
+        "entities": ["MenuItem", "MenuCategory"],
+        "dexie_tables": ["menuItems", "menuCategories"],
+        "key_operations": ["addMenuItem", "updateMenuItem", "toggleAvailability", "filterByCategory"]
+      },
+      {
+        "store_name": "useRecipeStore",
+        "domain_group": "recipe",
+        "entities": ["Recipe", "RecipeIngredient", "RecipeStep"],
+        "dexie_tables": ["recipes", "recipeIngredients", "recipeSteps"],
+        "key_operations": ["addRecipe", "updateRecipe", "getRecipeByMenuItem", "linkIngredientToInventory"]
+      },
+      {
+        "store_name": "useInventoryStore",
+        "domain_group": "inventory",
+        "entities": ["InventoryItem", "StockMovement"],
+        "dexie_tables": ["inventoryItems", "stockMovements"],
+        "key_operations": ["addStock", "deductStock", "adjustStock", "checkThreshold", "getMovementHistory"]
+      },
+      {
+        "store_name": "useOrderManagementStore",
+        "domain_group": "order-management",
+        "entities": ["Order", "OrderItem"],
+        "dexie_tables": ["orders", "orderItems"],
+        "key_operations": ["createOrder", "addItemsToOrder", "updateOrderStatus", "cancelOrder", "getActiveOrders"]
+      },
+      {
+        "store_name": "useKitchenStore",
+        "domain_group": "kitchen",
+        "entities": ["Order", "KitchenNotification"],
+        "dexie_tables": ["orders", "kitchenNotifications"],
+        "key_operations": ["getOrderQueue", "startCooking", "markReady", "confirmServed", "getReadyNotifications"]
+      },
+      {
+        "store_name": "usePaymentStore",
+        "domain_group": "payment",
+        "entities": ["Transaction", "EwalletProvider"],
+        "dexie_tables": ["transactions", "ewalletProviders"],
+        "key_operations": ["processPayment", "calculatePPN", "applyDiscount", "voidTransaction", "getTransactionHistory"]
+      },
+      {
+        "store_name": "useShiftManagementStore",
+        "domain_group": "shift-management",
+        "entities": ["Shift", "VoidRecord"],
+        "dexie_tables": ["shifts", "voidRecords"],
+        "key_operations": ["openShift", "closeShift", "getActiveShift", "calculateExpectedCash", "recordDiscrepancy"]
+      },
+      {
+        "store_name": "useReportingStore",
+        "domain_group": "reporting",
+        "entities": ["DailySummary", "RevenueData"],
+        "dexie_tables": ["dailySummaries"],
+        "key_operations": ["getDailySummary", "getRevenueByDateRange", "getTopSellingItems", "getPeakHours", "getPaymentBreakdown"]
+      },
+      {
+        "store_name": "useSettingsStore",
+        "domain_group": "settings",
+        "entities": ["PosSettings", "Discount", "EwalletProvider"],
+        "dexie_tables": ["posSettings", "discounts", "ewalletProviders"],
+        "key_operations": ["getPPNRate", "togglePPN", "getActiveDiscounts", "updateRestaurantInfo", "configurePaymentMethods"]
+      }
+    ],
+    "cross_domain_events": [
+      {
+        "event": "order.submitted",
+        "source_store": "useOrderManagementStore",
+        "target_stores": ["useKitchenStore", "useInventoryStore"],
+        "action": "Push order to kitchen queue. Check stock levels against recipe ingredients. Deduct stock on order confirmation.",
+        "source_flow": "UF-001"
+      },
+      {
+        "event": "order.ready",
+        "source_store": "useKitchenStore",
+        "target_stores": ["useOrderManagementStore"],
+        "action": "Push notification to kitchenReadyNotifications. Update order status to 'ready' in order store.",
+        "source_flow": "UF-008"
+      },
+      {
+        "event": "payment.completed",
+        "source_store": "usePaymentStore",
+        "target_stores": ["useOrderManagementStore", "useShiftManagementStore", "useInventoryStore"],
+        "action": "Update order status to 'paid'. Release table. Record transaction in active shift. Confirm stock deduction.",
+        "source_flow": "UF-001"
+      },
+      {
+        "event": "shift.opened",
+        "source_store": "useShiftManagementStore",
+        "target_stores": ["useAuthStore"],
+        "action": "Set active shift flag. Enable POS access for this cashier.",
+        "source_flow": "UF-007"
+      },
+      {
+        "event": "shift.closed",
+        "source_store": "useShiftManagementStore",
+        "target_stores": ["usePaymentStore"],
+        "action": "Finalize shift transactions. Lock shift data as immutable.",
+        "source_flow": "UF-007"
+      },
+      {
+        "event": "void.processed",
+        "source_store": "usePaymentStore",
+        "target_stores": ["useOrderManagementStore", "useShiftManagementStore"],
+        "action": "Update order status to 'voided'. Reduce expected cash in active shift by void amount.",
+        "source_flow": "UF-010"
+      },
+      {
+        "event": "stock.low",
+        "source_store": "useInventoryStore",
+        "target_stores": ["useReportingStore"],
+        "action": "Flag low stock item for dashboard alert widget.",
+        "source_flow": "UF-006"
+      }
+    ]
+  },
+  "screen_mapping": [
+    {
+      "screen_id": "S-001",
+      "screen_name": "Login Screen",
+      "page_component": "LoginPage",
+      "route": "/login",
+      "interface": "shared",
+      "layout": "none"
+    },
+    {
+      "screen_id": "S-002",
+      "screen_name": "Order List",
+      "page_component": "OrderListPage",
+      "route": "/pos/orders",
+      "interface": "waiter-cashier-ui",
+      "layout": "WaiterCashierLayout"
+    },
+    {
+      "screen_id": "S-003",
+      "screen_name": "Create / Edit / Add to Order",
+      "page_component": "CreateOrderPage",
+      "route": "/pos/orders/new",
+      "interface": "waiter-cashier-ui",
+      "layout": "WaiterCashierLayout"
+    },
+    {
+      "screen_id": "S-004",
+      "screen_name": "Payment Screen",
+      "page_component": "PaymentPage",
+      "route": "/pos/payment/:orderId",
+      "interface": "waiter-cashier-ui",
+      "layout": "WaiterCashierLayout"
+    },
+    {
+      "screen_id": "S-005",
+      "screen_name": "Table Map",
+      "page_component": "TableMapPage",
+      "route": "/pos/tables",
+      "interface": "waiter-cashier-ui",
+      "layout": "WaiterCashierLayout"
+    },
+    {
+      "screen_id": "S-006",
+      "screen_name": "Kitchen Order Queue",
+      "page_component": "KitchenQueuePage",
+      "route": "/kitchen/queue",
+      "interface": "kitchen-display",
+      "layout": "KitchenLayout"
+    },
+    {
+      "screen_id": "S-007",
+      "screen_name": "Recipe Viewer",
+      "page_component": "RecipeViewerPage",
+      "route": "/kitchen/recipe/:recipeId",
+      "interface": "kitchen-display",
+      "layout": "KitchenLayout"
+    },
+    {
+      "screen_id": "S-008",
+      "screen_name": "Admin Dashboard (Laporan Bisnis)",
+      "page_component": "AdminDashboardPage",
+      "route": "/admin/dashboard",
+      "interface": "admin-panel",
+      "layout": "AdminLayout"
+    },
+    {
+      "screen_id": "S-009",
+      "screen_name": "Menu Management",
+      "page_component": "MenuManagementPage",
+      "route": "/admin/menu",
+      "interface": "admin-panel",
+      "layout": "AdminLayout"
+    },
+    {
+      "screen_id": "S-010",
+      "screen_name": "Recipe Management",
+      "page_component": "RecipeManagementPage",
+      "route": "/admin/recipes",
+      "interface": "admin-panel",
+      "layout": "AdminLayout"
+    },
+    {
+      "screen_id": "S-011",
+      "screen_name": "Inventory / Stock Management",
+      "page_component": "InventoryManagementPage",
+      "route": "/admin/inventory",
+      "interface": "admin-panel",
+      "layout": "AdminLayout"
+    },
+    {
+      "screen_id": "S-012",
+      "screen_name": "Transaction History (Laporan Penjualan)",
+      "page_component": "TransactionHistoryPage",
+      "route": "/admin/transactions",
+      "interface": "admin-panel",
+      "layout": "AdminLayout"
+    },
+    {
+      "screen_id": "S-013",
+      "screen_name": "User & Access Control",
+      "page_component": "UserManagementPage",
+      "route": "/admin/users",
+      "interface": "admin-panel",
+      "layout": "AdminLayout"
+    },
+    {
+      "screen_id": "S-014",
+      "screen_name": "Open Shift (Buka Kasir)",
+      "page_component": "OpenShiftPage",
+      "route": "/shift/open",
+      "interface": "waiter-cashier-ui",
+      "layout": "none"
+    },
+    {
+      "screen_id": "S-015",
+      "screen_name": "Close Shift / Cash Reconciliation (Tutup Kasir)",
+      "page_component": "CloseShiftPage",
+      "route": "/shift/close",
+      "interface": "waiter-cashier-ui",
+      "layout": "none"
+    },
+    {
+      "screen_id": "S-016",
+      "screen_name": "Main Dashboard Hub",
+      "page_component": "DashboardHubPage",
+      "route": "/dashboard",
+      "interface": "shared",
+      "layout": "DashboardHubLayout"
+    },
+    {
+      "screen_id": "S-017",
+      "screen_name": "POS System Settings (Pengaturan POS)",
+      "page_component": "SystemSettingsPage",
+      "route": "/admin/settings",
+      "interface": "admin-panel",
+      "layout": "AdminLayout"
+    }
+  ],
+  "seed_data": {
+    "description": "Initial seed data required for the system to function. Seeded into both Dexie (client) on first app load and PostgreSQL (server) via Prisma seed.",
+    "items": [
+      {
+        "entity": "User",
+        "records": [
+          {
+            "username": "owner",
+            "display_name": "Pemilik Restoran",
+            "role": "owner",
+            "password_hash": "(bcrypt hash of default password)",
+            "pin_hash": "(bcrypt hash of default PIN)",
+            "is_active": true
+          }
+        ],
+        "source": "roles.json (owner role is required for initial system setup)"
+      },
+      {
+        "entity": "Role",
+        "records": [
+          { "id": "owner", "name": "Owner / Admin", "description": "Full system access" },
+          { "id": "waiter-cashier", "name": "Waiter / Cashier", "description": "Front-of-house operations" },
+          { "id": "chef", "name": "Chef / Cook", "description": "Kitchen operations" }
+        ],
+        "source": "roles.json (3 roles defined)"
+      },
+      {
+        "entity": "DefaultPermission",
+        "records": [
+          { "role": "waiter-cashier", "permission": "perm-view-stock", "default": false },
+          { "role": "waiter-cashier", "permission": "perm-view-menu", "default": true },
+          { "role": "waiter-cashier", "permission": "perm-view-recipe", "default": false },
+          { "role": "waiter-cashier", "permission": "perm-view-tables", "default": true },
+          { "role": "waiter-cashier", "permission": "perm-view-reports", "default": false },
+          { "role": "waiter-cashier", "permission": "perm-view-transactions", "default": false },
+          { "role": "chef", "permission": "perm-chef-view-stock", "default": false },
+          { "role": "chef", "permission": "perm-chef-view-menu", "default": true },
+          { "role": "chef", "permission": "perm-chef-manage-recipe", "default": false }
+        ],
+        "source": "roles.json (toggleable_permissions per role)"
+      },
+      {
+        "entity": "SystemSettings",
+        "records": [
+          {
+            "ppn_enabled": true,
+            "ppn_rate": 11,
+            "restaurant_name": "Restoran UMKM Logia",
+            "restaurant_address": "",
+            "receipt_footer": "Terima kasih atas kunjungan Anda!"
+          }
+        ],
+        "source": "features.json F-016 (PPN default rate 11%)"
+      },
+      {
+        "entity": "Table",
+        "records": [
+          { "table_number": 1, "status": "available" },
+          { "table_number": 2, "status": "available" },
+          { "table_number": 3, "status": "available" },
+          { "table_number": 4, "status": "available" },
+          { "table_number": 5, "status": "available" },
+          { "table_number": 6, "status": "available" },
+          { "table_number": 7, "status": "available" },
+          { "table_number": 8, "status": "available" },
+          { "table_number": 9, "status": "available" },
+          { "table_number": 10, "status": "available" }
+        ],
+        "source": "features.json F-010 (table management, default 10 tables configurable by owner)"
+      }
+    ]
+  },
+  "decisions_requiring_approval": [
+    {
+      "id": "D-060",
+      "category": "architecture-pattern",
+      "decision": "Offline-first with opportunistic sync architecture pattern",
+      "rationale": "All core features must work without internet (nfr.reliability). Data lives in IndexedDB on-device as primary store. Server is sync target only, not a dependency. This means the frontend is the source of truth during normal operation.",
+      "alternatives": ["Online-first with offline cache", "Hybrid online/offline with service worker"],
+      "impact": "Entire data flow is local-first. Server is optional for core operations."
+    },
+    {
+      "id": "D-061",
+      "category": "multi-interface-layout",
+      "decision": "4 distinct interface layouts: DashboardHub (fullscreen-grid), WaiterCashier (bottom-tabs), Kitchen (fullscreen), Admin (sidebar)",
+      "rationale": "layout.json defines 4 interfaces with different navigation patterns and target roles. Each optimized for its use case: bottom-tabs for waiter mobility, fullscreen for kitchen visibility, sidebar for admin data density.",
+      "alternatives": ["Single responsive layout for all roles", "2 layouts (mobile + desktop)"],
+      "impact": "4 layout shell components needed. Route guards determine which layout renders based on user role and target screen."
+    },
+    {
+      "id": "D-062",
+      "category": "store-architecture",
+      "decision": "10 Zustand stores (one per domain group) backed by Dexie tables",
+      "rationale": "key_signals.domain_groups lists 10 domain groups. Each domain gets its own Zustand store for separation of concerns. Stores are backed by Dexie tables as the persistent layer. Cross-domain communication via event-style actions (e.g., order.submitted triggers kitchen queue update).",
+      "alternatives": ["Single monolithic store", "Fewer stores with merged domains"],
+      "impact": "Clean domain separation but requires explicit cross-domain event handling for flows that touch multiple domains (UF-001, UF-007, UF-010)."
+    },
+    {
+      "id": "D-063",
+      "category": "cross-domain-communication",
+      "decision": "Cross-domain events handled via store-to-store action calls with Dexie transactions",
+      "rationale": "5 cross-domain flows identified in shared context (UF-001, UF-006, UF-007, UF-008, UF-010). Each flow touches 2-4 domains. Events are handled by calling target store actions from source store actions, wrapped in Dexie transactions for atomicity.",
+      "alternatives": ["Event bus / pub-sub system", "Single orchestrator service per flow"],
+      "impact": "Requires careful ordering of cross-domain operations. Dexie transactions ensure atomicity across tables."
+    },
+    {
+      "id": "D-064",
+      "category": "stock-deduction-timing",
+      "decision": "Stock deduction occurs at order confirmation (not at payment completion)",
+      "rationale": "Timing conflict identified in shared context: F-004 says 'when order is confirmed' vs UF-001 step 11 says 'at payment completion'. Choosing order confirmation because: (1) prevents selling items that are already out of stock, (2) F-004 business rule is explicit, (3) if order is cancelled before payment, stock is restored. This is the safer approach for UMKM restaurants with limited inventory.",
+      "alternatives": ["Deduct at payment completion (risk: overselling during cooking)", "Two-phase: reserve at order, confirm at payment"],
+      "impact": "Stock levels reflect committed orders, not just paid orders. Cancelled orders must restore stock."
+    },
+    {
+      "id": "D-065",
+      "category": "route-structure",
+      "decision": "Route hierarchy: /login, /dashboard, /pos/*, /kitchen/*, /shift/*, /admin/*",
+      "rationale": "Routes organized by interface context matching layout.json interfaces. /pos/* uses WaiterCashierLayout, /kitchen/* uses KitchenLayout, /admin/* uses AdminLayout. /dashboard and /login are standalone. /shift/* pages are standalone (no persistent nav during shift operations).",
+      "alternatives": ["Flat route structure (/orders, /kitchen, /menu)", "Role-prefixed routes (/waiter/orders, /chef/kitchen)"],
+      "impact": "Clean URL structure that maps to interface layouts. Role-based access controlled by guards, not URL paths."
+    },
+    {
+      "id": "D-066",
+      "category": "pin-gate-strategy",
+      "decision": "PIN gate implemented as modal overlay (C-024) triggered by navigation context, not as a route",
+      "rationale": "F-015 requires PIN re-verification when entering POS from outside POS but NOT when navigating within POS. A modal overlay tracks navigation context (was previous route a POS route?) rather than adding PIN as a route step. This provides seamless POS-internal navigation while enforcing security on POS entry.",
+      "alternatives": ["PIN as intermediate route (/pos/verify-pin)", "PIN check on every POS page load"],
+      "impact": "Requires navigation context tracking in useAuthStore. POS-internal navigation is friction-free."
+    }
+  ],
+  "summary": {
+    "total_screens": 17,
+    "total_routes": 17,
+    "total_stores": 10,
+    "total_dexie_tables": 19,
+    "total_layouts": 4,
+    "total_seed_entities": 5,
+    "interfaces": ["dashboard-hub", "waiter-cashier-ui", "kitchen-display", "admin-panel"],
+    "cross_domain_flows": 5,
+    "auth_guards": 5,
+    "key_pattern": "Component -> Zustand store -> Dexie table (primary) -> sync to PostgreSQL when online"
+  }
+}

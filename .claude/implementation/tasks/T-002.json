@@ -1,0 +1,66 @@
+{
+  "id": "T-002",
+  "subject": "Set up backend infrastructure with database schema and server",
+  "owner": "builder-backend-crud",
+  "builder_role": "backend",
+  "layer": 1,
+  "wave": 1,
+  "goal": "Set up Express.js server with middleware stack, implement auth middleware (bcrypt-based local auth), configure Prisma client initialization, add base route structure, implement error handling middleware, and CORS configuration.",
+  "domain_packages": [],
+  "write_scope": [
+    "server/src/",
+    "server/middleware/",
+    "server/config/"
+  ],
+  "read_sources": {
+    "ba_files": [
+      ".ba/requirements/nfr.json"
+    ],
+    "entities": [],
+    "endpoints": {},
+    "features": [],
+    "screens": [],
+    "flows": [],
+    "components": []
+  },
+  "cross_domain_contracts": [],
+  "business_rules": [],
+  "state_dependencies": null,
+  "db_scope": {
+    "writes": [],
+    "reads": []
+  },
+  "acceptance": {
+    "infra": [
+      "Server starts on configured port",
+      "Prisma client connects to PostgreSQL",
+      "Auth middleware validates session tokens",
+      "Error handling returns structured JSON errors",
+      "CORS allows configured origins",
+      "Base route structure responds to health check"
+    ]
+  },
+  "depends_on": [],
+  "on_critical_path": true,
+  "_foundation_files": [
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  }
+}

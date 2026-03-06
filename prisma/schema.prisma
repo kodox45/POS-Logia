@@ -1,0 +1,566 @@
+// ============================================================
+// Prisma Schema — PostgreSQL sync target for offline-first POS
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum SyncStatus {
+  synced
+  pending
+  conflict
+}
+
+enum UserRole {
+  owner
+  waiter_cashier @map("waiter-cashier")
+  chef
+}
+
+enum DifficultyLevel {
+  easy
+  medium
+  hard
+}
+
+enum StockStatus {
+  ok
+  low
+  critical
+}
+
+enum MovementType {
+  restock
+  auto_deduction
+  manual_adjustment
+}
+
+enum TableStatus {
+  available
+  occupied
+  needs_payment
+}
+
+enum OrderStatus {
+  pending
+  cooking
+  ready
+  served
+  paid
+  cancelled
+  voided
+}
+
+enum CookingStatus {
+  pending
+  cooking
+  ready
+  served
+}
+
+enum PaymentMethod {
+  tunai
+  qris
+  gopay
+  ovo
+  dana
+  shopeepay
+  transfer_bank
+}
+
+enum TransactionStatus {
+  completed
+  voided
+}
+
+enum ShiftStatus {
+  open
+  closed
+}
+
+enum VoidType {
+  full_void
+  partial_void
+  cancel_before_payment
+}
+
+enum VoidReason {
+  salah_input
+  customer_batal
+  item_habis
+  lainnya
+}
+
+enum DiscountType {
+  percentage
+  fixed_amount
+}
+
+enum DiscountAppliedTo {
+  whole_order
+  specific_items
+}
+
+// --- Models ---
+
+model User {
+  id            String    @id @default(uuid())
+  username      String    @unique
+  passwordHash  String
+  pinHash       String?
+  role          UserRole
+  displayName   String
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  syncId        String    @unique @default(uuid())
+  lastSynced    DateTime?
+  syncStatus    SyncStatus @default(pending)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  permissions   UserPermission[]
+  shifts        Shift[]   @relation("CashierShifts")
+  orders        Order[]   @relation("WaiterOrders")
+  transactions  Transaction[] @relation("CashierTransactions")
+  stockMovements StockMovement[] @relation("PerformerMovements")
+  voidRecords   VoidRecord[] @relation("VoidPerformer")
+
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+model UserPermission {
+  id            String    @id @default(uuid())
+  userId        String
+  permissionKey String
+  isGranted     Boolean   @default(false)
+  syncId        String    @unique @default(uuid())
+  lastSynced    DateTime?
+  syncStatus    SyncStatus @default(pending)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionKey])
+  @@index([userId])
+  @@map("user_permissions")
+}
+
+model MenuItem {
+  id            String    @id @default(uuid())
+  itemName      String
+  price         Decimal
+  categoryId    String
+  description   String?
+  isAvailable   Boolean   @default(true)
+  imageUrl      String?
+  syncId        String    @unique @default(uuid())
+  lastSynced    DateTime?
+  syncStatus    SyncStatus @default(pending)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  category      MenuCategory @relation(fields: [categoryId], references: [id])
+  recipes       Recipe[]
+  orderItems    OrderItem[]
+
+  @@index([categoryId])
+  @@index([isAvailable])
+  @@index([itemName])
+  @@map("menu_items")
+}
+
+model MenuCategory {
+  id            String    @id @default(uuid())
+  name          String    @unique
+  sortOrder     Int?      @default(0)
+  syncId        String    @unique @default(uuid())
+  lastSynced    DateTime?
+  syncStatus    SyncStatus @default(pending)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  menuItems     MenuItem[]
+
+  @@map("menu_categories")
+}
+
+model Recipe {
+  id            String    @id @default(uuid())
+  menuItemId    String
+  cookingTime   Int?
+  difficultyLevel DifficultyLevel?
+  notes         String?
+  syncId        String    @unique @default(uuid())
+  lastSynced    DateTime?
+  syncStatus    SyncStatus @default(pending)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  menuItem      MenuItem  @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  ingredients   RecipeIngredient[]
+  steps         RecipeStep[]
+
+  @@index([menuItemId])
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  id              String    @id @default(uuid())
+  recipeId        String
+  inventoryItemId String
+  quantityRequired Decimal
+  unit            String
+  syncId          String    @unique @default(uuid())
+  lastSynced      DateTime?
+  syncStatus      SyncStatus @default(pending)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  recipe          Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@unique([recipeId, inventoryItemId])
+  @@index([recipeId])
+  @@index([inventoryItemId])
+  @@map("recipe_ingredients")
+}
+
+model RecipeStep {
+  id            String    @id @default(uuid())
+  recipeId      String
+  stepOrder     Int
+  instruction   String
+  syncId        String    @unique @default(uuid())
+  lastSynced    DateTime?
+  syncStatus    SyncStatus @default(pending)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  recipe        Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, stepOrder])
+  @@map("recipe_steps")
+}
+
+model InventoryItem {
+  id              String    @id @default(uuid())
+  itemName        String    @unique
+  quantity        Decimal   @default(0)
+  unit            String
+  minimumThreshold Decimal?
+  stockStatus     StockStatus @default(ok)
+  syncId          String    @unique @default(uuid())
+  lastSynced      DateTime?
+  syncStatus      SyncStatus @default(pending)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  recipeIngredients RecipeIngredient[]
+  stockMovements    StockMovement[]
+
+  @@index([stockStatus])
+  @@map("inventory_items")
+}
+
+model StockMovement {
+  id              String    @id @default(uuid())
+  inventoryItemId String
+  movementType    MovementType
+  quantityChange  Decimal
+  reason          String?
+  orderId         String?
+  performedBy     String
+  syncId          String    @unique @default(uuid())
+  lastSynced      DateTime?
+  syncStatus      SyncStatus @default(pending)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  order           Order?    @relation(fields: [orderId], references: [id])
+  performer       User      @relation("PerformerMovements", fields: [performedBy], references: [id])
+
+  @@index([inventoryItemId])
+  @@index([movementType])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+model RestaurantTable {
+  id            String    @id @default(uuid())
+  tableName     String    @unique
+  tableNumber   Int       @unique
+  capacity      Int?      @default(4)
+  status        TableStatus @default(available)
+  activeOrderId String?
+  syncId        String    @unique @default(uuid())
+  lastSynced    DateTime?
+  syncStatus    SyncStatus @default(pending)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  orders        Order[]
+
+  @@index([status])
+  @@map("tables")
+}
+
+model Order {
+  id              String    @id @default(uuid())
+  orderNumber     String    @unique
+  tableId         String
+  waiterId        String
+  shiftId         String?
+  orderStatus     OrderStatus @default(pending)
+  specialNotes    String?
+  isAdditional    Boolean?  @default(false)
+  discountId      String?
+  discountAmount  Decimal?  @default(0)
+  subtotalAmount  Decimal   @default(0)
+  ppnRate         Decimal   @default(0)
+  ppnAmount       Decimal   @default(0)
+  grandTotal      Decimal   @default(0)
+  cookingStartedAt DateTime?
+  readyAt         DateTime?
+  syncId          String    @unique @default(uuid())
+  lastSynced      DateTime?
+  syncStatus      SyncStatus @default(pending)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  table           RestaurantTable @relation(fields: [tableId], references: [id])
+  waiter          User      @relation("WaiterOrders", fields: [waiterId], references: [id])
+  shift           Shift?    @relation(fields: [shiftId], references: [id])
+  discount        Discount? @relation(fields: [discountId], references: [id])
+  items           OrderItem[]
+  transactions    Transaction[]
+  voidRecords     VoidRecord[]
+  kitchenNotifications KitchenNotification[]
+  stockMovements  StockMovement[]
+
+  @@index([tableId])
+  @@index([orderStatus])
+  @@index([shiftId])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String    @id @default(uuid())
+  orderId       String
+  menuItemId    String
+  itemName      String
+  quantity      Int       @default(1)
+  unitPrice     Decimal
+  lineTotal     Decimal
+  specialNotes  String?
+  isAdditional  Boolean?  @default(false)
+  cookingStatus CookingStatus @default(pending)
+  syncId        String    @unique @default(uuid())
+  lastSynced    DateTime?
+  syncStatus    SyncStatus @default(pending)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem      MenuItem  @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("order_items")
+}
+
+model Transaction {
+  id                  String    @id @default(uuid())
+  transactionNumber   String    @unique
+  orderId             String
+  shiftId             String
+  cashierId           String
+  tableNumber         Int
+  subtotalAmount      Decimal
+  discountName        String?
+  discountAmount      Decimal?  @default(0)
+  ppnRate             Decimal
+  ppnAmount           Decimal
+  grandTotal          Decimal
+  paymentMethod       PaymentMethod
+  digitalPaymentRef   String?
+  transferProofPhotoUrl String?
+  amountPaid          Decimal
+  changeAmount        Decimal   @default(0)
+  transactionStatus   TransactionStatus @default(completed)
+  syncId              String    @unique @default(uuid())
+  lastSynced          DateTime?
+  syncStatus          SyncStatus @default(pending)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  order               Order     @relation(fields: [orderId], references: [id])
+  shift               Shift     @relation(fields: [shiftId], references: [id])
+  cashier             User      @relation("CashierTransactions", fields: [cashierId], references: [id])
+
+  @@index([orderId])
+  @@index([shiftId])
+  @@index([cashierId])
+  @@index([paymentMethod])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+model Shift {
+  id              String    @id @default(uuid())
+  shiftNumber     String    @unique
+  picCashierId    String
+  pinVerified     Boolean   @default(false)
+  pinVerifiedAt   DateTime?
+  openingBalance  Decimal
+  shiftStartTime  DateTime
+  shiftEndTime    DateTime?
+  expectedCash    Decimal   @default(0)
+  actualCash      Decimal?
+  discrepancy     Decimal?
+  digitalSalesTotal Decimal @default(0)
+  cashSalesTotal  Decimal   @default(0)
+  totalRevenue    Decimal   @default(0)
+  totalTransactions Int     @default(0)
+  voidCount       Int       @default(0)
+  voidTotalAmount Decimal   @default(0)
+  discountTotalGiven Decimal @default(0)
+  shiftStatus     ShiftStatus @default(open)
+  closingNotes    String?
+  syncId          String    @unique @default(uuid())
+  lastSynced      DateTime?
+  syncStatus      SyncStatus @default(pending)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  cashier         User      @relation("CashierShifts", fields: [picCashierId], references: [id])
+  transactions    Transaction[]
+  orders          Order[]
+  voidRecords     VoidRecord[]
+
+  @@index([picCashierId])
+  @@index([shiftStatus])
+  @@index([shiftStartTime])
+  @@map("shifts")
+}
+
+model VoidRecord {
+  id              String    @id @default(uuid())
+  voidNumber      String    @unique
+  originalOrderId String
+  shiftId         String
+  voidType        VoidType
+  voidReason      VoidReason
+  voidNotes       String?
+  voidedBy        String
+  pinVerified     Boolean   @default(false)
+  pinVerifiedAt   DateTime
+  voidAmount      Decimal
+  syncId          String    @unique @default(uuid())
+  lastSynced      DateTime?
+  syncStatus      SyncStatus @default(pending)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  originalOrder   Order     @relation(fields: [originalOrderId], references: [id])
+  shift           Shift     @relation(fields: [shiftId], references: [id])
+  performer       User      @relation("VoidPerformer", fields: [voidedBy], references: [id])
+
+  @@index([originalOrderId])
+  @@index([shiftId])
+  @@index([voidedBy])
+  @@index([createdAt])
+  @@map("void_records")
+}
+
+model Discount {
+  id            String    @id @default(uuid())
+  discountName  String
+  discountType  DiscountType
+  discountValue Decimal
+  appliedTo     DiscountAppliedTo @default(whole_order)
+  isActive      Boolean   @default(true)
+  syncId        String    @unique @default(uuid())
+  lastSynced    DateTime?
+  syncStatus    SyncStatus @default(pending)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  orders        Order[]
+
+  @@index([isActive])
+  @@map("discounts")
+}
+
+model KitchenNotification {
+  id              String    @id @default(uuid())
+  orderId         String
+  tableNumber     Int
+  items           String
+  isAcknowledged  Boolean   @default(false)
+  syncId          String    @unique @default(uuid())
+  lastSynced      DateTime?
+  syncStatus      SyncStatus @default(pending)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([isAcknowledged])
+  @@map("kitchen_notifications")
+}
+
+model PosSettings {
+  id              String    @id @default(uuid())
+  ppnEnabled      Boolean   @default(true)
+  ppnRate         Decimal   @default(11)
+  restaurantName  String?
+  restaurantAddress String?
+  receiptFooter   String?
+  showPpnOnReceipt Boolean  @default(true)
+  qrisImageUrl    String?
+  bankName        String?
+  bankAccountNumber String?
+  bankAccountHolder String?
+  restaurantLogoUrl String?
+  syncId          String    @unique @default(uuid())
+  lastSynced      DateTime?
+  syncStatus      SyncStatus @default(pending)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  ewalletProviders EwalletProvider[]
+
+  @@map("pos_settings")
+}
+
+model EwalletProvider {
+  id            String    @id @default(uuid())
+  posSettingsId String
+  providerName  String    @unique
+  isEnabled     Boolean   @default(false)
+  qrImageUrl    String?
+  syncId        String    @unique @default(uuid())
+  lastSynced    DateTime?
+  syncStatus    SyncStatus @default(pending)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  posSettings   PosSettings @relation(fields: [posSettingsId], references: [id], onDelete: Cascade)
+
+  @@index([isEnabled])
+  @@map("ewallet_providers")
+}

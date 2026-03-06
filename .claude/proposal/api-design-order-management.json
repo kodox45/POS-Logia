@@ -1,0 +1,432 @@
+{
+  "domain": "order-management",
+  "endpoints": [
+    {
+      "id": "EP-035",
+      "method": "GET",
+      "path": "/api/orders",
+      "description": "List all orders with filtering by status, table, and date. Used by Order List screen (S-002).",
+      "source_features": ["F-001"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [
+          { "name": "orderStatus", "type": "enum", "required": false, "description": "Filter by status", "values": ["pending", "cooking", "ready", "served", "paid", "cancelled", "voided"] },
+          { "name": "tableId", "type": "uuid", "required": false, "description": "Filter by table" },
+          { "name": "shiftId", "type": "uuid", "required": false, "description": "Filter by shift" },
+          { "name": "dateFrom", "type": "date", "required": false, "description": "Start date" },
+          { "name": "dateTo", "type": "date", "required": false, "description": "End date" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "orders": [{ "id": "uuid", "orderNumber": "string", "tableId": "uuid", "tableNumber": "number", "orderStatus": "enum", "itemCount": "number", "subtotalAmount": "decimal", "grandTotal": "decimal", "waiterId": "uuid", "waiterName": "string", "hasKitchenNotification": "boolean", "createdAt": "ISO-8601" }],
+            "total": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "Order",
+      "related_entity_id": "E-011",
+      "domain_group": "order-management"
+    },
+    {
+      "id": "EP-036",
+      "method": "GET",
+      "path": "/api/orders/:id",
+      "description": "Get full order details including all line items, pricing breakdown, and status history.",
+      "source_features": ["F-001", "F-003"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Order ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "orderNumber": "string",
+            "tableId": "uuid",
+            "tableNumber": "number",
+            "waiterId": "uuid",
+            "waiterName": "string",
+            "shiftId": "uuid|null",
+            "orderStatus": "enum",
+            "specialNotes": "string|null",
+            "isAdditional": "boolean",
+            "items": [{ "id": "uuid", "menuItemId": "uuid", "itemName": "string", "quantity": "number", "unitPrice": "decimal", "lineTotal": "decimal", "specialNotes": "string|null", "isAdditional": "boolean", "cookingStatus": "enum" }],
+            "discountId": "uuid|null",
+            "discountName": "string|null",
+            "discountAmount": "decimal",
+            "subtotalAmount": "decimal",
+            "ppnRate": "decimal",
+            "ppnAmount": "decimal",
+            "grandTotal": "decimal",
+            "cookingStartedAt": "ISO-8601|null",
+            "readyAt": "ISO-8601|null",
+            "createdAt": "ISO-8601",
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "ORDER_NOT_FOUND", "message": "Order not found" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "Order",
+      "related_entity_id": "E-011",
+      "domain_group": "order-management"
+    },
+    {
+      "id": "EP-037",
+      "method": "POST",
+      "path": "/api/orders",
+      "description": "Create a new order for a table with menu items. Triggers stock check and sends to kitchen display. Auto-calculates subtotal.",
+      "source_features": ["F-001", "F-004"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "tableId", "type": "uuid", "required": true, "description": "Target table" },
+          { "name": "items", "type": "array", "required": true, "description": "Array of order items", "items": { "menuItemId": "uuid", "quantity": "number", "specialNotes": "string|null" } },
+          { "name": "specialNotes", "type": "string", "required": false, "description": "General order notes" },
+          { "name": "discountId", "type": "uuid", "required": false, "description": "Applied discount ID" }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 201,
+          "body": {
+            "id": "uuid",
+            "orderNumber": "string",
+            "tableId": "uuid",
+            "orderStatus": "pending",
+            "items": [{ "id": "uuid", "itemName": "string", "quantity": "number", "unitPrice": "decimal", "lineTotal": "decimal" }],
+            "subtotalAmount": "decimal",
+            "grandTotal": "decimal",
+            "stockWarnings": [{ "menuItemId": "uuid", "menuItemName": "string", "ingredient": "string", "status": "low|critical" }],
+            "createdAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 400, "code": "NO_ITEMS", "message": "Order must have at least one menu item" },
+          { "status": 400, "code": "TABLE_NOT_FOUND", "message": "Table does not exist" },
+          { "status": 400, "code": "ITEM_UNAVAILABLE", "message": "One or more menu items are unavailable" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Order must have at least one menu item",
+          "type": "constraint",
+          "source": "F-001.business_rules[0]"
+        },
+        {
+          "rule": "Each order is linked to a specific table",
+          "type": "constraint",
+          "source": "F-001.business_rules[2]"
+        },
+        {
+          "rule": "Stock deduction triggered on order submission",
+          "steps": ["Check recipe ingredients for each order item", "Deduct from inventory", "Create stock movement records", "Update stock status if below threshold"],
+          "triggers": ["order.created"],
+          "side_effects": ["inventory.quantity reduced", "stock_movement records created", "low_stock_alert if below threshold"],
+          "source": "F-004.business_rules[0]",
+          "resolved_timing": {
+            "trigger": "order.submitted (status = pending)",
+            "rationale": "Deduct at submission for real-time accuracy. Reversed on cancellation/void via reversal StockMovement.",
+            "alternatives_rejected": [{ "timing": "at payment completion", "reason": "Delays stock visibility, stock could appear available when already committed" }]
+          }
+        },
+        {
+          "rule": "Order total recalculated automatically",
+          "formula": "SUM(item.unitPrice * item.quantity)",
+          "inputs": ["OrderItem.unitPrice", "OrderItem.quantity"],
+          "output": "Order.subtotalAmount",
+          "source": "F-001.business_rules[6]"
+        }
+      ],
+      "related_entity": "Order",
+      "related_entity_id": "E-011",
+      "domain_group": "order-management"
+    },
+    {
+      "id": "EP-038",
+      "method": "POST",
+      "path": "/api/orders/:id/add-items",
+      "description": "Add additional items to an existing active order. Items are labeled as 'Tambahan' and sent to kitchen separately.",
+      "source_features": ["F-001"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Order ID" }],
+        "body": [
+          { "name": "items", "type": "array", "required": true, "description": "Additional items to add", "items": { "menuItemId": "uuid", "quantity": "number", "specialNotes": "string|null" } }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "orderId": "uuid",
+            "addedItems": [{ "id": "uuid", "itemName": "string", "quantity": "number", "unitPrice": "decimal", "lineTotal": "decimal", "isAdditional": true }],
+            "newSubtotal": "decimal",
+            "newGrandTotal": "decimal",
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "ORDER_NOT_FOUND", "message": "Order not found" },
+          { "status": 400, "code": "ORDER_NOT_ACTIVE", "message": "Cannot add items to a paid/cancelled/voided order" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "If a table already has an active (unpaid) order, cashier can ADD items to that existing order",
+          "type": "constraint",
+          "source": "F-001.business_rules[3]"
+        },
+        {
+          "rule": "Additional items are appended to the same order with Tambahan label",
+          "type": "constraint",
+          "source": "F-001.business_rules[4]"
+        },
+        {
+          "rule": "Additional items are sent to kitchen as new items with same order ID",
+          "type": "constraint",
+          "source": "F-001.business_rules[5]"
+        }
+      ],
+      "related_entity": "Order",
+      "related_entity_id": "E-011",
+      "domain_group": "order-management"
+    },
+    {
+      "id": "EP-039",
+      "method": "PATCH",
+      "path": "/api/orders/:id/status",
+      "description": "Update order status. Handles state machine transitions: pending->cooking->ready->served->paid. Also handles cancellation.",
+      "source_features": ["F-001", "F-002"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Order ID" }],
+        "body": [
+          { "name": "status", "type": "enum", "required": true, "description": "New status", "values": ["cooking", "ready", "served", "cancelled"] }
+        ]
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "orderStatus": "enum",
+            "cookingStartedAt": "ISO-8601|null",
+            "readyAt": "ISO-8601|null",
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "ORDER_NOT_FOUND", "message": "Order not found" },
+          { "status": 400, "code": "INVALID_TRANSITION", "message": "Cannot transition from current status to requested status" },
+          { "status": 403, "code": "ROLE_NOT_ALLOWED", "message": "Your role cannot perform this status transition" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Order can be cancelled before payment (status -> cancelled)",
+          "type": "constraint",
+          "source": "F-001.business_rules[7]"
+        },
+        {
+          "rule": "When cancelling, reverse stock deductions via reversal StockMovement",
+          "steps": ["Set order status to cancelled", "For each order item, look up recipe", "Create reversal stock movements (positive quantities)", "Update inventory quantities", "Release table if no other active orders"],
+          "triggers": ["order.status -> cancelled"],
+          "side_effects": ["inventory.quantity restored", "stock_movement reversal records created", "table.status may change to available"],
+          "source": "F-001.business_rules[7]"
+        }
+      ],
+      "related_entity": "Order",
+      "related_entity_id": "E-011",
+      "domain_group": "order-management"
+    },
+    {
+      "id": "EP-040",
+      "method": "GET",
+      "path": "/api/tables",
+      "description": "List all tables with current status and active order info. Used by Table Map screen (S-005).",
+      "source_features": ["F-010"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": "perm-view-tables",
+      "params": {
+        "query": [
+          { "name": "status", "type": "enum", "required": false, "description": "Filter by table status", "values": ["available", "occupied", "needs_payment"] }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "tables": [{ "id": "uuid", "tableName": "string", "tableNumber": "number", "capacity": "number", "status": "enum", "activeOrderId": "uuid|null", "activeOrderNumber": "string|null" }],
+            "total": "number",
+            "availableCount": "number",
+            "occupiedCount": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "Table",
+      "related_entity_id": "E-010",
+      "domain_group": "order-management"
+    },
+    {
+      "id": "EP-041",
+      "method": "GET",
+      "path": "/api/tables/:id",
+      "description": "Get single table details with active order info.",
+      "source_features": ["F-010"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": "perm-view-tables",
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Table ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "tableName": "string",
+            "tableNumber": "number",
+            "capacity": "number",
+            "status": "enum",
+            "activeOrderId": "uuid|null",
+            "activeOrderSummary": { "orderNumber": "string", "itemCount": "number", "grandTotal": "decimal", "orderStatus": "enum" }
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "TABLE_NOT_FOUND", "message": "Table not found" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "Table",
+      "related_entity_id": "E-010",
+      "domain_group": "order-management"
+    },
+    {
+      "id": "EP-042",
+      "method": "POST",
+      "path": "/api/tables",
+      "description": "Create a new restaurant table. Owner configures tables.",
+      "source_features": ["F-010"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "tableName", "type": "string", "required": true, "description": "Display name for the table" },
+          { "name": "tableNumber", "type": "integer", "required": true, "description": "Unique table number" },
+          { "name": "capacity", "type": "integer", "required": false, "description": "Seating capacity, defaults to 4" }
+        ]
+      },
+      "response": {
+        "success": { "status": 201, "body": { "id": "uuid", "tableName": "string", "tableNumber": "number", "capacity": "number", "status": "available", "createdAt": "ISO-8601" } },
+        "errors": [
+          { "status": 409, "code": "TABLE_NUMBER_EXISTS", "message": "Table number already exists" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Owner can configure total number of tables",
+          "type": "constraint",
+          "source": "F-010.acceptance_criteria[3]"
+        }
+      ],
+      "related_entity": "Table",
+      "related_entity_id": "E-010",
+      "domain_group": "order-management"
+    },
+    {
+      "id": "EP-043",
+      "method": "PATCH",
+      "path": "/api/tables/:id",
+      "description": "Update table details (name, capacity). Cannot change table number if occupied.",
+      "source_features": ["F-010"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Table ID" }],
+        "body": [
+          { "name": "tableName", "type": "string", "required": false, "description": "Updated name" },
+          { "name": "capacity", "type": "integer", "required": false, "description": "Updated capacity" }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "tableName": "string", "capacity": "number", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 404, "code": "TABLE_NOT_FOUND", "message": "Table not found" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "Table",
+      "related_entity_id": "E-010",
+      "domain_group": "order-management"
+    },
+    {
+      "id": "EP-044",
+      "method": "DELETE",
+      "path": "/api/tables/:id",
+      "description": "Delete a table. Only allowed if table has no active orders.",
+      "source_features": ["F-010"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Table ID" }],
+        "body": []
+      },
+      "response": {
+        "success": { "status": 200, "body": { "message": "Table deleted successfully" } },
+        "errors": [
+          { "status": 404, "code": "TABLE_NOT_FOUND", "message": "Table not found" },
+          { "status": 409, "code": "TABLE_OCCUPIED", "message": "Cannot delete table with active orders" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "Table",
+      "related_entity_id": "E-010",
+      "domain_group": "order-management"
+    }
+  ],
+  "summary": {
+    "endpoint_count": 10,
+    "by_method": { "GET": 4, "POST": 3, "PATCH": 2, "DELETE": 1 }
+  }
+}

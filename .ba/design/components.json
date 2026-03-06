@@ -1,0 +1,437 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:45:00Z",
+  "components": [
+    {
+      "id": "C-001",
+      "name": "order-card",
+      "purpose": "Displays order summary with table number, items, status, and timestamp",
+      "used_in": ["S-002"],
+      "behavior": "Tappable to view order detail. Swipe for quick actions.",
+      "states": [
+        { "state": "pending", "label": "Menunggu", "style": "border-warning, bg-surface" },
+        { "state": "cooking", "label": "Dimasak", "style": "border-info, bg-surface" },
+        { "state": "ready", "label": "Siap", "style": "border-success, bg-surface" },
+        { "state": "served", "label": "Disajikan", "style": "border-primary, bg-surface" }
+      ]
+    },
+    {
+      "id": "C-002",
+      "name": "status-badge",
+      "purpose": "Small colored badge showing current status of an order or item",
+      "used_in": ["S-002", "S-006", "S-013"],
+      "behavior": "Read-only indicator. Color changes based on status.",
+      "states": [
+        { "state": "pending", "label": "Menunggu", "style": "bg-warning, text-dark" },
+        { "state": "cooking", "label": "Dimasak", "style": "bg-info, text-white" },
+        { "state": "ready", "label": "Siap", "style": "bg-success, text-white" },
+        { "state": "served", "label": "Disajikan", "style": "bg-primary, text-white" },
+        { "state": "paid", "label": "Lunas", "style": "bg-success, text-white" }
+      ]
+    },    {
+      "id": "C-003",
+      "name": "menu-item-card",
+      "purpose": "Displays a menu item with image, name, price for selection during order creation",
+      "used_in": ["S-003"],
+      "behavior": "Tappable to add item to order. Shows quantity badge when added. Long-press for detail.",
+      "states": [
+        { "state": "default", "label": "Available", "style": "bg-surface, border-border" },
+        { "state": "selected", "label": "In Order", "style": "bg-surface-elevated, border-primary, quantity-badge" },
+        { "state": "unavailable", "label": "Habis", "style": "bg-surface, opacity-50, disabled" }
+      ]
+    },
+    {
+      "id": "C-004",
+      "name": "quantity-stepper",
+      "purpose": "Plus/minus buttons to adjust item quantity in an order",
+      "used_in": ["S-003"],
+      "behavior": "Minimum 1, no maximum. Tap minus at 1 removes item from order.",
+      "states": [
+        { "state": "default", "label": "Active", "style": "bg-surface-elevated" },
+        { "state": "min", "label": "Minimum (1)", "style": "minus-button-warning" }
+      ]
+    },
+    {
+      "id": "C-005",
+      "name": "kitchen-order-card",
+      "purpose": "Kitchen-optimized order card with large text, items list, special notes, and action buttons",
+      "used_in": ["S-006"],
+      "behavior": "Large touch targets for busy kitchen. Single tap to change status. Shows timer since order placed.",
+      "states": [
+        { "state": "pending", "label": "Baru", "style": "border-left-warning, bg-surface, pulse-animation" },
+        { "state": "cooking", "label": "Dimasak", "style": "border-left-info, bg-surface-elevated" },
+        { "state": "ready", "label": "Siap Antar", "style": "border-left-success, bg-surface-elevated" }
+      ]
+    },    {
+      "id": "C-006",
+      "name": "table-card",
+      "purpose": "Visual representation of a restaurant table with status indicator",
+      "used_in": ["S-005"],
+      "behavior": "Tappable to create order (if available) or view active order (if occupied).",
+      "states": [
+        { "state": "available", "label": "Kosong", "style": "bg-success/10, border-success" },
+        { "state": "occupied", "label": "Terisi", "style": "bg-primary/10, border-primary" },
+        { "state": "needs_payment", "label": "Bayar", "style": "bg-warning/10, border-warning" }
+      ]
+    },
+    {
+      "id": "C-007",
+      "name": "kpi-card",
+      "purpose": "Dashboard metric card showing label, value, and trend indicator",
+      "used_in": ["S-008"],
+      "behavior": "Read-only display. Optional trend arrow (up/down) with percentage.",
+      "states": [
+        { "state": "positive", "label": "Trend Up", "style": "trend-success" },
+        { "state": "negative", "label": "Trend Down", "style": "trend-error" },
+        { "state": "neutral", "label": "No Change", "style": "trend-secondary" }
+      ]
+    },
+    {
+      "id": "C-008",
+      "name": "data-table",
+      "purpose": "Reusable table component for listing data with sortable columns and actions",
+      "used_in": ["S-009", "S-010", "S-011", "S-012", "S-013"],
+      "behavior": "Sortable columns, row click for detail, pagination for large datasets. Responsive: becomes card list on mobile.",
+      "states": [
+        { "state": "default", "label": "Loaded", "style": "bg-surface" },
+        { "state": "empty", "label": "No Data", "style": "empty-state-illustration" },
+        { "state": "loading", "label": "Loading", "style": "skeleton-rows" }
+      ]
+    },    {
+      "id": "C-009",
+      "name": "permission-checklist",
+      "purpose": "Grid of toggleable permission checkboxes for access control configuration",
+      "used_in": ["S-013"],
+      "behavior": "Each row is a module/permission. Toggle on/off per user. Shows default role permission vs override.",
+      "states": [
+        { "state": "granted", "label": "Aktif", "style": "checkbox-checked, text-success" },
+        { "state": "denied", "label": "Nonaktif", "style": "checkbox-unchecked, text-secondary" },
+        { "state": "default", "label": "Default Role", "style": "checkbox-checked, text-primary, italic" }
+      ]
+    },
+    {
+      "id": "C-010",
+      "name": "numpad",
+      "purpose": "On-screen numeric keypad for payment amount input",
+      "used_in": ["S-004"],
+      "behavior": "Large touch-friendly buttons. Supports decimal input. Clear and backspace actions.",
+      "states": [
+        { "state": "default", "label": "Active", "style": "bg-surface-elevated, large-buttons" }
+      ]
+    },
+    {
+      "id": "C-011",
+      "name": "alert-card",
+      "purpose": "Warning/notification card for low stock alerts and system notifications",
+      "used_in": ["S-008", "S-011"],
+      "behavior": "Shows icon, message, and action link. Dismissible or persistent based on type.",
+      "states": [
+        { "state": "warning", "label": "Low Stock", "style": "border-warning, bg-warning/10" },
+        { "state": "critical", "label": "Out of Stock", "style": "border-error, bg-error/10" },
+        { "state": "info", "label": "Info", "style": "border-info, bg-info/10" }
+      ]
+    },    {
+      "id": "C-012",
+      "name": "search-bar",
+      "purpose": "Text input with search icon for filtering lists and tables",
+      "used_in": ["S-003", "S-009", "S-010", "S-011", "S-012", "S-013"],
+      "behavior": "Instant filter as user types. Clear button when text present.",
+      "states": [
+        { "state": "empty", "label": "Placeholder", "style": "border-border, text-secondary" },
+        { "state": "active", "label": "Typing", "style": "border-primary, text-primary" }
+      ]
+    },
+    {
+      "id": "C-013",
+      "name": "date-range-picker",
+      "purpose": "Calendar-based date range selector for filtering reports and transactions",
+      "used_in": ["S-008", "S-012"],
+      "behavior": "Preset options (Today, This Week, This Month) + custom range picker.",
+      "states": [
+        { "state": "default", "label": "Today", "style": "preset-selected" },
+        { "state": "custom", "label": "Custom Range", "style": "calendar-open" }
+      ]
+    },
+    {
+      "id": "C-014",
+      "name": "recipe-header",
+      "purpose": "Header section for recipe viewer showing dish name, image, difficulty, and cooking time",
+      "used_in": ["S-007"],
+      "behavior": "Read-only display. Large text optimized for kitchen viewing distance.",
+      "states": [
+        { "state": "default", "label": "Viewing", "style": "large-text, bg-surface-elevated" }
+      ]
+    },
+    {
+      "id": "C-015",
+      "name": "step-card",
+      "purpose": "Individual cooking step with number, instruction text, and optional timer",
+      "used_in": ["S-007"],
+      "behavior": "Large readable text for kitchen. Optional highlight for current step.",
+      "states": [
+        { "state": "upcoming", "label": "Belum", "style": "text-secondary" },
+        { "state": "current", "label": "Sekarang", "style": "border-primary, bg-primary/10, text-primary" },
+        { "state": "done", "label": "Selesai", "style": "text-secondary, strikethrough" }
+      ]
+    },
+    {
+      "id": "C-016",
+      "name": "shift-status-bar",
+      "purpose": "Persistent bar showing active shift info: cashier name, opening balance, shift duration, running cash total",
+      "used_in": ["S-002", "S-004", "S-005"],
+      "behavior": "Always visible in waiter header when shift is active. Tappable to view shift detail or initiate close shift.",
+      "states": [
+        { "state": "active", "label": "Shift Aktif", "style": "bg-green-500/10, border-green-500, text-green-400" },
+        { "state": "no_shift", "label": "Belum Buka", "style": "bg-red-500/10, border-red-500, text-red-400" }
+      ]
+    },
+    {
+      "id": "C-017",
+      "name": "discrepancy-indicator",
+      "purpose": "Color-coded display showing the difference between expected and actual cash at shift close",
+      "used_in": ["S-015"],
+      "behavior": "Auto-calculated. Green = match (±Rp1000), Yellow = minor (±Rp10000), Red = major (>Rp10000).",
+      "states": [
+        { "state": "match", "label": "Sesuai", "style": "bg-green-500/20, text-green-400, icon-check" },
+        { "state": "minor", "label": "Selisih Kecil", "style": "bg-yellow-500/20, text-yellow-400, icon-alert" },
+        { "state": "major", "label": "Selisih Besar", "style": "bg-red-500/20, text-red-400, icon-warning" }
+      ]
+    },
+    {
+      "id": "C-018",
+      "name": "currency-display",
+      "purpose": "Large formatted Rupiah amount display for payment and shift screens",
+      "used_in": ["S-014", "S-015", "S-004"],
+      "behavior": "Shows amount in large font with IDR formatting. Updates in real-time as numpad is used.",
+      "states": [
+        { "state": "default", "label": "Displaying", "style": "text-3xl, font-bold, text-txt" },
+        { "state": "empty", "label": "Rp 0", "style": "text-3xl, font-bold, text-dim" }
+      ]
+    },
+    {
+      "id": "C-019",
+      "name": "pin-input",
+      "purpose": "Masked 4-6 digit PIN entry with numpad for cashier identity verification before shift operations",
+      "used_in": ["S-014"],
+      "behavior": "Shows dots for entered digits. Validates against stored PIN. 3 failed attempts locks for 5 minutes.",
+      "states": [
+        { "state": "empty", "label": "Waiting", "style": "dots-empty, border-line" },
+        { "state": "entering", "label": "Entering", "style": "dots-partial, border-primary" },
+        { "state": "verified", "label": "Berhasil", "style": "dots-full, border-success, icon-check" },
+        { "state": "failed", "label": "PIN Salah", "style": "dots-shake, border-error, text-error" }
+      ]
+    },
+    {
+      "id": "C-020",
+      "name": "menu-card-large",
+      "purpose": "Large tappable card on Dashboard Hub representing a module/feature entry point with icon, label, and description",
+      "used_in": ["S-016"],
+      "behavior": "Tappable to navigate to target screen. Greyed out if condition not met (e.g., no active shift for POS). Shows tooltip explaining why disabled.",
+      "states": [
+        { "state": "available", "label": "Active", "style": "bg-surface, border-line, hover-border-primary" },
+        { "state": "disabled", "label": "Disabled", "style": "bg-surface, opacity-50, cursor-not-allowed" },
+        { "state": "highlighted", "label": "Recommended", "style": "bg-primary/10, border-primary, pulse" }
+      ]
+    },
+    {
+      "id": "C-021",
+      "name": "warning-banner",
+      "purpose": "Prominent fixed banner indicating a locked/one-way session (used in close shift)",
+      "used_in": ["S-015"],
+      "behavior": "Fixed at top. Cannot be dismissed. Clearly communicates that the user is in a closing session and cannot return to operations.",
+      "states": [
+        { "state": "active", "label": "Closing Session", "style": "bg-red-900/30, border-red-500, text-red-300, icon-lock" }
+      ]
+    },
+    {
+      "id": "C-022",
+      "name": "print-button",
+      "purpose": "Button to trigger printing of transaction report or receipt via connected thermal printer",
+      "used_in": ["S-015", "S-004"],
+      "behavior": "Tappable to send print job. Shows loading spinner while printing. Success/error toast after completion.",
+      "states": [
+        { "state": "ready", "label": "Print", "style": "bg-surfaceEl, border-line, icon-printer" },
+        { "state": "printing", "label": "Mencetak...", "style": "bg-surfaceEl, spinner, disabled" },
+        { "state": "done", "label": "Selesai", "style": "bg-success/20, text-success" }
+      ]
+    },
+    {
+      "id": "C-023",
+      "name": "role-quick-access-bar",
+      "purpose": "Persistent navigation bar shown when non-owner users access admin/shared screens (Stok, Menu, etc). Provides quick shortcuts back to Hub and to their primary workspace without navigating through multiple screens.",
+      "used_in": ["S-008", "S-009", "S-010", "S-011", "S-012"],
+      "behavior": "Fixed at top below header. Shows role-appropriate shortcuts. POS button requires PIN if shift is active. Always shows Back to Hub.",
+      "role_buttons": {
+        "waiter-cashier": [
+          { "label": "Kembali ke Hub", "icon": "home", "target": "S-016", "requires_pin": false },
+          { "label": "POS Kasir", "icon": "shopping-cart", "target": "S-002", "requires_pin": true, "condition": "active shift" }
+        ],
+        "chef": [
+          { "label": "Kembali ke Hub", "icon": "home", "target": "S-016", "requires_pin": false },
+          { "label": "Dapur", "icon": "flame", "target": "S-006", "requires_pin": false }
+        ],
+        "owner": []
+      },
+      "states": [
+        { "state": "visible", "label": "Non-owner viewing admin screen", "style": "bg-surface/95, backdrop-blur, border-b-line, sticky-top" },
+        { "state": "hidden", "label": "Owner viewing own screens", "style": "display-none" }
+      ]
+    },
+    {
+      "id": "C-024",
+      "name": "pin-gate-modal",
+      "purpose": "Modal overlay requiring PIN verification before entering POS operational screens. Triggered when cashier navigates to POS from outside POS context (Hub, admin screens). Prevents unauthorized transaction manipulation during active shift.",
+      "used_in": ["S-002", "S-003", "S-004", "S-005"],
+      "behavior": "Appears as modal overlay when entering POS screens from non-POS context. Does NOT appear when navigating within POS (e.g., order list to create order). Uses same PIN input as Open Shift. 3 failed attempts locks for 5 minutes and returns user to Hub.",
+      "trigger_conditions": [
+        "Entering POS from Dashboard Hub (S-016)",
+        "Entering POS from admin screen (S-009, S-011, etc)",
+        "Entering POS after being idle/away",
+        "NOT triggered when navigating within POS screens"
+      ],
+      "states": [
+        { "state": "requesting", "label": "Masukkan PIN", "style": "modal-overlay, bg-page/90, pin-input-centered" },
+        { "state": "verified", "label": "PIN Benar", "style": "auto-close, navigate-to-target" },
+        { "state": "failed", "label": "PIN Salah", "style": "shake-animation, error-text" },
+        { "state": "locked", "label": "Terkunci", "style": "countdown-timer, redirect-to-hub" }
+      ]
+    },
+    {
+      "id": "C-025",
+      "name": "payment-success-modal",
+      "purpose": "Full-screen success overlay after payment completion. Shows checkmark animation, transaction summary with PPN, and print receipt button.",
+      "used_in": ["S-004"],
+      "behavior": "Appears after successful payment confirmation. Cannot be dismissed by tapping outside. Two buttons: 'Print Struk' (sends print job) and 'Selesai' (returns to order list). Must explicitly choose an action.",
+      "content": ["success_animation", "order_id", "items_summary", "subtotal", "ppn_amount", "grand_total", "payment_method", "cash_received", "change", "print_button", "done_button"],
+      "states": [
+        { "state": "showing", "label": "Transaksi Berhasil!", "style": "modal-fullscreen, bg-page/95, success-green-accent" },
+        { "state": "printing", "label": "Mencetak Struk...", "style": "print-button-loading" }
+      ]
+    },
+    {
+      "id": "C-026",
+      "name": "order-summary-sidebar",
+      "purpose": "Side panel for order creation (S-003) that shows selected items without covering the menu grid",
+      "used_in": ["S-003"],
+      "behavior": "On tablet/desktop: fixed right sidebar (300-350px). On mobile: collapsible bottom sheet — minimized shows item count + total, swipe up expands full list. Key: NEVER covers the menu grid.",
+      "states": [
+        { "state": "expanded", "label": "Full list visible", "style": "sidebar-right or bottomsheet-full" },
+        { "state": "minimized", "label": "Compact bar", "style": "bottomsheet-minimized, shows count+total" },
+        { "state": "empty", "label": "No items", "style": "hidden or subtle placeholder" }
+      ]
+    },
+    {
+      "id": "C-027",
+      "name": "export-excel-button",
+      "purpose": "Button to export filtered transaction data to Excel (.xlsx) file download",
+      "used_in": ["S-012"],
+      "behavior": "Exports currently displayed/filtered data as .xlsx file. Shows loading spinner during generation. Downloads file automatically when ready. Filename format: 'Transaksi_POS_Logia_YYYY-MM-DD.xlsx'",
+      "states": [
+        { "state": "ready", "label": "Export Excel", "style": "bg-green-600, text-white, icon-download" },
+        { "state": "exporting", "label": "Generating...", "style": "bg-green-600/50, spinner, disabled" },
+        { "state": "done", "label": "Downloaded!", "style": "bg-green-500, icon-check, auto-reset-3s" }
+      ]
+    },
+    {
+      "id": "C-028",
+      "name": "back-button",
+      "purpose": "Prominent back navigation button for returning from detail views to list views within the same screen",
+      "used_in": ["S-010", "S-007"],
+      "behavior": "Positioned at top-left. Shows '← Kembali ke Daftar' text with arrow icon. Clicking returns to the list/table view within the same screen. Always visible when in detail/viewer mode.",
+      "states": [
+        { "state": "visible", "label": "← Kembali", "style": "text-primary, hover-text-primary-light, icon-arrow-left" }
+      ]
+    },
+    {
+      "id": "C-029",
+      "name": "kitchen-ready-notification",
+      "purpose": "Real-time notification bar on waiter POS when kitchen marks order as ready. Shows table number, items, and confirm serve button.",
+      "used_in": ["S-002"],
+      "behavior": "Appears at top with audio chime. Multiple notifications stack. Tapping 'Sudah Diantar' dismisses and updates order status to served.",
+      "states": [
+        { "state": "new", "label": "Pesanan Siap!", "style": "bg-green-500/20, border-green, animate-slide-in, audio-chime" },
+        { "state": "confirmed", "label": "Sudah Diantar", "style": "fade-out, remove" }
+      ]
+    },
+    {
+      "id": "C-030",
+      "name": "void-confirm-modal",
+      "purpose": "Modal for voiding paid transactions with PIN verification, reason selection, and impact preview.",
+      "used_in": ["S-004", "S-002"],
+      "behavior": "Step 1: PIN verification. Step 2: Select void type (full/partial). Step 3: Select mandatory reason. Step 4: Optional notes. Shows void amount and cash impact before confirm.",
+      "states": [
+        { "state": "pin_step", "label": "Verifikasi PIN", "style": "pin-input-centered" },
+        { "state": "form_step", "label": "Detail Void", "style": "form-layout" },
+        { "state": "confirmed", "label": "Transaksi Di-void", "style": "success-feedback" }
+      ]
+    },
+    {
+      "id": "C-031",
+      "name": "discount-picker",
+      "purpose": "Picker/dropdown showing all active discount options with calculated preview amount for current order.",
+      "used_in": ["S-004"],
+      "behavior": "Shows active discounts from settings. Each option shows: name, type (% or Rp), calculated amount for current subtotal. Only one selectable. Remove button to clear.",
+      "states": [
+        { "state": "no_discount", "label": "Tambah Diskon", "style": "btn-outline, dashed-border" },
+        { "state": "applied", "label": "Diskon Applied", "style": "bg-green/10, badge-green, show-remove-btn" }
+      ]
+    },
+    {
+      "id": "C-032",
+      "name": "qris-display",
+      "purpose": "Static QRIS QR code display shown during QRIS payment. Image uploaded by owner in settings.",
+      "used_in": ["S-004"],
+      "behavior": "Shows QR code image at readable size. Instruction text below: 'Minta customer scan QR code ini'. If no QR uploaded, shows placeholder with link to settings.",
+      "states": [
+        { "state": "ready", "label": "Scan QR", "style": "qr-image-centered, instruction-text" },
+        { "state": "no_qr", "label": "QR Belum Diatur", "style": "placeholder, link-to-settings" }
+      ]
+    },
+    {
+      "id": "C-033",
+      "name": "elapsed-timer",
+      "purpose": "Live counter showing time elapsed since order was placed. Used in kitchen and order list.",
+      "used_in": ["S-006", "S-002"],
+      "behavior": "Counts up in mm:ss format. Green under 10 min, yellow 10-15 min, red over 15 min.",
+      "states": [
+        { "state": "normal", "label": "<10 min", "style": "text-green" },
+        { "state": "warning", "label": "10-15 min", "style": "text-yellow" },
+        { "state": "late", "label": ">15 min", "style": "text-red, badge-terlambat" }
+      ]
+    },
+    {
+      "id": "C-034",
+      "name": "photo-upload-bukti",
+      "purpose": "Camera/file upload component for transfer payment proof (bukti transfer). Cashier can take photo or select from gallery.",
+      "used_in": ["S-004"],
+      "behavior": "Tap to open camera or file picker. Shows thumbnail preview after upload. Can remove/retake. Image stored with transaction record. Viewable in transaction detail modal.",
+      "states": [
+        { "state": "empty", "label": "Upload Bukti Transfer", "style": "border-dashed, icon-camera, text-muted" },
+        { "state": "uploaded", "label": "Bukti Terupload", "style": "thumbnail-preview, icon-check-green, remove-button" }
+      ]
+    },
+    {
+      "id": "C-035",
+      "name": "provider-qr-display",
+      "purpose": "Display QR code image specific to the selected e-wallet provider. QR images are uploaded by owner per provider in settings.",
+      "used_in": ["S-004"],
+      "behavior": "After cashier selects e-wallet provider (GoPay/OVO/Dana/ShopeePay), shows the QR code image uploaded for that provider. If no QR uploaded for provider, shows instruction text instead. Instruction: 'Minta customer scan QR [Provider]'.",
+      "states": [
+        { "state": "showing_qr", "label": "QR [Provider]", "style": "qr-image-large, instruction-text" },
+        { "state": "no_qr", "label": "QR belum diupload", "style": "text-muted, link-to-settings" }
+      ]
+    },
+    {
+      "id": "C-036",
+      "name": "promo-banner-card",
+      "purpose": "Horizontal scrollable promo card shown on order creation screen. Displays active discount/promo info and allows cashier to apply it to the order immediately.",
+      "used_in": ["S-003"],
+      "behavior": "Horizontally scrollable row of cards above menu grid. Each card shows promo name + type + value. Tappable to apply. Selected card gets checkmark and highlight. Tap again to remove. Only one active per order. Applied promo reflects in sidebar order summary (discount line).",
+      "states": [
+        { "state": "available", "label": "Promo name", "style": "bg-surfaceEl, border-dashed-primary, compact-card" },
+        { "state": "applied", "label": "✓ Applied", "style": "bg-primary/15, border-solid-primary, checkmark-icon" },
+        { "state": "no_promos", "label": "Tidak ada promo aktif", "style": "hidden" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+{
+  "id": "T-014",
+  "subject": "Implement backend order management and table APIs",
+  "owner": "builder-backend-logic",
+  "builder_role": "backend",
+  "layer": 2,
+  "wave": 3,
+  "goal": "Implement order CRUD endpoints with state machine transitions, add-items endpoint for additional orders with Tambahan label, order status update with stock deduction side-effects, cancellation with stock reversal. Implement table CRUD and status auto-updates. Wire cross-domain stock check on order creation.",
+  "domain_packages": [
+    ".claude/implementation/domains/order-management.json"
+  ],
+  "write_scope": [
+    "server/routes/order-management/",
+    "server/services/order-management/"
+  ],
+  "read_sources": {
+    "primary": ".claude/implementation/domains/order-management.json",
+    "entities": [
+      "Order",
+      "OrderItem",
+      "Table"
+    ],
+    "endpoints": {
+      "domains": [
+        "order-management"
+      ],
+      "ids": [
+        "EP-035",
+        "EP-036",
+        "EP-037",
+        "EP-038",
+        "EP-039",
+        "EP-040",
+        "EP-041",
+        "EP-042",
+        "EP-043",
+        "EP-044"
+      ]
+    },
+    "features": [
+      "F-001",
+      "F-010",
+      "F-017"
+    ],
+    "screens": [],
+    "flows": [
+      "UF-001",
+      "UF-006"
+    ],
+    "components": []
+  },
+  "cross_domain_contracts": [
+    {
+      "flow_id": "UF-001",
+      "your_steps": [
+        1,
+        3
+      ],
+      "context": "Waiter selects table, browses menu, creates order.",
+      "timing_notes": [
+        "Stock deduction at order submission (D-001, D-030, D-064)"
+      ],
+      "next_domain": "kitchen receives order, inventory deducts stock"
+    }
+  ],
+  "business_rules": [
+    {
+      "rule": "Order must have at least one menu item",
+      "type": "constraint",
+      "source": "F-001"
+    },
+    {
+      "rule": "Each order is linked to a specific table",
+      "type": "constraint",
+      "source": "F-001"
+    },
+    {
+      "rule": "Stock deduction triggered on order submission",
+      "type": "multi_step",
+      "steps": [
+        "Check recipe ingredients for each order item",
+        "Deduct from inventory",
+        "Create stock movement records",
+        "Update stock status if below threshold"
+      ],
+      "source": "F-004"
+    },
+    {
+      "rule": "Order total recalculated automatically",
+      "type": "calculation",
+      "formula": "SUM(item.unitPrice * item.quantity)",
+      "source": "F-001"
+    },
+    {
+      "rule": "When cancelling, reverse stock deductions via reversal StockMovement",
+      "type": "multi_step",
+      "steps": [
+        "Set order status to cancelled",
+        "For each order item, look up recipe",
+        "Create reversal stock movements (positive quantities)",
+        "Update inventory quantities",
+        "Release table if no other active orders"
+      ],
+      "source": "F-001"
+    },
+    {
+      "rule": "Table status updates automatically when order is created/paid",
+      "type": "constraint",
+      "source": "F-010"
+    }
+  ],
+  "state_dependencies": null,
+  "db_scope": {
+    "writes": [
+      "orders",
+      "orderItems",
+      "tables"
+    ],
+    "reads": [
+      "orders",
+      "orderItems",
+      "tables",
+      "users",
+      "shifts",
+      "menuItems",
+      "discounts",
+      "inventoryItems",
+      "recipeIngredients",
+      "stockMovements"
+    ]
+  },
+  "acceptance": {
+    "F-001": [
+      "Order creation with auto-subtotal calculation works",
+      "Additional items endpoint appends with Tambahan label",
+      "Order status transitions follow state machine",
+      "Cancellation reverses stock deductions",
+      "Stock warnings returned on order submission"
+    ],
+    "F-010": [
+      "Table CRUD works correctly",
+      "Table status auto-updates on order lifecycle",
+      "Cannot delete occupied table"
+    ],
+    "F-017": [
+      "Cancellation before payment restores table and stock"
+    ]
+  },
+  "depends_on": [
+    "T-002",
+    "T-013"
+  ],
+  "on_critical_path": true,
+  "_foundation_files": [
+    {
+      "path": "src/types/entities.ts",
+      "category": "types",
+      "lines": 413,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/enums.ts",
+      "category": "types",
+      "lines": 100,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/index.ts",
+      "category": "types",
+      "lines": 2,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "version": "1.0",
+  "base_path": "/api",
+  "auth": {
+    "type": "local-auth-hash",
+    "permission_checks": [
+      {
+        "permission_id": "perm-view-stock",
+        "description": "View Inventory / Stock",
+        "roles_applicable": ["waiter-cashier"],
+        "default": false,
+        "endpoints_affected": ["EP-025", "EP-026", "EP-032", "EP-033"]
+      },
+      {
+        "permission_id": "perm-view-menu",
+        "description": "View / Browse Menu Management",
+        "roles_applicable": ["waiter-cashier"],
+        "default": true,
+        "endpoints_affected": ["EP-011", "EP-012"]
+      },
+      {
+        "permission_id": "perm-view-recipe",
+        "description": "View Recipes / Cooking Guides",
+        "roles_applicable": ["waiter-cashier"],
+        "default": false,
+        "endpoints_affected": ["EP-020", "EP-021"]
+      },
+      {
+        "permission_id": "perm-view-tables",
+        "description": "View and Manage Tables",
+        "roles_applicable": ["waiter-cashier"],
+        "default": true,
+        "endpoints_affected": ["EP-040", "EP-041"]
+      },
+      {
+        "permission_id": "perm-view-reports",
+        "description": "View Sales Reports",
+        "roles_applicable": ["waiter-cashier"],
+        "default": false,
+        "endpoints_affected": ["EP-062", "EP-063"]
+      },
+      {
+        "permission_id": "perm-view-transactions",
+        "description": "View Transaction History",
+        "roles_applicable": ["waiter-cashier"],
+        "default": false,
+        "endpoints_affected": ["EP-052", "EP-053"]
+      },
+      {
+        "permission_id": "perm-chef-view-stock",
+        "description": "Chef: View Inventory / Stock",
+        "roles_applicable": ["chef"],
+        "default": false,
+        "endpoints_affected": ["EP-025", "EP-026"]
+      },
+      {
+        "permission_id": "perm-chef-view-menu",
+        "description": "Chef: View Menu Management",
+        "roles_applicable": ["chef"],
+        "default": true,
+        "endpoints_affected": ["EP-011", "EP-012"]
+      },
+      {
+        "permission_id": "perm-chef-manage-recipe",
+        "description": "Chef: Edit Recipes / Cooking Guides",
+        "roles_applicable": ["chef"],
+        "default": false,
+        "endpoints_affected": ["EP-023"]
+      }
+    ]
+  },
+  "domain_index": {
+    "auth": { "entity_count": 1, "endpoint_count": 4 },
+    "user-management": { "entity_count": 2, "endpoint_count": 6 },
+    "menu": { "entity_count": 2, "endpoint_count": 9 },
+    "recipe": { "entity_count": 3, "endpoint_count": 5 },
+    "inventory": { "entity_count": 2, "endpoint_count": 10 },
+    "order-management": { "entity_count": 2, "endpoint_count": 10 },
+    "kitchen": { "entity_count": 2, "endpoint_count": 5 },
+    "payment": { "entity_count": 2, "endpoint_count": 6 },
+    "shift-management": { "entity_count": 1, "endpoint_count": 6 },
+    "reporting": { "entity_count": 1, "endpoint_count": 2 },
+    "settings": { "entity_count": 3, "endpoint_count": 8 },
+    "sync": { "entity_count": 1, "endpoint_count": 3 }
+  },
+  "file_map": {
+    "auth": { "file": ".claude/proposal/api-design-auth.json", "endpoint_count": 4 },
+    "user-management": { "file": ".claude/proposal/api-design-user-management.json", "endpoint_count": 6 },
+    "menu": { "file": ".claude/proposal/api-design-menu.json", "endpoint_count": 9 },
+    "recipe": { "file": ".claude/proposal/api-design-recipe.json", "endpoint_count": 5 },
+    "inventory": { "file": ".claude/proposal/api-design-inventory.json", "endpoint_count": 10 },
+    "order-management": { "file": ".claude/proposal/api-design-order-management.json", "endpoint_count": 10 },
+    "kitchen": { "file": ".claude/proposal/api-design-kitchen.json", "endpoint_count": 5 },
+    "payment": { "file": ".claude/proposal/api-design-payment.json", "endpoint_count": 6 },
+    "shift-management": { "file": ".claude/proposal/api-design-shift-management.json", "endpoint_count": 6 },
+    "reporting": { "file": ".claude/proposal/api-design-reporting.json", "endpoint_count": 2 },
+    "settings": { "file": ".claude/proposal/api-design-settings.json", "endpoint_count": 8 },
+    "sync": { "file": ".claude/proposal/api-design-sync.json", "endpoint_count": 3 }
+  },
+  "decisions_requiring_approval": [
+    {
+      "id": "D-030",
+      "category": "api",
+      "item": "Stock deduction timing for API: deduct at order submission or at payment completion?",
+      "options": [
+        "A: Deduct at order submission (status=pending) with reversal on cancel/void",
+        "B: Deduct at payment completion only"
+      ],
+      "default": "A",
+      "recommended": "A",
+      "rationale": "F-004 states 'Stock deduction is triggered automatically when an order is confirmed'. Deducting at submission gives real-time stock accuracy and prevents overselling. Cancellation/void creates reversal StockMovement entries. This aligns with entity-level D-001 decision."
+    },
+    {
+      "id": "D-031",
+      "category": "api",
+      "item": "Sync conflict resolution strategy: last-write-wins vs domain-specific merge rules?",
+      "options": [
+        "A: Last-write-wins for all entities (simpler)",
+        "B: Last-write-wins for most entities, domain-specific merge for financial records (Transaction, Shift, VoidRecord)",
+        "C: Full CRDT-based conflict resolution"
+      ],
+      "default": "B",
+      "recommended": "B",
+      "rationale": "Financial records (transactions, shifts, void records) are immutable once created and should never be overwritten. For these entities, server-side merge uses append-only semantics. Other entities (menu, inventory, settings) can use last-write-wins safely. Full CRDT (option C) is overengineered for 5 concurrent users."
+    },
+    {
+      "id": "D-032",
+      "category": "api",
+      "item": "Receipt generation: server-side PDF or client-side HTML print?",
+      "options": [
+        "A: Client-side HTML/CSS print via browser Print API (offline-compatible)",
+        "B: Server-side PDF generation endpoint"
+      ],
+      "default": "A",
+      "recommended": "A",
+      "rationale": "Offline-first architecture requires receipt printing without server. Client-side HTML print using react-to-print (already in tech-stack) formats receipt content as thermal-printer-compatible HTML. No server round-trip needed. Transaction detail endpoint (EP-053) provides all data needed for client-side rendering."
+    },
+    {
+      "id": "D-033",
+      "category": "api",
+      "item": "Excel export: client-side generation or server-side?",
+      "options": [
+        "A: Client-side generation using SheetJS (xlsx package, already in tech-stack) -- works offline",
+        "B: Server-side generation via dedicated export endpoint"
+      ],
+      "default": "A",
+      "recommended": "A",
+      "rationale": "SheetJS (xlsx) is already in the tech-stack for client-side Excel generation. EP-054 is designed as a data endpoint that returns structured data; the actual .xlsx file generation happens client-side using SheetJS. This works offline and avoids server dependency."
+    }
+  ],
+  "summary": {
+    "total_endpoints": 74,
+    "by_method": { "GET": 33, "POST": 21, "PATCH": 14, "DELETE": 6 },
+    "by_domain": {
+      "auth": 4,
+      "user-management": 6,
+      "menu": 9,
+      "recipe": 5,
+      "inventory": 10,
+      "order-management": 10,
+      "kitchen": 5,
+      "payment": 6,
+      "shift-management": 6,
+      "reporting": 2,
+      "settings": 8,
+      "sync": 3
+    },
+    "decisions_pending": 4
+  }
+}

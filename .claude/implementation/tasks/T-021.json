@@ -1,0 +1,172 @@
+{
+  "id": "T-021",
+  "subject": "Wire sync to domain stores",
+  "owner": "builder-sync",
+  "builder_role": "sync",
+  "layer": 3,
+  "wave": 4,
+  "goal": "Connect sync engine to all domain Zustand stores. Implement per-table sync tracking, automatic push on store mutations, periodic pull for background sync, and online/offline status indicator in all layouts.",
+  "domain_packages": [
+    ".claude/implementation/domains/sync.json"
+  ],
+  "write_scope": [
+    "src/sync/",
+    "src/stores/"
+  ],
+  "read_sources": {
+    "primary": ".claude/implementation/domains/sync.json",
+    "entities": [],
+    "endpoints": {
+      "domains": [
+        "sync"
+      ],
+      "ids": [
+        "EP-072",
+        "EP-073",
+        "EP-074"
+      ]
+    },
+    "features": [],
+    "screens": [],
+    "flows": [],
+    "components": []
+  },
+  "cross_domain_contracts": [],
+  "business_rules": [
+    {
+      "rule": "Auto-sync to cloud/server when internet connection is available",
+      "type": "constraint",
+      "source": "nfr.reliability"
+    },
+    {
+      "rule": "Data persists locally on device even after app restart",
+      "type": "constraint",
+      "source": "nfr.reliability"
+    }
+  ],
+  "state_dependencies": {
+    "owns_store": null,
+    "writes_to_tables": [],
+    "reads_from_tables": [],
+    "calls_other_stores": [
+      "useAuthStore",
+      "useMenuStore",
+      "useRecipeStore",
+      "useInventoryStore",
+      "useOrderManagementStore",
+      "useKitchenStore",
+      "usePaymentStore",
+      "useShiftManagementStore",
+      "useReportingStore",
+      "useSettingsStore"
+    ]
+  },
+  "db_scope": null,
+  "acceptance": {
+    "sync": [
+      "Store mutations trigger sync queue push",
+      "Background pull syncs server changes to local stores",
+      "Online/offline indicator shown in all layouts",
+      "Per-table sync status tracked in Dexie",
+      "Financial records use append-only sync"
+    ]
+  },
+  "depends_on": [
+    "T-003",
+    "T-018",
+    "T-004",
+    "T-006",
+    "T-007",
+    "T-008",
+    "T-009",
+    "T-010"
+  ],
+  "on_critical_path": false,
+  "_foundation_files": [
+    {
+      "path": "src/stores/useAuthStore.ts",
+      "category": "state",
+      "lines": 86,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useMenuStore.ts",
+      "category": "state",
+      "lines": 74,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useRecipeStore.ts",
+      "category": "state",
+      "lines": 72,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useInventoryStore.ts",
+      "category": "state",
+      "lines": 74,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useOrderManagementStore.ts",
+      "category": "state",
+      "lines": 85,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useKitchenStore.ts",
+      "category": "state",
+      "lines": 68,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/usePaymentStore.ts",
+      "category": "state",
+      "lines": 76,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useShiftManagementStore.ts",
+      "category": "state",
+      "lines": 75,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useReportingStore.ts",
+      "category": "state",
+      "lines": 97,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useSettingsStore.ts",
+      "category": "state",
+      "lines": 79,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/index.ts",
+      "category": "state",
+      "lines": 10,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  }
+}

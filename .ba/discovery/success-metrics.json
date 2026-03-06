@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:15:00Z",
+  "definition": "All restaurant operations are digitally recorded, daily sales reports are accessible, and inventory stock is trackable in real-time.",
+  "metrics": [
+    {
+      "id": "M-001",
+      "name": "Digital Order Recording Rate",
+      "current": "0% — all orders handwritten",
+      "target": "100% — all orders recorded digitally",
+      "measurement": "Percentage of orders entered through POS system vs total orders"
+    },
+    {
+      "id": "M-002",
+      "name": "Daily Sales Report Availability",
+      "current": "None — no structured sales reporting",
+      "target": "Automated daily sales summary accessible anytime",
+      "measurement": "Owner can view accurate daily sales report within the system"
+    },
+    {
+      "id": "M-003",
+      "name": "Real-time Inventory Visibility",
+      "current": "0% — no stock tracking exists",
+      "target": "100% — all inventory items tracked with real-time updates",
+      "measurement": "Stock levels auto-update when orders are placed and ingredients are used"
+    },
+    {
+      "id": "M-004",
+      "name": "Inventory Loss Reduction",
+      "current": "Unknown — untracked losses occurring regularly",
+      "target": "Near-zero unexplained inventory loss",
+      "measurement": "Difference between system stock and physical stock count during audits"
+    }
+  ]
+}

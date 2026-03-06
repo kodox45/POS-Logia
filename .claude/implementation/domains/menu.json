@@ -1,0 +1,464 @@
+{
+  "domain": "menu",
+  "version": "1.0",
+  "wave": 2,
+  "depends_on_domains": [],
+
+  "entities": {
+    "owns": [
+      {
+        "name": "MenuItem",
+        "id": "E-003",
+        "table_name": "menuItems",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "itemName", "type": "string", "category": "business", "required": true, "unique": false, "default": null, "max_length": 255, "source": "F-005.fields[0]" },
+          { "name": "price", "type": "decimal", "category": "business", "required": true, "unique": false, "default": null, "source": "F-005.fields[1]" },
+          { "name": "categoryId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-005.fields[2]" },
+          { "name": "description", "type": "text", "category": "business", "required": false, "unique": false, "default": null, "source": "F-005.fields[3]" },
+          { "name": "isAvailable", "type": "boolean", "category": "business", "required": true, "unique": false, "default": true, "source": "F-005.fields[4]" },
+          { "name": "imageUrl", "type": "string", "category": "business", "required": false, "unique": false, "default": null, "max_length": 500, "source": "F-005.fields[5]" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "MenuCategory", "type": "many-to-one", "foreign_key": "categoryId", "cascade_delete": false },
+          { "target": "Recipe", "type": "one-to-many", "foreign_key": "menuItemId", "cascade_delete": true },
+          { "target": "OrderItem", "type": "one-to-many", "foreign_key": "menuItemId", "cascade_delete": false }
+        ],
+        "indexes": [
+          { "fields": ["categoryId"], "unique": false },
+          { "fields": ["isAvailable"], "unique": false },
+          { "fields": ["itemName"], "unique": false }
+        ],
+        "state_machine": null,
+        "business_rules": [
+          { "rule": "Unavailable items are hidden from the order screen", "type": "constraint", "source": "F-005.business_rules[0]", "enforcement": "both" },
+          { "rule": "Price changes take effect immediately for new orders", "type": "constraint", "source": "F-005.business_rules[1]", "enforcement": "update" },
+          { "rule": "Each menu item can be linked to a recipe and ingredient list", "type": "constraint", "source": "F-005.business_rules[2]", "enforcement": "both" }
+        ]
+      },
+      {
+        "name": "MenuCategory",
+        "id": "E-004",
+        "table_name": "menuCategories",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "name", "type": "string", "category": "business", "required": true, "unique": true, "default": null, "max_length": 255, "source": "F-005.fields[2]" },
+          { "name": "sortOrder", "type": "integer", "category": "business", "required": false, "unique": false, "default": 0, "source": "inferred:structural" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "MenuItem", "type": "one-to-many", "foreign_key": "categoryId", "cascade_delete": false }
+        ],
+        "indexes": [
+          { "fields": ["name"], "unique": true }
+        ],
+        "state_machine": null,
+        "business_rules": [
+          { "rule": "Owner can create, edit, and delete categories", "type": "constraint", "source": "F-014.acceptance_criteria[2]", "enforcement": "both" }
+        ]
+      }
+    ],
+    "reads": [
+      {
+        "name": "Recipe",
+        "id": "E-005",
+        "read_fields": ["id", "menuItemId"]
+      },
+      {
+        "name": "OrderItem",
+        "id": "E-012",
+        "read_fields": ["id", "menuItemId"]
+      }
+    ]
+  },
+
+  "endpoints": [
+    {
+      "id": "EP-011",
+      "method": "GET",
+      "path": "/api/menu-items",
+      "description": "List all menu items with optional category filter and availability filter. Used by order creation screen and menu management.",
+      "source_features": ["F-005", "F-001", "F-014"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": "perm-view-menu",
+      "params": {
+        "query": [
+          { "name": "categoryId", "type": "uuid", "required": false, "description": "Filter by menu category" },
+          { "name": "isAvailable", "type": "boolean", "required": false, "description": "Filter by availability" },
+          { "name": "search", "type": "string", "required": false, "description": "Search by item name" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "menuItems": [{ "id": "uuid", "itemName": "string", "price": "decimal", "categoryId": "uuid", "categoryName": "string", "description": "string|null", "isAvailable": "boolean", "imageUrl": "string|null", "hasRecipe": "boolean" }],
+            "total": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        { "rule": "Unavailable items are hidden from the order screen", "type": "constraint", "source": "F-005.business_rules[0]" }
+      ],
+      "related_entity": "MenuItem",
+      "related_entity_id": "E-003",
+      "domain_group": "menu"
+    },
+    {
+      "id": "EP-012",
+      "method": "GET",
+      "path": "/api/menu-items/:id",
+      "description": "Get a single menu item with full details including linked recipe status.",
+      "source_features": ["F-005"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": "perm-view-menu",
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Menu item ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "itemName": "string",
+            "price": "decimal",
+            "categoryId": "uuid",
+            "categoryName": "string",
+            "description": "string|null",
+            "isAvailable": "boolean",
+            "imageUrl": "string|null",
+            "hasRecipe": "boolean",
+            "createdAt": "ISO-8601",
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "MENU_ITEM_NOT_FOUND", "message": "Menu item not found" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "MenuItem",
+      "related_entity_id": "E-003",
+      "domain_group": "menu"
+    },
+    {
+      "id": "EP-013",
+      "method": "POST",
+      "path": "/api/menu-items",
+      "description": "Create a new menu item with name, price, category, and optional image.",
+      "source_features": ["F-005"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "itemName", "type": "string", "required": true, "description": "Name of the dish/drink" },
+          { "name": "price", "type": "decimal", "required": true, "description": "Selling price" },
+          { "name": "categoryId", "type": "uuid", "required": true, "description": "Category ID" },
+          { "name": "description", "type": "string", "required": false, "description": "Short description" },
+          { "name": "isAvailable", "type": "boolean", "required": false, "description": "Availability status, defaults to true" },
+          { "name": "imageUrl", "type": "string", "required": false, "description": "Photo URL of the dish" }
+        ]
+      },
+      "response": {
+        "success": { "status": 201, "body": { "id": "uuid", "itemName": "string", "price": "decimal", "categoryId": "uuid", "isAvailable": "boolean", "createdAt": "ISO-8601" } },
+        "errors": [
+          { "status": 400, "code": "INVALID_CATEGORY", "message": "Category does not exist" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "MenuItem",
+      "related_entity_id": "E-003",
+      "domain_group": "menu"
+    },
+    {
+      "id": "EP-014",
+      "method": "PATCH",
+      "path": "/api/menu-items/:id",
+      "description": "Update menu item details. Price changes take effect immediately for new orders.",
+      "source_features": ["F-005"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Menu item ID" }],
+        "body": [
+          { "name": "itemName", "type": "string", "required": false, "description": "Updated name" },
+          { "name": "price", "type": "decimal", "required": false, "description": "Updated price" },
+          { "name": "categoryId", "type": "uuid", "required": false, "description": "Updated category" },
+          { "name": "description", "type": "string", "required": false, "description": "Updated description" },
+          { "name": "isAvailable", "type": "boolean", "required": false, "description": "Toggle availability" },
+          { "name": "imageUrl", "type": "string", "required": false, "description": "Updated image" }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "itemName": "string", "price": "decimal", "isAvailable": "boolean", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 404, "code": "MENU_ITEM_NOT_FOUND", "message": "Menu item not found" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Price changes take effect immediately for new orders", "type": "constraint", "source": "F-005.business_rules[1]" }
+      ],
+      "related_entity": "MenuItem",
+      "related_entity_id": "E-003",
+      "domain_group": "menu"
+    },
+    {
+      "id": "EP-015",
+      "method": "DELETE",
+      "path": "/api/menu-items/:id",
+      "description": "Delete a menu item. Only allowed if no active orders reference this item.",
+      "source_features": ["F-005"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Menu item ID" }],
+        "body": []
+      },
+      "response": {
+        "success": { "status": 200, "body": { "message": "Menu item deleted successfully" } },
+        "errors": [
+          { "status": 404, "code": "MENU_ITEM_NOT_FOUND", "message": "Menu item not found" },
+          { "status": 409, "code": "MENU_ITEM_IN_USE", "message": "Cannot delete menu item with active orders" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "MenuItem",
+      "related_entity_id": "E-003",
+      "domain_group": "menu"
+    },
+    {
+      "id": "EP-016",
+      "method": "GET",
+      "path": "/api/menu-categories",
+      "description": "List all menu categories for filtering and organization.",
+      "source_features": ["F-014", "F-005"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "categories": [{ "id": "uuid", "name": "string", "sortOrder": "number", "itemCount": "number" }]
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "MenuCategory",
+      "related_entity_id": "E-004",
+      "domain_group": "menu"
+    },
+    {
+      "id": "EP-017",
+      "method": "POST",
+      "path": "/api/menu-categories",
+      "description": "Create a new menu category.",
+      "source_features": ["F-014"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "name", "type": "string", "required": true, "description": "Category name (must be unique)" },
+          { "name": "sortOrder", "type": "integer", "required": false, "description": "Display order" }
+        ]
+      },
+      "response": {
+        "success": { "status": 201, "body": { "id": "uuid", "name": "string", "sortOrder": "number" } },
+        "errors": [
+          { "status": 409, "code": "CATEGORY_NAME_EXISTS", "message": "Category name already exists" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Owner can create, edit, and delete categories", "type": "constraint", "source": "F-014.acceptance_criteria[2]" }
+      ],
+      "related_entity": "MenuCategory",
+      "related_entity_id": "E-004",
+      "domain_group": "menu"
+    },
+    {
+      "id": "EP-018",
+      "method": "PATCH",
+      "path": "/api/menu-categories/:id",
+      "description": "Update an existing menu category name or sort order.",
+      "source_features": ["F-014"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Category ID" }],
+        "body": [
+          { "name": "name", "type": "string", "required": false, "description": "Updated name" },
+          { "name": "sortOrder", "type": "integer", "required": false, "description": "Updated sort order" }
+        ]
+      },
+      "response": {
+        "success": { "status": 200, "body": { "id": "uuid", "name": "string", "sortOrder": "number", "updatedAt": "ISO-8601" } },
+        "errors": [
+          { "status": 404, "code": "CATEGORY_NOT_FOUND", "message": "Category not found" },
+          { "status": 409, "code": "CATEGORY_NAME_EXISTS", "message": "Category name already exists" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "MenuCategory",
+      "related_entity_id": "E-004",
+      "domain_group": "menu"
+    },
+    {
+      "id": "EP-019",
+      "method": "DELETE",
+      "path": "/api/menu-categories/:id",
+      "description": "Delete a menu category. Only if no menu items are assigned to it.",
+      "source_features": ["F-014"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Category ID" }],
+        "body": []
+      },
+      "response": {
+        "success": { "status": 200, "body": { "message": "Category deleted successfully" } },
+        "errors": [
+          { "status": 404, "code": "CATEGORY_NOT_FOUND", "message": "Category not found" },
+          { "status": 409, "code": "CATEGORY_HAS_ITEMS", "message": "Cannot delete category with assigned menu items" }
+        ]
+      },
+      "business_rules": [],
+      "related_entity": "MenuCategory",
+      "related_entity_id": "E-004",
+      "domain_group": "menu"
+    }
+  ],
+
+  "screens": [
+    {
+      "screen_id": "S-009",
+      "name": "Menu Management",
+      "page_component": "MenuManagementPage",
+      "route": "/admin/menu",
+      "interface": "admin-panel",
+      "layout": "AdminLayout",
+      "guards": ["AuthGuard", "RoleGuard"],
+      "sections": [
+        {
+          "name": "Menu List",
+          "position": "center",
+          "description": "Table/grid of all menu items with columns: name, category, price, availability toggle, actions (edit/delete)",
+          "components": ["data-table", "availability-toggle", "action-buttons"]
+        },
+        {
+          "name": "Toolbar",
+          "position": "top",
+          "description": "Add new item button, search bar, category filter dropdown",
+          "components": ["add-button", "search-bar", "category-filter"]
+        },
+        {
+          "name": "Menu Item Form",
+          "position": "modal",
+          "description": "Form to add/edit menu item: name, price, category, description, image upload, availability, link to recipe",
+          "components": ["form-input", "image-upload", "category-select", "recipe-link-select"]
+        }
+      ]
+    }
+  ],
+
+  "features": [
+    {
+      "id": "F-005",
+      "title": "Menu Management",
+      "priority": "must_have",
+      "acceptance_criteria": [
+        "Owner can add, edit, and delete menu items",
+        "Menu items can be categorized and filtered",
+        "Availability toggle immediately affects order screen",
+        "Menu items can be linked to recipe guides and inventory ingredients"
+      ],
+      "business_rules": [
+        { "rule": "Unavailable items are hidden from the order screen", "type": "constraint", "source": "F-005.business_rules[0]", "enforcement": "both" },
+        { "rule": "Price changes take effect immediately for new orders", "type": "constraint", "source": "F-005.business_rules[1]", "enforcement": "update" },
+        { "rule": "Each menu item can be linked to a recipe and ingredient list", "type": "constraint", "source": "F-005.business_rules[2]", "enforcement": "both" }
+      ]
+    },
+    {
+      "id": "F-014",
+      "title": "Menu Categorization",
+      "priority": "could_have",
+      "acceptance_criteria": [
+        "Menu items can be assigned to categories",
+        "Order screen allows filtering by category",
+        "Owner can create, edit, and delete categories"
+      ],
+      "business_rules": []
+    }
+  ],
+
+  "cross_domain_contracts": [
+    {
+      "flow_id": "UF-001",
+      "flow_name": "Complete Order-to-Payment Flow",
+      "your_steps": [2],
+      "context": "User has selected a table in order-management (step 1). Now browsing menu items.",
+      "triggers_to": [{ "domain": "order-management", "action": "Submit order with selected menu items" }],
+      "receives_from": [{ "domain": "order-management", "data": "Table selection context" }],
+      "timing_notes": []
+    },
+    {
+      "flow_id": "UF-007",
+      "flow_name": "Full Cashier Journey: Prep to Close Shift",
+      "your_steps": [],
+      "context": "Menu is referenced during pre-shift preparation for checking availability. Menu items are browsed and selected during POS operations.",
+      "triggers_to": [],
+      "receives_from": [],
+      "timing_notes": []
+    }
+  ],
+
+  "state_dependencies": {
+    "owns_store": "useMenuStore",
+    "writes_to_tables": ["menuItems", "menuCategories"],
+    "reads_from_tables": [],
+    "calls_other_stores": []
+  },
+
+  "write_scope": [
+    "src/pages/admin/MenuManagementPage.tsx",
+    "src/components/menu/",
+    "src/stores/useMenuStore.ts",
+    "server/routes/menu/",
+    "server/services/menu/"
+  ]
+}

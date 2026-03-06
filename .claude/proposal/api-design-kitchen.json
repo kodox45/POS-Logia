@@ -1,0 +1,230 @@
+{
+  "domain": "kitchen",
+  "endpoints": [
+    {
+      "id": "EP-045",
+      "method": "GET",
+      "path": "/api/kitchen/orders",
+      "description": "Get all orders for Kitchen Display queue. Shows pending and cooking orders with elapsed time. Orders exceeding target time are flagged.",
+      "source_features": ["F-002"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [
+          { "name": "status", "type": "enum", "required": false, "description": "Filter by cooking status", "values": ["pending", "cooking", "ready"] }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "orders": [{
+              "id": "uuid",
+              "orderNumber": "string",
+              "tableNumber": "number",
+              "orderStatus": "enum",
+              "specialNotes": "string|null",
+              "items": [{ "id": "uuid", "itemName": "string", "quantity": "number", "specialNotes": "string|null", "cookingStatus": "enum", "isAdditional": "boolean", "recipeId": "uuid|null" }],
+              "elapsedMinutes": "number",
+              "isLate": "boolean",
+              "cookingStartedAt": "ISO-8601|null",
+              "createdAt": "ISO-8601"
+            }],
+            "pendingCount": "number",
+            "cookingCount": "number",
+            "readyCount": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        {
+          "rule": "New orders appear at the top of the queue with audio/visual alert",
+          "type": "constraint",
+          "source": "F-002.business_rules[0]"
+        },
+        {
+          "rule": "Orders exceeding target time (e.g., 15 min) are highlighted in red as late",
+          "type": "constraint",
+          "source": "F-002.business_rules[6]"
+        },
+        {
+          "rule": "Additional items (tambahan) from same table appear as new items in the SAME order card",
+          "type": "constraint",
+          "source": "F-002.business_rules[7]"
+        }
+      ],
+      "related_entity": "Order",
+      "related_entity_id": "E-011",
+      "domain_group": "kitchen"
+    },
+    {
+      "id": "EP-046",
+      "method": "PATCH",
+      "path": "/api/kitchen/orders/:id/start-cooking",
+      "description": "Chef marks an order as 'cooking'. Updates cookingStartedAt timestamp.",
+      "source_features": ["F-002"],
+      "auth_required": true,
+      "roles_allowed": ["chef", "owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Order ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "orderStatus": "cooking",
+            "cookingStartedAt": "ISO-8601",
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "ORDER_NOT_FOUND", "message": "Order not found" },
+          { "status": 400, "code": "INVALID_TRANSITION", "message": "Order is not in pending status" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Chef taps to change status: pending -> cooking -> ready",
+          "type": "constraint",
+          "source": "F-002.business_rules[1]"
+        }
+      ],
+      "related_entity": "Order",
+      "related_entity_id": "E-011",
+      "domain_group": "kitchen"
+    },
+    {
+      "id": "EP-047",
+      "method": "PATCH",
+      "path": "/api/kitchen/orders/:id/mark-ready",
+      "description": "Chef marks an order as 'ready'. Creates a KitchenNotification for the waiter. Updates readyAt timestamp.",
+      "source_features": ["F-002"],
+      "auth_required": true,
+      "roles_allowed": ["chef", "owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Order ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "orderStatus": "ready",
+            "readyAt": "ISO-8601",
+            "notification": { "id": "uuid", "tableNumber": "number", "items": "string" },
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "ORDER_NOT_FOUND", "message": "Order not found" },
+          { "status": 400, "code": "INVALID_TRANSITION", "message": "Order is not in cooking status" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "When chef marks ready: notification sent to waiter/cashier POS screen immediately",
+          "type": "constraint",
+          "source": "F-002.business_rules[2]"
+        }
+      ],
+      "related_entity": "Order",
+      "related_entity_id": "E-011",
+      "domain_group": "kitchen"
+    },
+    {
+      "id": "EP-048",
+      "method": "GET",
+      "path": "/api/kitchen/notifications",
+      "description": "Get all unacknowledged kitchen ready notifications for waiter display. Shows 'Pesanan Siap!' badges.",
+      "source_features": ["F-002"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "notifications": [{ "id": "uuid", "orderId": "uuid", "orderNumber": "string", "tableNumber": "number", "items": "string", "createdAt": "ISO-8601" }],
+            "count": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        {
+          "rule": "Waiter sees notification badge with table number and 'Pesanan Siap!' message",
+          "type": "constraint",
+          "source": "F-002.business_rules[3]"
+        }
+      ],
+      "related_entity": "KitchenNotification",
+      "related_entity_id": "E-017",
+      "domain_group": "kitchen"
+    },
+    {
+      "id": "EP-049",
+      "method": "PATCH",
+      "path": "/api/kitchen/notifications/:id/acknowledge",
+      "description": "Waiter acknowledges a kitchen notification as served ('Sudah Diantar'). Removes notification and updates order status to served.",
+      "source_features": ["F-002"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Notification ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "notificationId": "uuid",
+            "orderId": "uuid",
+            "orderStatus": "served",
+            "acknowledged": true,
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "NOTIFICATION_NOT_FOUND", "message": "Notification not found" }
+        ]
+      },
+      "business_rules": [
+        {
+          "rule": "Waiter taps notification to confirm 'Sudah Diantar' -> status changes to served",
+          "type": "constraint",
+          "source": "F-002.business_rules[4]"
+        },
+        {
+          "rule": "Kitchen display auto-removes served orders after confirmation",
+          "type": "constraint",
+          "source": "F-002.business_rules[8]"
+        }
+      ],
+      "related_entity": "KitchenNotification",
+      "related_entity_id": "E-017",
+      "domain_group": "kitchen"
+    }
+  ],
+  "summary": {
+    "endpoint_count": 5,
+    "by_method": { "GET": 2, "POST": 0, "PATCH": 3, "DELETE": 0 }
+  }
+}

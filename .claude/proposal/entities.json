@@ -1,0 +1,3576 @@
+{
+  "version": "1.0",
+  "storage_type": "local-first-indexeddb-dexie",
+  "entities": [
+    {
+      "name": "User",
+      "id": "E-001",
+      "description": "System user account for authentication and access control. Represents owners, waiters/cashiers, and chefs with configurable permissions.",
+      "source_features": ["F-009", "F-008", "F-015"],
+      "table_name": "users",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "username",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "max_length": 255,
+          "source": "F-009.fields[0]"
+        },
+        {
+          "name": "passwordHash",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "F-009.fields[1]"
+        },
+        {
+          "name": "pinHash",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "F-015.business_rules[0]"
+        },
+        {
+          "name": "role",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "values": ["owner", "waiter-cashier", "chef"],
+          "source": "F-009.fields[2]"
+        },
+        {
+          "name": "displayName",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "F-009.fields[3]"
+        },
+        {
+          "name": "isActive",
+          "type": "boolean",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": true,
+          "source": "F-009.business_rules[3]"
+        },
+        {
+          "name": "lastLoginAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "UserPermission",
+          "type": "one-to-many",
+          "foreign_key": "userId",
+          "cascade_delete": true
+        },
+        {
+          "target": "Shift",
+          "type": "one-to-many",
+          "foreign_key": "picCashierId",
+          "cascade_delete": false
+        },
+        {
+          "target": "Order",
+          "type": "one-to-many",
+          "foreign_key": "waiterId",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["username"], "unique": true },
+        { "fields": ["role"], "unique": false },
+        { "fields": ["isActive"], "unique": false }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "Each user must have a unique username",
+          "type": "constraint",
+          "source": "F-009.business_rules[0]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "After login, ALL users are routed to the Main Dashboard Hub",
+          "type": "constraint",
+          "source": "F-009.business_rules[1]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Owner can create, edit, and deactivate user accounts",
+          "type": "constraint",
+          "source": "F-009.business_rules[3]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Failed login attempts are logged",
+          "type": "constraint",
+          "source": "F-009.business_rules[4]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Owner can set and reset PIN per user for shift operations",
+          "type": "constraint",
+          "source": "F-009.business_rules[5]",
+          "enforcement": "update"
+        }
+      ]
+    },
+    {
+      "name": "UserPermission",
+      "id": "E-002",
+      "description": "Per-user permission override for module access. Owner configures these via checklist UI to grant or revoke specific module access beyond role defaults.",
+      "source_features": ["F-008"],
+      "table_name": "userPermissions",
+      "type": "junction",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "userId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-008.fields[0]"
+        },
+        {
+          "name": "permissionKey",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "F-008.fields[1]"
+        },
+        {
+          "name": "isGranted",
+          "type": "boolean",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": false,
+          "source": "F-008.fields[1]"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "User",
+          "type": "many-to-one",
+          "foreign_key": "userId",
+          "cascade_delete": true
+        }
+      ],
+      "indexes": [
+        { "fields": ["userId", "permissionKey"], "unique": true },
+        { "fields": ["userId"], "unique": false }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "Only Owner can access the access control panel",
+          "type": "constraint",
+          "source": "F-008.business_rules[0]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Permission changes take effect immediately",
+          "type": "constraint",
+          "source": "F-008.business_rules[1]",
+          "enforcement": "update"
+        },
+        {
+          "rule": "Each role has default permissions that can be overridden per individual user",
+          "type": "constraint",
+          "source": "F-008.business_rules[2]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Core permissions cannot be removed",
+          "type": "constraint",
+          "source": "F-008.business_rules[3]",
+          "enforcement": "update"
+        }
+      ]
+    },
+    {
+      "name": "MenuItem",
+      "id": "E-003",
+      "description": "A dish or drink on the restaurant menu with pricing, category, availability, and optional image. Linked to recipes for cooking instructions and inventory for stock deduction.",
+      "source_features": ["F-005", "F-014", "F-001"],
+      "table_name": "menuItems",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "itemName",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "F-005.fields[0]"
+        },
+        {
+          "name": "price",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-005.fields[1]"
+        },
+        {
+          "name": "categoryId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-005.fields[2]"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-005.fields[3]"
+        },
+        {
+          "name": "isAvailable",
+          "type": "boolean",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": true,
+          "source": "F-005.fields[4]"
+        },
+        {
+          "name": "imageUrl",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 500,
+          "source": "F-005.fields[5]"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "MenuCategory",
+          "type": "many-to-one",
+          "foreign_key": "categoryId",
+          "cascade_delete": false
+        },
+        {
+          "target": "Recipe",
+          "type": "one-to-many",
+          "foreign_key": "menuItemId",
+          "cascade_delete": true
+        },
+        {
+          "target": "OrderItem",
+          "type": "one-to-many",
+          "foreign_key": "menuItemId",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["categoryId"], "unique": false },
+        { "fields": ["isAvailable"], "unique": false },
+        { "fields": ["itemName"], "unique": false }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "Unavailable items are hidden from the order screen",
+          "type": "constraint",
+          "source": "F-005.business_rules[0]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Price changes take effect immediately for new orders",
+          "type": "constraint",
+          "source": "F-005.business_rules[1]",
+          "enforcement": "update"
+        },
+        {
+          "rule": "Each menu item can be linked to a recipe and ingredient list",
+          "type": "constraint",
+          "source": "F-005.business_rules[2]",
+          "enforcement": "both"
+        }
+      ]
+    },
+    {
+      "name": "MenuCategory",
+      "id": "E-004",
+      "description": "Category grouping for menu items (e.g., food, drink, dessert, snack). Used for filtering and organization during order creation.",
+      "source_features": ["F-014", "F-005"],
+      "table_name": "menuCategories",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "max_length": 255,
+          "source": "F-005.fields[2]"
+        },
+        {
+          "name": "sortOrder",
+          "type": "integer",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": 0,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "MenuItem",
+          "type": "one-to-many",
+          "foreign_key": "categoryId",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["name"], "unique": true }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "Owner can create, edit, and delete categories",
+          "type": "constraint",
+          "source": "F-014.acceptance_criteria[2]",
+          "enforcement": "both"
+        }
+      ]
+    },
+    {
+      "name": "Recipe",
+      "id": "E-005",
+      "description": "Cooking guide for a menu item containing step-by-step instructions, required ingredients with quantities, cooking time, and difficulty level. Accessible from Kitchen Display.",
+      "source_features": ["F-006"],
+      "table_name": "recipes",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "menuItemId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-006.fields[0]"
+        },
+        {
+          "name": "cookingTime",
+          "type": "integer",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-006.fields[3]"
+        },
+        {
+          "name": "difficultyLevel",
+          "type": "enum",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "values": ["easy", "medium", "hard"],
+          "source": "F-006.fields[4]"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-006.fields[5]"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "MenuItem",
+          "type": "many-to-one",
+          "foreign_key": "menuItemId",
+          "cascade_delete": true
+        },
+        {
+          "target": "RecipeIngredient",
+          "type": "one-to-many",
+          "foreign_key": "recipeId",
+          "cascade_delete": true
+        },
+        {
+          "target": "RecipeStep",
+          "type": "one-to-many",
+          "foreign_key": "recipeId",
+          "cascade_delete": true
+        }
+      ],
+      "indexes": [
+        { "fields": ["menuItemId"], "unique": false }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "Recipe ingredients must reference inventory items for stock deduction",
+          "type": "constraint",
+          "source": "F-006.business_rules[0]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Only Owner or authorized chef can edit recipes",
+          "type": "constraint",
+          "source": "F-006.business_rules[1]",
+          "enforcement": "update"
+        },
+        {
+          "rule": "Recipe is viewable from Kitchen Display per order item",
+          "type": "constraint",
+          "source": "F-006.business_rules[2]",
+          "enforcement": "both"
+        }
+      ]
+    },
+    {
+      "name": "RecipeIngredient",
+      "id": "E-006",
+      "description": "An ingredient entry within a recipe, linking a recipe to an inventory item with the required quantity and unit. Used for automatic stock deduction when orders are placed.",
+      "source_features": ["F-006", "F-004"],
+      "table_name": "recipeIngredients",
+      "type": "junction",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "recipeId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-006.fields[1]"
+        },
+        {
+          "name": "inventoryItemId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-006.business_rules[0]"
+        },
+        {
+          "name": "quantityRequired",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-006.fields[1]"
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "max_length": 50,
+          "source": "F-006.fields[1]"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "Recipe",
+          "type": "many-to-one",
+          "foreign_key": "recipeId",
+          "cascade_delete": true
+        },
+        {
+          "target": "InventoryItem",
+          "type": "many-to-one",
+          "foreign_key": "inventoryItemId",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["recipeId"], "unique": false },
+        { "fields": ["inventoryItemId"], "unique": false },
+        { "fields": ["recipeId", "inventoryItemId"], "unique": true }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "Recipe ingredients must reference existing inventory items for stock deduction linkage",
+          "type": "constraint",
+          "source": "F-006.business_rules[0]",
+          "enforcement": "create"
+        }
+      ]
+    },
+    {
+      "name": "RecipeStep",
+      "id": "E-007",
+      "description": "An ordered step within a recipe's cooking instructions. Each step contains the instruction text and its sequence number.",
+      "source_features": ["F-006"],
+      "table_name": "recipeSteps",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "recipeId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-006.fields[2]"
+        },
+        {
+          "name": "stepOrder",
+          "type": "integer",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-006.fields[2]"
+        },
+        {
+          "name": "instruction",
+          "type": "text",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-006.fields[2]"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "Recipe",
+          "type": "many-to-one",
+          "foreign_key": "recipeId",
+          "cascade_delete": true
+        }
+      ],
+      "indexes": [
+        { "fields": ["recipeId", "stepOrder"], "unique": true }
+      ],
+      "state_machine": null,
+      "business_rules": []
+    },
+    {
+      "name": "InventoryItem",
+      "id": "E-008",
+      "description": "An ingredient or supply tracked in inventory with current stock quantity, unit of measure, and minimum threshold for low-stock alerts.",
+      "source_features": ["F-004", "F-012"],
+      "table_name": "inventoryItems",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "itemName",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "max_length": 255,
+          "source": "F-004.fields[0]"
+        },
+        {
+          "name": "quantity",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "F-004.fields[1]"
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "max_length": 50,
+          "source": "F-004.fields[2]"
+        },
+        {
+          "name": "minimumThreshold",
+          "type": "decimal",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-004.fields[3]"
+        },
+        {
+          "name": "stockStatus",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": "ok",
+          "values": ["ok", "low", "critical"],
+          "source": "inferred:prototype-summary",
+          "state_machine": {
+            "states": ["ok", "low", "critical"],
+            "transitions": [
+              { "from": "ok", "to": "low", "trigger": "quantity_below_threshold", "allowed_roles": ["owner"] },
+              { "from": "low", "to": "critical", "trigger": "quantity_near_zero", "allowed_roles": ["owner"] },
+              { "from": "low", "to": "ok", "trigger": "restocked_above_threshold", "allowed_roles": ["owner"] },
+              { "from": "critical", "to": "ok", "trigger": "restocked_above_threshold", "allowed_roles": ["owner"] },
+              { "from": "critical", "to": "low", "trigger": "restocked_below_threshold", "allowed_roles": ["owner"] }
+            ],
+            "initial": "ok",
+            "terminal": []
+          }
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "RecipeIngredient",
+          "type": "one-to-many",
+          "foreign_key": "inventoryItemId",
+          "cascade_delete": false
+        },
+        {
+          "target": "StockMovement",
+          "type": "one-to-many",
+          "foreign_key": "inventoryItemId",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["itemName"], "unique": true },
+        { "fields": ["stockStatus"], "unique": false }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "Stock deduction is triggered automatically when an order is confirmed",
+          "type": "steps",
+          "source": "F-004.business_rules[0]",
+          "steps": [
+            "Order is confirmed/paid",
+            "For each order item, look up recipe",
+            "For each recipe ingredient, deduct quantityRequired * orderItem.quantity from inventory",
+            "Update stockStatus based on new quantity vs minimumThreshold"
+          ],
+          "enforcement": "both"
+        },
+        {
+          "rule": "Deduction amounts are based on recipe ingredient definitions",
+          "type": "constraint",
+          "source": "F-004.business_rules[1]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Stock cannot go below zero - system warns if insufficient",
+          "type": "constraint",
+          "source": "F-004.business_rules[2]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Only authorized users can manually adjust stock (restock or correction)",
+          "type": "constraint",
+          "source": "F-004.business_rules[3]",
+          "enforcement": "update"
+        }
+      ]
+    },
+    {
+      "name": "StockMovement",
+      "id": "E-009",
+      "description": "Audit log entry for every inventory stock change - restock, auto-deduction from orders, and manual adjustments. Provides traceability for stock levels.",
+      "source_features": ["F-004"],
+      "table_name": "stockMovements",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "inventoryItemId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-004.fields[0]"
+        },
+        {
+          "name": "movementType",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "values": ["restock", "auto_deduction", "manual_adjustment"],
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "quantityChange",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "reason",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 500,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "orderId",
+          "type": "uuid",
+          "category": "reference",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "performedBy",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-004.business_rules[3]"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "InventoryItem",
+          "type": "many-to-one",
+          "foreign_key": "inventoryItemId",
+          "cascade_delete": false
+        },
+        {
+          "target": "Order",
+          "type": "many-to-one",
+          "foreign_key": "orderId",
+          "cascade_delete": false
+        },
+        {
+          "target": "User",
+          "type": "many-to-one",
+          "foreign_key": "performedBy",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["inventoryItemId"], "unique": false },
+        { "fields": ["movementType"], "unique": false },
+        { "fields": ["createdAt"], "unique": false }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "Stock movement is logged for every inventory change (auto-deduction, restock, adjustment)",
+          "type": "constraint",
+          "source": "F-004.acceptance_criteria[3]",
+          "enforcement": "create"
+        }
+      ]
+    },
+    {
+      "name": "Table",
+      "id": "E-010",
+      "description": "A restaurant table with seating capacity and real-time occupancy status. Tables are linked to active orders.",
+      "source_features": ["F-010", "F-001"],
+      "table_name": "tables",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "tableName",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "max_length": 50,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "tableNumber",
+          "type": "integer",
+          "category": "business",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "F-001.fields[0]"
+        },
+        {
+          "name": "capacity",
+          "type": "integer",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": 4,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "status",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": "available",
+          "values": ["available", "occupied", "needs_payment"],
+          "source": "inferred:prototype-summary",
+          "state_machine": {
+            "states": ["available", "occupied", "needs_payment"],
+            "transitions": [
+              { "from": "available", "to": "occupied", "trigger": "order_created", "allowed_roles": ["waiter-cashier", "owner"] },
+              { "from": "occupied", "to": "needs_payment", "trigger": "order_ready_to_pay", "allowed_roles": ["waiter-cashier", "owner"] },
+              { "from": "needs_payment", "to": "available", "trigger": "payment_completed", "allowed_roles": ["waiter-cashier", "owner"] },
+              { "from": "occupied", "to": "available", "trigger": "order_cancelled", "allowed_roles": ["waiter-cashier", "owner"] }
+            ],
+            "initial": "available",
+            "terminal": []
+          }
+        },
+        {
+          "name": "activeOrderId",
+          "type": "uuid",
+          "category": "reference",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "Order",
+          "type": "one-to-many",
+          "foreign_key": "tableId",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["tableNumber"], "unique": true },
+        { "fields": ["status"], "unique": false }
+      ],
+      "state_machine": {
+        "states": ["available", "occupied", "needs_payment"],
+        "transitions": [
+          { "from": "available", "to": "occupied", "trigger": "order_created", "allowed_roles": ["waiter-cashier", "owner"] },
+          { "from": "occupied", "to": "needs_payment", "trigger": "order_ready_to_pay", "allowed_roles": ["waiter-cashier", "owner"] },
+          { "from": "needs_payment", "to": "available", "trigger": "payment_completed", "allowed_roles": ["waiter-cashier", "owner"] },
+          { "from": "occupied", "to": "available", "trigger": "order_cancelled", "allowed_roles": ["waiter-cashier", "owner"] }
+        ],
+        "initial": "available",
+        "terminal": []
+      },
+      "business_rules": [
+        {
+          "rule": "Table status updates automatically when order is created/paid",
+          "type": "constraint",
+          "source": "F-010.acceptance_criteria[2]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Owner can configure total number of tables",
+          "type": "constraint",
+          "source": "F-010.acceptance_criteria[3]",
+          "enforcement": "both"
+        }
+      ]
+    },
+    {
+      "name": "Order",
+      "id": "E-011",
+      "description": "A customer order linked to a table, containing line items from the menu. Tracks the full lifecycle from creation through kitchen processing to payment. Supports additional items appended to existing orders.",
+      "source_features": ["F-001", "F-002", "F-003", "F-017", "F-018"],
+      "table_name": "orders",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "orderNumber",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "max_length": 20,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "tableId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-001.fields[0]"
+        },
+        {
+          "name": "waiterId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "shiftId",
+          "type": "uuid",
+          "category": "reference",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "orderStatus",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["pending", "cooking", "ready", "served", "paid", "cancelled", "voided"],
+          "source": "F-001.fields[3]",
+          "state_machine": {
+            "states": ["pending", "cooking", "ready", "served", "paid", "cancelled", "voided"],
+            "transitions": [
+              { "from": "pending", "to": "cooking", "trigger": "chef_starts_cooking", "allowed_roles": ["chef", "owner"] },
+              { "from": "cooking", "to": "ready", "trigger": "chef_marks_ready", "allowed_roles": ["chef", "owner"] },
+              { "from": "ready", "to": "served", "trigger": "waiter_confirms_served", "allowed_roles": ["waiter-cashier", "owner"] },
+              { "from": "served", "to": "paid", "trigger": "payment_completed", "allowed_roles": ["waiter-cashier", "owner"] },
+              { "from": "pending", "to": "cancelled", "trigger": "cancel_before_payment", "allowed_roles": ["waiter-cashier", "owner"] },
+              { "from": "paid", "to": "voided", "trigger": "void_after_payment", "allowed_roles": ["waiter-cashier", "owner"] }
+            ],
+            "initial": "pending",
+            "terminal": ["paid", "cancelled", "voided"]
+          }
+        },
+        {
+          "name": "specialNotes",
+          "type": "text",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-001.fields[2]"
+        },
+        {
+          "name": "isAdditional",
+          "type": "boolean",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": false,
+          "source": "F-001.fields[4]"
+        },
+        {
+          "name": "discountId",
+          "type": "uuid",
+          "category": "reference",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-018.fields[0]"
+        },
+        {
+          "name": "discountAmount",
+          "type": "decimal",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": 0,
+          "source": "F-018.business_rules[3]"
+        },
+        {
+          "name": "subtotalAmount",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "F-003.fields[1]"
+        },
+        {
+          "name": "ppnRate",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "F-003.fields[2]"
+        },
+        {
+          "name": "ppnAmount",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "F-003.fields[3]"
+        },
+        {
+          "name": "grandTotal",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "F-003.fields[4]"
+        },
+        {
+          "name": "cookingStartedAt",
+          "type": "timestamp",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-002.fields[5]"
+        },
+        {
+          "name": "readyAt",
+          "type": "timestamp",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-002.fields[6]"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "Table",
+          "type": "many-to-one",
+          "foreign_key": "tableId",
+          "cascade_delete": false
+        },
+        {
+          "target": "User",
+          "type": "many-to-one",
+          "foreign_key": "waiterId",
+          "cascade_delete": false
+        },
+        {
+          "target": "Shift",
+          "type": "many-to-one",
+          "foreign_key": "shiftId",
+          "cascade_delete": false
+        },
+        {
+          "target": "Discount",
+          "type": "many-to-one",
+          "foreign_key": "discountId",
+          "cascade_delete": false
+        },
+        {
+          "target": "OrderItem",
+          "type": "one-to-many",
+          "foreign_key": "orderId",
+          "cascade_delete": true
+        },
+        {
+          "target": "Transaction",
+          "type": "one-to-many",
+          "foreign_key": "orderId",
+          "cascade_delete": false
+        },
+        {
+          "target": "VoidRecord",
+          "type": "one-to-many",
+          "foreign_key": "originalOrderId",
+          "cascade_delete": false
+        },
+        {
+          "target": "KitchenNotification",
+          "type": "one-to-many",
+          "foreign_key": "orderId",
+          "cascade_delete": true
+        }
+      ],
+      "indexes": [
+        { "fields": ["orderNumber"], "unique": true },
+        { "fields": ["tableId"], "unique": false },
+        { "fields": ["orderStatus"], "unique": false },
+        { "fields": ["shiftId"], "unique": false },
+        { "fields": ["createdAt"], "unique": false }
+      ],
+      "state_machine": {
+        "states": ["pending", "cooking", "ready", "served", "paid", "cancelled", "voided"],
+        "transitions": [
+          { "from": "pending", "to": "cooking", "trigger": "chef_starts_cooking", "allowed_roles": ["chef", "owner"] },
+          { "from": "cooking", "to": "ready", "trigger": "chef_marks_ready", "allowed_roles": ["chef", "owner"] },
+          { "from": "ready", "to": "served", "trigger": "waiter_confirms_served", "allowed_roles": ["waiter-cashier", "owner"] },
+          { "from": "served", "to": "paid", "trigger": "payment_completed", "allowed_roles": ["waiter-cashier", "owner"] },
+          { "from": "pending", "to": "cancelled", "trigger": "cancel_before_payment", "allowed_roles": ["waiter-cashier", "owner"] },
+          { "from": "paid", "to": "voided", "trigger": "void_after_payment", "allowed_roles": ["waiter-cashier", "owner"] }
+        ],
+        "initial": "pending",
+        "terminal": ["paid", "cancelled", "voided"]
+      },
+      "business_rules": [
+        {
+          "rule": "Order must have at least one menu item",
+          "type": "constraint",
+          "source": "F-001.business_rules[0]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Each order is linked to a specific table",
+          "type": "constraint",
+          "source": "F-001.business_rules[2]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "If a table already has an active (unpaid) order, cashier can ADD items to that existing order instead of creating a new one",
+          "type": "constraint",
+          "source": "F-001.business_rules[3]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Additional items are appended to the same order with Tambahan label",
+          "type": "constraint",
+          "source": "F-001.business_rules[4]",
+          "enforcement": "update"
+        },
+        {
+          "rule": "Order total recalculated automatically after adding items",
+          "type": "formula",
+          "source": "F-001.business_rules[6]",
+          "inputs": ["OrderItem.price", "OrderItem.quantity"],
+          "output": "Order.subtotalAmount",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Order can be cancelled before payment (status -> cancelled)",
+          "type": "constraint",
+          "source": "F-001.business_rules[7]",
+          "enforcement": "update"
+        },
+        {
+          "rule": "Discount applied before PPN: Grand Total = (Subtotal - Discount) * (1 + PPN rate)",
+          "type": "formula",
+          "source": "F-003.business_rules[2]",
+          "inputs": ["Order.subtotalAmount", "Order.discountAmount", "Order.ppnRate"],
+          "output": "Order.grandTotal",
+          "enforcement": "both"
+        }
+      ]
+    },
+    {
+      "name": "OrderItem",
+      "id": "E-012",
+      "description": "A line item within an order, linking to a menu item with quantity, unit price at time of order, and optional special notes. Tracks whether the item was added as a tambahan (additional).",
+      "source_features": ["F-001", "F-002"],
+      "table_name": "orderItems",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "orderId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-001.fields[1]"
+        },
+        {
+          "name": "menuItemId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-001.fields[1]"
+        },
+        {
+          "name": "itemName",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 1,
+          "source": "F-001.fields[1]"
+        },
+        {
+          "name": "unitPrice",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "lineTotal",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "specialNotes",
+          "type": "text",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-001.fields[2]"
+        },
+        {
+          "name": "isAdditional",
+          "type": "boolean",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": false,
+          "source": "F-001.fields[4]"
+        },
+        {
+          "name": "cookingStatus",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["pending", "cooking", "ready", "served"],
+          "source": "F-002.fields[4]",
+          "state_machine": {
+            "states": ["pending", "cooking", "ready", "served"],
+            "transitions": [
+              { "from": "pending", "to": "cooking", "trigger": "chef_starts_item", "allowed_roles": ["chef", "owner"] },
+              { "from": "cooking", "to": "ready", "trigger": "chef_marks_item_ready", "allowed_roles": ["chef", "owner"] },
+              { "from": "ready", "to": "served", "trigger": "waiter_confirms_item_served", "allowed_roles": ["waiter-cashier", "owner"] }
+            ],
+            "initial": "pending",
+            "terminal": ["served"]
+          }
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "Order",
+          "type": "many-to-one",
+          "foreign_key": "orderId",
+          "cascade_delete": true
+        },
+        {
+          "target": "MenuItem",
+          "type": "many-to-one",
+          "foreign_key": "menuItemId",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["orderId"], "unique": false },
+        { "fields": ["menuItemId"], "unique": false }
+      ],
+      "state_machine": {
+        "states": ["pending", "cooking", "ready", "served"],
+        "transitions": [
+          { "from": "pending", "to": "cooking", "trigger": "chef_starts_item", "allowed_roles": ["chef", "owner"] },
+          { "from": "cooking", "to": "ready", "trigger": "chef_marks_item_ready", "allowed_roles": ["chef", "owner"] },
+          { "from": "ready", "to": "served", "trigger": "waiter_confirms_item_served", "allowed_roles": ["waiter-cashier", "owner"] }
+        ],
+        "initial": "pending",
+        "terminal": ["served"]
+      },
+      "business_rules": [
+        {
+          "rule": "Line total is calculated as unitPrice * quantity",
+          "type": "formula",
+          "source": "F-001.business_rules[6]",
+          "inputs": ["OrderItem.unitPrice", "OrderItem.quantity"],
+          "output": "OrderItem.lineTotal",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Additional items from same table appear as new items in the SAME order card with Tambahan badge",
+          "type": "constraint",
+          "source": "F-002.business_rules[7]",
+          "enforcement": "create"
+        }
+      ]
+    },
+    {
+      "name": "Transaction",
+      "id": "E-013",
+      "description": "A completed payment record storing the full financial details including subtotal, PPN breakdown, discount, payment method, and receipt information. Linked to shift for reconciliation.",
+      "source_features": ["F-003", "F-011", "F-016"],
+      "table_name": "transactions",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "transactionNumber",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "max_length": 20,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "orderId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-003.fields[0]"
+        },
+        {
+          "name": "shiftId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "cashierId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "tableNumber",
+          "type": "integer",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "subtotalAmount",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-003.fields[1]"
+        },
+        {
+          "name": "discountName",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "F-018.business_rules[6]"
+        },
+        {
+          "name": "discountAmount",
+          "type": "decimal",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": 0,
+          "source": "F-003.business_rules[0]"
+        },
+        {
+          "name": "ppnRate",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-003.fields[2]"
+        },
+        {
+          "name": "ppnAmount",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-003.fields[3]"
+        },
+        {
+          "name": "grandTotal",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-003.fields[4]"
+        },
+        {
+          "name": "paymentMethod",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "values": ["tunai", "qris", "gopay", "ovo", "dana", "shopeepay", "transfer_bank"],
+          "source": "F-003.fields[5]"
+        },
+        {
+          "name": "digitalPaymentRef",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "F-003.fields[6]"
+        },
+        {
+          "name": "transferProofPhotoUrl",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 500,
+          "source": "F-003.fields[7]"
+        },
+        {
+          "name": "amountPaid",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-003.fields[8]"
+        },
+        {
+          "name": "changeAmount",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "F-003.fields[9]"
+        },
+        {
+          "name": "transactionStatus",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": "completed",
+          "values": ["completed", "voided"],
+          "source": "inferred:structural",
+          "state_machine": {
+            "states": ["completed", "voided"],
+            "transitions": [
+              { "from": "completed", "to": "voided", "trigger": "void_processed", "allowed_roles": ["waiter-cashier", "owner"] }
+            ],
+            "initial": "completed",
+            "terminal": ["voided"]
+          }
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "Order",
+          "type": "many-to-one",
+          "foreign_key": "orderId",
+          "cascade_delete": false
+        },
+        {
+          "target": "Shift",
+          "type": "many-to-one",
+          "foreign_key": "shiftId",
+          "cascade_delete": false
+        },
+        {
+          "target": "User",
+          "type": "many-to-one",
+          "foreign_key": "cashierId",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["transactionNumber"], "unique": true },
+        { "fields": ["orderId"], "unique": false },
+        { "fields": ["shiftId"], "unique": false },
+        { "fields": ["cashierId"], "unique": false },
+        { "fields": ["paymentMethod"], "unique": false },
+        { "fields": ["createdAt"], "unique": false }
+      ],
+      "state_machine": {
+        "states": ["completed", "voided"],
+        "transitions": [
+          { "from": "completed", "to": "voided", "trigger": "void_processed", "allowed_roles": ["waiter-cashier", "owner"] }
+        ],
+        "initial": "completed",
+        "terminal": ["voided"]
+      },
+      "business_rules": [
+        {
+          "rule": "Payment cannot be processed if amount paid is less than grand total",
+          "type": "constraint",
+          "source": "F-003.business_rules[3]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Transaction stores SPECIFIC payment method name (e.g., GoPay, OVO, Transfer BCA) - NOT generic Digital",
+          "type": "constraint",
+          "source": "F-003.business_rules[9]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "PPN amount = (subtotal - discount) * (ppnRate / 100)",
+          "type": "formula",
+          "source": "F-003.business_rules[1]",
+          "inputs": ["Transaction.subtotalAmount", "Transaction.discountAmount", "Transaction.ppnRate"],
+          "output": "Transaction.ppnAmount",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Grand total = (subtotal - discount) + ppnAmount",
+          "type": "formula",
+          "source": "F-003.business_rules[1]",
+          "inputs": ["Transaction.subtotalAmount", "Transaction.discountAmount", "Transaction.ppnAmount"],
+          "output": "Transaction.grandTotal",
+          "enforcement": "create"
+        },
+        {
+          "rule": "For digital payments: no change calculation needed (exact amount)",
+          "type": "constraint",
+          "source": "F-003.business_rules[8]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Transaction is recorded in sales history with full PPN info",
+          "type": "constraint",
+          "source": "F-003.business_rules[11]",
+          "enforcement": "create"
+        }
+      ]
+    },
+    {
+      "name": "Shift",
+      "id": "E-014",
+      "description": "A cashier shift with opening/closing lifecycle. Tracks opening balance, all cash and digital transactions during the shift, and requires cash reconciliation at closing with mandatory notes for discrepancies.",
+      "source_features": ["F-015"],
+      "table_name": "shifts",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "shiftNumber",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "max_length": 20,
+          "source": "F-015.fields[0]"
+        },
+        {
+          "name": "picCashierId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-015.fields[1]"
+        },
+        {
+          "name": "pinVerified",
+          "type": "boolean",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": false,
+          "source": "F-015.fields[2]"
+        },
+        {
+          "name": "pinVerifiedAt",
+          "type": "timestamp",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-015.business_rules[0]"
+        },
+        {
+          "name": "openingBalance",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-015.fields[3]"
+        },
+        {
+          "name": "shiftStartTime",
+          "type": "timestamp",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-015.fields[4]"
+        },
+        {
+          "name": "shiftEndTime",
+          "type": "timestamp",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-015.fields[5]"
+        },
+        {
+          "name": "expectedCash",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "F-015.fields[6]"
+        },
+        {
+          "name": "actualCash",
+          "type": "decimal",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-015.fields[7]"
+        },
+        {
+          "name": "discrepancy",
+          "type": "decimal",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-015.fields[8]"
+        },
+        {
+          "name": "digitalSalesTotal",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "F-015.fields[9]"
+        },
+        {
+          "name": "cashSalesTotal",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "totalRevenue",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "F-015.fields[10]"
+        },
+        {
+          "name": "totalTransactions",
+          "type": "integer",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "voidCount",
+          "type": "integer",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "F-017.business_rules[5]"
+        },
+        {
+          "name": "voidTotalAmount",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "F-017.business_rules[6]"
+        },
+        {
+          "name": "discountTotalGiven",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 0,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "shiftStatus",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": "open",
+          "values": ["open", "closed"],
+          "source": "F-015.fields[11]",
+          "state_machine": {
+            "states": ["open", "closed"],
+            "transitions": [
+              { "from": "open", "to": "closed", "trigger": "cashier_closes_shift", "allowed_roles": ["waiter-cashier", "owner"] }
+            ],
+            "initial": "open",
+            "terminal": ["closed"]
+          }
+        },
+        {
+          "name": "closingNotes",
+          "type": "text",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-015.fields[12]"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "User",
+          "type": "many-to-one",
+          "foreign_key": "picCashierId",
+          "cascade_delete": false
+        },
+        {
+          "target": "Transaction",
+          "type": "one-to-many",
+          "foreign_key": "shiftId",
+          "cascade_delete": false
+        },
+        {
+          "target": "Order",
+          "type": "one-to-many",
+          "foreign_key": "shiftId",
+          "cascade_delete": false
+        },
+        {
+          "target": "VoidRecord",
+          "type": "one-to-many",
+          "foreign_key": "shiftId",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["shiftNumber"], "unique": true },
+        { "fields": ["picCashierId"], "unique": false },
+        { "fields": ["shiftStatus"], "unique": false },
+        { "fields": ["shiftStartTime"], "unique": false }
+      ],
+      "state_machine": {
+        "states": ["open", "closed"],
+        "transitions": [
+          { "from": "open", "to": "closed", "trigger": "cashier_closes_shift", "allowed_roles": ["waiter-cashier", "owner"] }
+        ],
+        "initial": "open",
+        "terminal": ["closed"]
+      },
+      "business_rules": [
+        {
+          "rule": "Cashier MUST verify PIN before opening a shift",
+          "type": "constraint",
+          "source": "F-015.business_rules[0]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Cashier MUST open a shift before processing any payment",
+          "type": "constraint",
+          "source": "F-015.business_rules[4]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Only one active shift per cashier at a time",
+          "type": "constraint",
+          "source": "F-015.business_rules[5]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Expected cash = opening_balance + cash_sales - cash_refunds_from_voids",
+          "type": "formula",
+          "source": "F-015.business_rules[9]",
+          "inputs": ["Shift.openingBalance", "Shift.cashSalesTotal", "Shift.voidTotalAmount"],
+          "output": "Shift.expectedCash",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Closing is a ONE-WAY session - cashier cannot return to operations after initiating close",
+          "type": "constraint",
+          "source": "F-015.business_rules[10]",
+          "enforcement": "update"
+        },
+        {
+          "rule": "If discrepancy exists (not match), notes are MANDATORY - cashier must explain before closing",
+          "type": "constraint",
+          "source": "F-015.business_rules[14]",
+          "enforcement": "update"
+        },
+        {
+          "rule": "Closed shift data is immutable and logged for audit",
+          "type": "constraint",
+          "source": "F-015.business_rules[16]",
+          "enforcement": "update"
+        }
+      ]
+    },
+    {
+      "name": "VoidRecord",
+      "id": "E-015",
+      "description": "An immutable audit record of a voided or cancelled order/transaction. Requires PIN verification and mandatory reason. Affects shift cash reconciliation.",
+      "source_features": ["F-017"],
+      "table_name": "voidRecords",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "voidNumber",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "max_length": 20,
+          "source": "F-017.fields[0]"
+        },
+        {
+          "name": "originalOrderId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-017.fields[1]"
+        },
+        {
+          "name": "shiftId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "voidType",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "values": ["full_void", "partial_void", "cancel_before_payment"],
+          "source": "F-017.fields[2]"
+        },
+        {
+          "name": "voidReason",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "values": ["salah_input", "customer_batal", "item_habis", "lainnya"],
+          "source": "F-017.fields[3]"
+        },
+        {
+          "name": "voidNotes",
+          "type": "text",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-017.fields[4]"
+        },
+        {
+          "name": "voidedBy",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-017.fields[5]"
+        },
+        {
+          "name": "pinVerified",
+          "type": "boolean",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": false,
+          "source": "F-017.fields[6]"
+        },
+        {
+          "name": "pinVerifiedAt",
+          "type": "timestamp",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-017.business_rules[0]"
+        },
+        {
+          "name": "voidAmount",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-017.fields[7]"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "Order",
+          "type": "many-to-one",
+          "foreign_key": "originalOrderId",
+          "cascade_delete": false
+        },
+        {
+          "target": "Shift",
+          "type": "many-to-one",
+          "foreign_key": "shiftId",
+          "cascade_delete": false
+        },
+        {
+          "target": "User",
+          "type": "many-to-one",
+          "foreign_key": "voidedBy",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["voidNumber"], "unique": true },
+        { "fields": ["originalOrderId"], "unique": false },
+        { "fields": ["shiftId"], "unique": false },
+        { "fields": ["voidedBy"], "unique": false },
+        { "fields": ["createdAt"], "unique": false }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "PIN verification required before any void operation",
+          "type": "constraint",
+          "source": "F-017.business_rules[0]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Cancel before payment: order is cancelled, items returned to available, no cash impact",
+          "type": "constraint",
+          "source": "F-017.business_rules[1]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Void after payment (full): full refund tracked, expected cash reduced in shift",
+          "type": "constraint",
+          "source": "F-017.business_rules[2]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Void reason is MANDATORY - kasir must select reason",
+          "type": "constraint",
+          "source": "F-017.business_rules[4]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "All voids are logged immutably for audit trail",
+          "type": "constraint",
+          "source": "F-017.business_rules[5]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Expected cash formula updated: opening + cash_sales - cash_refunds_from_voids",
+          "type": "formula",
+          "source": "F-017.business_rules[6]",
+          "inputs": ["Shift.openingBalance", "Shift.cashSalesTotal", "VoidRecord.voidAmount"],
+          "output": "Shift.expectedCash",
+          "enforcement": "create"
+        }
+      ]
+    },
+    {
+      "name": "Discount",
+      "id": "E-016",
+      "description": "A discount or promo rule created by the owner. Can be percentage-based or fixed amount. Applied to whole orders or specific items. Active discounts appear as banners during order creation.",
+      "source_features": ["F-018"],
+      "table_name": "discounts",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "discountName",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "F-018.fields[2]"
+        },
+        {
+          "name": "discountType",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "values": ["percentage", "fixed_amount"],
+          "source": "F-018.fields[0]"
+        },
+        {
+          "name": "discountValue",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "F-018.fields[1]"
+        },
+        {
+          "name": "appliedTo",
+          "type": "enum",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": "whole_order",
+          "values": ["whole_order", "specific_items"],
+          "source": "F-018.fields[3]"
+        },
+        {
+          "name": "isActive",
+          "type": "boolean",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": true,
+          "source": "F-018.fields[4]"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "Order",
+          "type": "one-to-many",
+          "foreign_key": "discountId",
+          "cascade_delete": false
+        }
+      ],
+      "indexes": [
+        { "fields": ["isActive"], "unique": false }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "Owner creates and manages discount/promo options in settings",
+          "type": "constraint",
+          "source": "F-018.business_rules[0]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Discount applied BEFORE PPN calculation: Grand Total = (Subtotal - Discount) + PPN",
+          "type": "formula",
+          "source": "F-018.business_rules[3]",
+          "inputs": ["Order.subtotalAmount", "Discount.discountValue", "Order.ppnRate"],
+          "output": "Order.grandTotal",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Only one discount per order (prevent stacking)",
+          "type": "constraint",
+          "source": "F-018.business_rules[4]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Owner can activate/deactivate discounts anytime",
+          "type": "constraint",
+          "source": "F-018.business_rules[7]",
+          "enforcement": "update"
+        }
+      ]
+    },
+    {
+      "name": "KitchenNotification",
+      "id": "E-017",
+      "description": "A transient notification created when chef marks an order as ready. Displayed on the waiter POS screen until confirmed as served. Ephemeral - deleted after confirmation.",
+      "source_features": ["F-002", "F-001"],
+      "table_name": "kitchenNotifications",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "orderId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "tableNumber",
+          "type": "integer",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "items",
+          "type": "text",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "isAcknowledged",
+          "type": "boolean",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": false,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "Order",
+          "type": "many-to-one",
+          "foreign_key": "orderId",
+          "cascade_delete": true
+        }
+      ],
+      "indexes": [
+        { "fields": ["orderId"], "unique": false },
+        { "fields": ["isAcknowledged"], "unique": false }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "When chef marks order as ready, notification is pushed to waiter/cashier POS screen immediately",
+          "type": "constraint",
+          "source": "F-002.business_rules[2]",
+          "enforcement": "create"
+        },
+        {
+          "rule": "Waiter taps notification to confirm served - notification is removed",
+          "type": "constraint",
+          "source": "F-002.business_rules[4]",
+          "enforcement": "update"
+        }
+      ]
+    },
+    {
+      "name": "PosSettings",
+      "id": "E-018",
+      "description": "Singleton configuration for the POS system including PPN/tax settings, restaurant info for receipts, and receipt customization. Only one record exists system-wide.",
+      "source_features": ["F-016"],
+      "table_name": "posSettings",
+      "type": "singleton",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "ppnEnabled",
+          "type": "boolean",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": true,
+          "source": "F-016.fields[0]"
+        },
+        {
+          "name": "ppnRate",
+          "type": "decimal",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": 11,
+          "source": "F-016.fields[1]"
+        },
+        {
+          "name": "restaurantName",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "F-016.fields[2]"
+        },
+        {
+          "name": "restaurantAddress",
+          "type": "text",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "F-016.fields[3]"
+        },
+        {
+          "name": "receiptFooter",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 500,
+          "source": "F-016.fields[4]"
+        },
+        {
+          "name": "showPpnOnReceipt",
+          "type": "boolean",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": true,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "qrisImageUrl",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 500,
+          "source": "F-003.business_rules[5]"
+        },
+        {
+          "name": "bankName",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "bankAccountNumber",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 50,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "bankAccountHolder",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 255,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "restaurantLogoUrl",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 500,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "EwalletProvider",
+          "type": "one-to-many",
+          "foreign_key": "posSettingsId",
+          "cascade_delete": true
+        }
+      ],
+      "indexes": [],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "PPN rate is configurable by owner in system settings",
+          "type": "constraint",
+          "source": "F-016.business_rules[0]",
+          "enforcement": "update"
+        },
+        {
+          "rule": "PPN applies to all transactions when enabled",
+          "type": "constraint",
+          "source": "F-016.business_rules[3]",
+          "enforcement": "both"
+        },
+        {
+          "rule": "Changes to PPN rate apply to new transactions only, not retroactively",
+          "type": "constraint",
+          "source": "F-016.business_rules[5]",
+          "enforcement": "update"
+        }
+      ]
+    },
+    {
+      "name": "EwalletProvider",
+      "id": "E-019",
+      "description": "Configuration for an e-wallet payment provider (GoPay, OVO, Dana, ShopeePay). Each provider can be enabled/disabled and has its own QR code image for display during payment.",
+      "source_features": ["F-003", "F-016"],
+      "table_name": "ewalletProviders",
+      "type": "standard",
+      "category": "business",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "posSettingsId",
+          "type": "uuid",
+          "category": "reference",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:structural"
+        },
+        {
+          "name": "providerName",
+          "type": "string",
+          "category": "business",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "max_length": 100,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "isEnabled",
+          "type": "boolean",
+          "category": "business",
+          "required": true,
+          "unique": false,
+          "default": false,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "qrImageUrl",
+          "type": "string",
+          "category": "business",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "max_length": 500,
+          "source": "inferred:prototype-summary"
+        },
+        {
+          "name": "syncId",
+          "type": "uuid",
+          "category": "system",
+          "required": true,
+          "unique": true,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "lastSynced",
+          "type": "timestamp",
+          "category": "system",
+          "required": false,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "syncStatus",
+          "type": "enum",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": "pending",
+          "values": ["synced", "pending", "conflict"],
+          "source": "inferred:technical"
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        },
+        {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "category": "system",
+          "required": true,
+          "unique": false,
+          "default": null,
+          "source": "inferred:technical"
+        }
+      ],
+      "relationships": [
+        {
+          "target": "PosSettings",
+          "type": "many-to-one",
+          "foreign_key": "posSettingsId",
+          "cascade_delete": true
+        }
+      ],
+      "indexes": [
+        { "fields": ["providerName"], "unique": true },
+        { "fields": ["isEnabled"], "unique": false }
+      ],
+      "state_machine": null,
+      "business_rules": [
+        {
+          "rule": "E-Wallet provider shows specific QR code for that provider during payment",
+          "type": "constraint",
+          "source": "F-003.business_rules[6]",
+          "enforcement": "both"
+        }
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "entity": "AuditLog",
+      "reason": "Comprehensive audit logging for all system actions (login, order changes, void operations, settings changes) would strengthen accountability. Currently, individual entities log their own audit trails (VoidRecord, StockMovement), but a centralized audit log would provide holistic tracking.",
+      "tier": 3
+    },
+    {
+      "entity": "LoginAttempt",
+      "reason": "F-009 business rule states 'Failed login attempts are logged'. A dedicated LoginAttempt entity would capture IP, timestamp, username, success/failure for security monitoring. Currently this is noted as a business rule but has no dedicated storage.",
+      "tier": 3
+    },
+    {
+      "entity": "SoftDelete",
+      "reason": "Adding soft-delete (isDeleted, deletedAt) to key entities (User, MenuItem, InventoryItem) would preserve referential integrity for historical records while hiding deleted items from active views.",
+      "tier": 3
+    }
+  ],
+  "decisions_requiring_approval": [
+    {
+      "id": "D-001",
+      "category": "entities",
+      "item": "Stock deduction timing: When should inventory be auto-deducted?",
+      "options": [
+        "A: At order confirmation (when waiter submits order) - F-004 says 'when order is confirmed'",
+        "B: At payment completion (when transaction is recorded) - UF-001 step 11 says 'stock auto-deducted' at payment",
+        "C: At order submission but with reversal on cancellation/void"
+      ],
+      "default": "C",
+      "recommended": "C",
+      "rationale": "Option C (deduct at submission, reverse on cancel/void) provides the best real-time stock accuracy while maintaining data integrity. This matches F-004's 'when order is confirmed' timing and handles the UF-010 void case by creating a reversal StockMovement. The timing_conflicts in cross_domain_flows explicitly flag this ambiguity between F-004 and UF-001 step 11."
+    },
+    {
+      "id": "D-002",
+      "category": "entities",
+      "item": "PIN verification scope: Should PIN hashes be stored on the User entity or in a separate PinVerification entity?",
+      "options": [
+        "A: Store pinHash as a User attribute (simpler, current design)",
+        "B: Create a separate PinVerification entity with context-specific PINs (shift, void, POS entry)"
+      ],
+      "default": "A",
+      "recommended": "A",
+      "rationale": "The prototype uses a single PIN per user for all verification contexts (shift opening, void operations, POS entry). A single pinHash on User is simpler and matches the BA spec which says 'Owner can set and reset PIN per user'. The three PIN contexts (S-014 shift, POS gate, void) all use the same PIN - they are different UI gates, not different PINs."
+    },
+    {
+      "id": "D-003",
+      "category": "entities",
+      "item": "Order-level vs item-level cooking status tracking",
+      "options": [
+        "A: Track cooking status at ORDER level only (simpler, current Order.orderStatus)",
+        "B: Track cooking status at both ORDER and ITEM level (allows partial ready states)",
+        "C: Track only at ITEM level, derive order status from item statuses"
+      ],
+      "default": "B",
+      "recommended": "B",
+      "rationale": "The current design includes both Order.orderStatus and OrderItem.cookingStatus. This allows the chef to mark individual items as ready while the order-level status reflects the overall state. The Kitchen Display shows per-item status while the Order List shows per-order status. This dual tracking is needed for the 'additional items' feature where new items may be pending while original items are already served."
+    },
+    {
+      "id": "D-004",
+      "category": "entities",
+      "item": "Transaction entity redundancy: Should transaction store denormalized order data or reference order via FK only?",
+      "options": [
+        "A: Denormalize key fields (tableNumber, subtotal, ppn, discount) into Transaction for immutable receipt data",
+        "B: Reference Order via FK only, compute all values from Order + OrderItems at read time"
+      ],
+      "default": "A",
+      "recommended": "A",
+      "rationale": "Transaction records must be immutable for financial auditing. If the order or menu item prices change after payment, the transaction should still reflect the original values. Denormalizing subtotal, ppn, discount, and payment details into Transaction ensures receipt reprinting always shows the correct historical values. This also matches the prototype's data model where transactions store full financial snapshots."
+    }
+  ],
+  "summary": {
+    "total_entities": 19,
+    "total_fields": 253,
+    "relationships": 44,
+    "junction_tables": 2,
+    "decisions_pending": 4
+  }
+}

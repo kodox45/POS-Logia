@@ -1,0 +1,114 @@
+{
+  "id": "V-T-011",
+  "subject": "Validate: Implement backend auth and user management APIs",
+  "owner": "validator-backend",
+  "builder_task_id": "T-011",
+  "layer": 2,
+  "wave": 1,
+  "goal": "Validate builder output for Implement backend auth and user management APIs",
+  "write_scope": [
+    ".claude/implementation/validation-backend.json"
+  ],
+  "acceptance": {
+    "F-009": [
+      "Users can log in with username and password (bcrypt comparison)",
+      "Session token returned on successful login",
+      "PIN verification works for shift/void/POS contexts",
+      "Owner can manage all user accounts (create, edit, deactivate, set PIN)"
+    ],
+    "F-008": [
+      "Owner can view a list of all users with their current permissions",
+      "Owner can toggle each permission on/off via checkboxes",
+      "Default permissions are pre-set based on role but fully customizable"
+    ]
+  },
+  "business_rules": [
+    {
+      "rule": "Each user must have a unique username",
+      "type": "constraint",
+      "source": "F-009"
+    },
+    {
+      "rule": "Failed login attempts are logged",
+      "type": "constraint",
+      "source": "F-009"
+    },
+    {
+      "rule": "Owner can set and reset PIN per user for shift operations",
+      "type": "constraint",
+      "source": "F-009"
+    },
+    {
+      "rule": "Only Owner can access the access control panel",
+      "type": "constraint",
+      "source": "F-008"
+    },
+    {
+      "rule": "Permission changes take effect immediately",
+      "type": "constraint",
+      "source": "F-008"
+    },
+    {
+      "rule": "Each role has default permissions that can be overridden per individual user",
+      "type": "constraint",
+      "source": "F-008"
+    },
+    {
+      "rule": "Core permissions cannot be removed",
+      "type": "constraint",
+      "source": "F-008"
+    }
+  ],
+  "cross_domain_contracts": [],
+  "_foundation_files": [
+    {
+      "path": "src/types/entities.ts",
+      "category": "types",
+      "lines": 413,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/enums.ts",
+      "category": "types",
+      "lines": 100,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/index.ts",
+      "category": "types",
+      "lines": 2,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  },
+  "validation_targets": {
+    "builder_write_scope": [
+      "server/routes/auth/",
+      "server/services/auth/",
+      "server/routes/user-management/",
+      "server/services/user-management/"
+    ],
+    "domain_packages": [
+      ".claude/implementation/domains/auth.json",
+      ".claude/implementation/domains/user-management.json"
+    ]
+  }
+}

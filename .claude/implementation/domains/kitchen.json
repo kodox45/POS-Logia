@@ -1,0 +1,449 @@
+{
+  "domain": "kitchen",
+  "version": "1.0",
+  "wave": 3,
+  "depends_on_domains": ["order-management", "recipe"],
+
+  "entities": {
+    "owns": [
+      {
+        "name": "Order",
+        "id": "E-011",
+        "table_name": "orders",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "orderNumber", "type": "string", "category": "business", "required": true, "unique": true, "default": null, "max_length": 20, "source": "inferred:structural" },
+          { "name": "tableId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "F-001.fields[0]" },
+          { "name": "waiterId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "inferred:structural" },
+          { "name": "shiftId", "type": "uuid", "category": "reference", "required": false, "unique": false, "default": null, "source": "inferred:structural" },
+          {
+            "name": "orderStatus", "type": "enum", "category": "business", "required": true, "unique": false, "default": "pending",
+            "values": ["pending", "cooking", "ready", "served", "paid", "cancelled", "voided"], "source": "F-001.fields[3]",
+            "state_machine": {
+              "states": ["pending", "cooking", "ready", "served", "paid", "cancelled", "voided"],
+              "transitions": [
+                { "from": "pending", "to": "cooking", "trigger": "chef_starts_cooking", "allowed_roles": ["chef", "owner"] },
+                { "from": "cooking", "to": "ready", "trigger": "chef_marks_ready", "allowed_roles": ["chef", "owner"] },
+                { "from": "ready", "to": "served", "trigger": "waiter_confirms_served", "allowed_roles": ["waiter-cashier", "owner"] },
+                { "from": "served", "to": "paid", "trigger": "payment_completed", "allowed_roles": ["waiter-cashier", "owner"] },
+                { "from": "pending", "to": "cancelled", "trigger": "cancel_before_payment", "allowed_roles": ["waiter-cashier", "owner"] },
+                { "from": "paid", "to": "voided", "trigger": "void_after_payment", "allowed_roles": ["waiter-cashier", "owner"] }
+              ],
+              "initial": "pending",
+              "terminal": ["paid", "cancelled", "voided"]
+            }
+          },
+          { "name": "specialNotes", "type": "text", "category": "business", "required": false, "unique": false, "default": null, "source": "F-001.fields[2]" },
+          { "name": "isAdditional", "type": "boolean", "category": "business", "required": false, "unique": false, "default": false, "source": "F-001.fields[4]" },
+          { "name": "discountId", "type": "uuid", "category": "reference", "required": false, "unique": false, "default": null, "source": "F-018.fields[0]" },
+          { "name": "discountAmount", "type": "decimal", "category": "business", "required": false, "unique": false, "default": 0, "source": "F-018.business_rules[3]" },
+          { "name": "subtotalAmount", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "F-003.fields[1]" },
+          { "name": "ppnRate", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "F-003.fields[2]" },
+          { "name": "ppnAmount", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "F-003.fields[3]" },
+          { "name": "grandTotal", "type": "decimal", "category": "business", "required": true, "unique": false, "default": 0, "source": "F-003.fields[4]" },
+          { "name": "cookingStartedAt", "type": "timestamp", "category": "business", "required": false, "unique": false, "default": null, "source": "F-002.fields[5]" },
+          { "name": "readyAt", "type": "timestamp", "category": "business", "required": false, "unique": false, "default": null, "source": "F-002.fields[6]" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "Table", "type": "many-to-one", "foreign_key": "tableId", "cascade_delete": false },
+          { "target": "User", "type": "many-to-one", "foreign_key": "waiterId", "cascade_delete": false },
+          { "target": "Shift", "type": "many-to-one", "foreign_key": "shiftId", "cascade_delete": false },
+          { "target": "Discount", "type": "many-to-one", "foreign_key": "discountId", "cascade_delete": false },
+          { "target": "OrderItem", "type": "one-to-many", "foreign_key": "orderId", "cascade_delete": true },
+          { "target": "Transaction", "type": "one-to-many", "foreign_key": "orderId", "cascade_delete": false },
+          { "target": "VoidRecord", "type": "one-to-many", "foreign_key": "originalOrderId", "cascade_delete": false },
+          { "target": "KitchenNotification", "type": "one-to-many", "foreign_key": "orderId", "cascade_delete": true }
+        ],
+        "indexes": [
+          { "fields": ["orderNumber"], "unique": true },
+          { "fields": ["tableId"], "unique": false },
+          { "fields": ["orderStatus"], "unique": false },
+          { "fields": ["shiftId"], "unique": false },
+          { "fields": ["createdAt"], "unique": false }
+        ],
+        "state_machine": {
+          "states": ["pending", "cooking", "ready", "served", "paid", "cancelled", "voided"],
+          "transitions": [
+            { "from": "pending", "to": "cooking", "trigger": "chef_starts_cooking", "allowed_roles": ["chef", "owner"] },
+            { "from": "cooking", "to": "ready", "trigger": "chef_marks_ready", "allowed_roles": ["chef", "owner"] },
+            { "from": "ready", "to": "served", "trigger": "waiter_confirms_served", "allowed_roles": ["waiter-cashier", "owner"] },
+            { "from": "served", "to": "paid", "trigger": "payment_completed", "allowed_roles": ["waiter-cashier", "owner"] },
+            { "from": "pending", "to": "cancelled", "trigger": "cancel_before_payment", "allowed_roles": ["waiter-cashier", "owner"] },
+            { "from": "paid", "to": "voided", "trigger": "void_after_payment", "allowed_roles": ["waiter-cashier", "owner"] }
+          ],
+          "initial": "pending",
+          "terminal": ["paid", "cancelled", "voided"]
+        },
+        "business_rules": [
+          { "rule": "Order must have at least one menu item", "type": "constraint", "source": "F-001.business_rules[0]", "enforcement": "create" },
+          { "rule": "Each order is linked to a specific table", "type": "constraint", "source": "F-001.business_rules[2]", "enforcement": "create" },
+          { "rule": "If a table already has an active (unpaid) order, cashier can ADD items to that existing order instead of creating a new one", "type": "constraint", "source": "F-001.business_rules[3]", "enforcement": "create" },
+          { "rule": "Additional items are appended to the same order with Tambahan label", "type": "constraint", "source": "F-001.business_rules[4]", "enforcement": "update" },
+          { "rule": "Order total recalculated automatically after adding items", "type": "formula", "source": "F-001.business_rules[6]", "inputs": ["OrderItem.price", "OrderItem.quantity"], "output": "Order.subtotalAmount", "enforcement": "both" },
+          { "rule": "Order can be cancelled before payment (status -> cancelled)", "type": "constraint", "source": "F-001.business_rules[7]", "enforcement": "update" },
+          { "rule": "Discount applied before PPN: Grand Total = (Subtotal - Discount) * (1 + PPN rate)", "type": "formula", "source": "F-003.business_rules[2]", "inputs": ["Order.subtotalAmount", "Order.discountAmount", "Order.ppnRate"], "output": "Order.grandTotal", "enforcement": "both" }
+        ]
+      },
+      {
+        "name": "KitchenNotification",
+        "id": "E-017",
+        "table_name": "kitchenNotifications",
+        "attributes": [
+          { "name": "id", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "orderId", "type": "uuid", "category": "reference", "required": true, "unique": false, "default": null, "source": "inferred:prototype-summary" },
+          { "name": "tableNumber", "type": "integer", "category": "business", "required": true, "unique": false, "default": null, "source": "inferred:prototype-summary" },
+          { "name": "items", "type": "text", "category": "business", "required": true, "unique": false, "default": null, "source": "inferred:prototype-summary" },
+          { "name": "isAcknowledged", "type": "boolean", "category": "business", "required": true, "unique": false, "default": false, "source": "inferred:structural" },
+          { "name": "syncId", "type": "uuid", "category": "system", "required": true, "unique": true, "default": null, "source": "inferred:technical" },
+          { "name": "lastSynced", "type": "timestamp", "category": "system", "required": false, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "syncStatus", "type": "enum", "category": "system", "required": true, "unique": false, "default": "pending", "values": ["synced", "pending", "conflict"], "source": "inferred:technical" },
+          { "name": "createdAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" },
+          { "name": "updatedAt", "type": "timestamp", "category": "system", "required": true, "unique": false, "default": null, "source": "inferred:technical" }
+        ],
+        "relationships": [
+          { "target": "Order", "type": "many-to-one", "foreign_key": "orderId", "cascade_delete": true }
+        ],
+        "indexes": [
+          { "fields": ["orderId"], "unique": false },
+          { "fields": ["isAcknowledged"], "unique": false }
+        ],
+        "state_machine": null,
+        "business_rules": [
+          { "rule": "When chef marks order as ready, notification is pushed to waiter/cashier POS screen immediately", "type": "constraint", "source": "F-002.business_rules[2]", "enforcement": "create" },
+          { "rule": "Waiter taps notification to confirm served - notification is removed", "type": "constraint", "source": "F-002.business_rules[4]", "enforcement": "update" }
+        ]
+      }
+    ],
+    "reads": [
+      {
+        "name": "Table",
+        "id": "E-010",
+        "read_fields": ["id", "tableNumber", "status"]
+      },
+      {
+        "name": "User",
+        "id": "E-001",
+        "read_fields": ["id", "displayName", "role"]
+      },
+      {
+        "name": "OrderItem",
+        "id": "E-012",
+        "read_fields": ["id", "orderId", "menuItemId", "itemName", "quantity", "specialNotes", "isAdditional", "cookingStatus"]
+      },
+      {
+        "name": "Recipe",
+        "id": "E-005",
+        "read_fields": ["id", "menuItemId", "cookingTime", "difficultyLevel"]
+      }
+    ]
+  },
+
+  "endpoints": [
+    {
+      "id": "EP-045",
+      "method": "GET",
+      "path": "/api/kitchen/orders",
+      "description": "Get all orders for Kitchen Display queue. Shows pending and cooking orders with elapsed time. Orders exceeding target time are flagged.",
+      "source_features": ["F-002"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "chef"],
+      "permission_required": null,
+      "params": {
+        "query": [
+          { "name": "status", "type": "enum", "required": false, "description": "Filter by cooking status", "values": ["pending", "cooking", "ready"] }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "orders": [{
+              "id": "uuid",
+              "orderNumber": "string",
+              "tableNumber": "number",
+              "orderStatus": "enum",
+              "specialNotes": "string|null",
+              "items": [{ "id": "uuid", "itemName": "string", "quantity": "number", "specialNotes": "string|null", "cookingStatus": "enum", "isAdditional": "boolean", "recipeId": "uuid|null" }],
+              "elapsedMinutes": "number",
+              "isLate": "boolean",
+              "cookingStartedAt": "ISO-8601|null",
+              "createdAt": "ISO-8601"
+            }],
+            "pendingCount": "number",
+            "cookingCount": "number",
+            "readyCount": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        { "rule": "New orders appear at the top of the queue with audio/visual alert", "type": "constraint", "source": "F-002.business_rules[0]" },
+        { "rule": "Orders exceeding target time (e.g., 15 min) are highlighted in red as late", "type": "constraint", "source": "F-002.business_rules[6]" },
+        { "rule": "Additional items (tambahan) from same table appear as new items in the SAME order card", "type": "constraint", "source": "F-002.business_rules[7]" }
+      ],
+      "related_entity": "Order",
+      "related_entity_id": "E-011",
+      "domain_group": "kitchen"
+    },
+    {
+      "id": "EP-046",
+      "method": "PATCH",
+      "path": "/api/kitchen/orders/:id/start-cooking",
+      "description": "Chef marks an order as 'cooking'. Updates cookingStartedAt timestamp.",
+      "source_features": ["F-002"],
+      "auth_required": true,
+      "roles_allowed": ["chef", "owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Order ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "orderStatus": "cooking",
+            "cookingStartedAt": "ISO-8601",
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "ORDER_NOT_FOUND", "message": "Order not found" },
+          { "status": 400, "code": "INVALID_TRANSITION", "message": "Order is not in pending status" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Chef taps to change status: pending -> cooking -> ready", "type": "constraint", "source": "F-002.business_rules[1]" }
+      ],
+      "related_entity": "Order",
+      "related_entity_id": "E-011",
+      "domain_group": "kitchen"
+    },
+    {
+      "id": "EP-047",
+      "method": "PATCH",
+      "path": "/api/kitchen/orders/:id/mark-ready",
+      "description": "Chef marks an order as 'ready'. Creates a KitchenNotification for the waiter. Updates readyAt timestamp.",
+      "source_features": ["F-002"],
+      "auth_required": true,
+      "roles_allowed": ["chef", "owner"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Order ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "id": "uuid",
+            "orderStatus": "ready",
+            "readyAt": "ISO-8601",
+            "notification": { "id": "uuid", "tableNumber": "number", "items": "string" },
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "ORDER_NOT_FOUND", "message": "Order not found" },
+          { "status": 400, "code": "INVALID_TRANSITION", "message": "Order is not in cooking status" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "When chef marks ready: notification sent to waiter/cashier POS screen immediately", "type": "constraint", "source": "F-002.business_rules[2]" }
+      ],
+      "related_entity": "Order",
+      "related_entity_id": "E-011",
+      "domain_group": "kitchen"
+    },
+    {
+      "id": "EP-048",
+      "method": "GET",
+      "path": "/api/kitchen/notifications",
+      "description": "Get all unacknowledged kitchen ready notifications for waiter display. Shows 'Pesanan Siap!' badges.",
+      "source_features": ["F-002"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": { "query": [], "path": [], "body": [] },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "notifications": [{ "id": "uuid", "orderId": "uuid", "orderNumber": "string", "tableNumber": "number", "items": "string", "createdAt": "ISO-8601" }],
+            "count": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        { "rule": "Waiter sees notification badge with table number and 'Pesanan Siap!' message", "type": "constraint", "source": "F-002.business_rules[3]" }
+      ],
+      "related_entity": "KitchenNotification",
+      "related_entity_id": "E-017",
+      "domain_group": "kitchen"
+    },
+    {
+      "id": "EP-049",
+      "method": "PATCH",
+      "path": "/api/kitchen/notifications/:id/acknowledge",
+      "description": "Waiter acknowledges a kitchen notification as served ('Sudah Diantar'). Removes notification and updates order status to served.",
+      "source_features": ["F-002"],
+      "auth_required": true,
+      "roles_allowed": ["owner", "waiter-cashier"],
+      "permission_required": null,
+      "params": {
+        "query": [],
+        "path": [{ "name": "id", "type": "uuid", "required": true, "description": "Notification ID" }],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "notificationId": "uuid",
+            "orderId": "uuid",
+            "orderStatus": "served",
+            "acknowledged": true,
+            "updatedAt": "ISO-8601"
+          }
+        },
+        "errors": [
+          { "status": 404, "code": "NOTIFICATION_NOT_FOUND", "message": "Notification not found" }
+        ]
+      },
+      "business_rules": [
+        { "rule": "Waiter taps notification to confirm 'Sudah Diantar' -> status changes to served", "type": "constraint", "source": "F-002.business_rules[4]" },
+        { "rule": "Kitchen display auto-removes served orders after confirmation", "type": "constraint", "source": "F-002.business_rules[8]" }
+      ],
+      "related_entity": "KitchenNotification",
+      "related_entity_id": "E-017",
+      "domain_group": "kitchen"
+    }
+  ],
+
+  "screens": [
+    {
+      "screen_id": "S-006",
+      "name": "Kitchen Order Queue",
+      "page_component": "KitchenQueuePage",
+      "route": "/kitchen/queue",
+      "interface": "kitchen-display",
+      "layout": "KitchenLayout",
+      "guards": ["AuthGuard", "RoleGuard"],
+      "sections": [
+        {
+          "name": "New Order Alert",
+          "position": "top-fixed",
+          "description": "Audio chime + visual flash when new order arrives. Shows 'Pesanan Baru! Meja [X]' banner for 5 seconds.",
+          "components": ["alert-banner", "audio-chime"]
+        },
+        {
+          "name": "Order Queue",
+          "position": "center",
+          "description": "Kanban-style columns: Pending -> Cooking -> Ready. Each card shows: table number, items with quantities, special notes, elapsed timer, 'Tambahan' badge if additional items. Orders exceeding 15 min get RED border.",
+          "components": ["kitchen-order-card", "status-badge", "elapsed-timer", "late-indicator", "tambahan-badge"]
+        },
+        {
+          "name": "Quick Actions",
+          "position": "card-footer",
+          "description": "Large tap targets: 'Mulai Masak' (pending->cooking), 'Siap Diantar' (cooking->ready). On 'Siap Diantar': creates KitchenNotification.",
+          "components": ["action-button"]
+        },
+        {
+          "name": "Recipe Quick Access",
+          "position": "card-inline",
+          "description": "Tap on any menu item name to open recipe guide modal",
+          "components": ["recipe-link"]
+        },
+        {
+          "name": "Stats Bar",
+          "position": "bottom",
+          "description": "Today stats: total orders completed, average cooking time, currently pending count, currently cooking count.",
+          "components": ["stat-chip"]
+        }
+      ]
+    }
+  ],
+
+  "features": [
+    {
+      "id": "F-002",
+      "title": "Kitchen Display System",
+      "priority": "must_have",
+      "acceptance_criteria": [
+        "Kitchen display shows all pending and cooking orders in queue format",
+        "Chef can update order status with a single tap",
+        "Recipe/cooking guide is accessible from each order item",
+        "When order is marked 'ready', waiter gets real-time notification on POS screen",
+        "Notification shows table number and items that are ready",
+        "Waiter can mark order as 'served' from notification",
+        "Elapsed time counter visible on each order",
+        "Late orders (>15 min) visually highlighted",
+        "Completed orders move to done section"
+      ],
+      "business_rules": [
+        { "rule": "New orders appear at the top of the queue with audio/visual alert", "type": "constraint", "source": "F-002.business_rules[0]", "enforcement": "both" },
+        { "rule": "Chef taps to change status: pending -> cooking -> ready", "type": "constraint", "source": "F-002.business_rules[1]", "enforcement": "both" },
+        { "rule": "When chef marks 'ready': notification sent to waiter/cashier POS screen immediately", "type": "constraint", "source": "F-002.business_rules[2]", "enforcement": "both" },
+        { "rule": "Waiter sees notification badge with table number and 'Pesanan Siap!' message", "type": "constraint", "source": "F-002.business_rules[3]", "enforcement": "both" },
+        { "rule": "Waiter taps notification to confirm 'Sudah Diantar' -> status changes to 'served'", "type": "constraint", "source": "F-002.business_rules[4]", "enforcement": "both" },
+        { "rule": "Elapsed time shown on each order card", "type": "constraint", "source": "F-002.business_rules[5]", "enforcement": "both" },
+        { "rule": "Orders exceeding target time (15 min) are highlighted in red as late", "type": "constraint", "source": "F-002.business_rules[6]", "enforcement": "both" },
+        { "rule": "Additional items (tambahan) from same table appear as new items in the SAME order card", "type": "constraint", "source": "F-002.business_rules[7]", "enforcement": "both" },
+        { "rule": "Kitchen display auto-removes served orders after confirmation", "type": "constraint", "source": "F-002.business_rules[8]", "enforcement": "both" }
+      ]
+    }
+  ],
+
+  "cross_domain_contracts": [
+    {
+      "flow_id": "UF-001",
+      "flow_name": "Complete Order-to-Payment Flow",
+      "your_steps": [4, 7, 9],
+      "context": "Order-management submits order (step 3), kitchen receives it in the queue.",
+      "triggers_to": [
+        { "domain": "order-management", "action": "Order status updated to 'ready', KitchenNotification created for waiter" }
+      ],
+      "receives_from": [
+        { "domain": "order-management", "data": "New order with items, table number, special notes pushed to kitchen queue" }
+      ],
+      "timing_notes": []
+    },
+    {
+      "flow_id": "UF-008",
+      "flow_name": "Kitchen Ready to Waiter Serve",
+      "your_steps": [1, 2, 3],
+      "context": "Kitchen-originated flow: chef marks order ready, waiter sees notification, waiter confirms served.",
+      "triggers_to": [
+        { "domain": "order-management", "action": "Order status updated to 'served'" }
+      ],
+      "receives_from": [],
+      "timing_notes": []
+    }
+  ],
+
+  "state_dependencies": {
+    "owns_store": "useKitchenStore",
+    "writes_to_tables": ["orders", "kitchenNotifications"],
+    "reads_from_tables": ["tables", "users", "orderItems", "recipes"],
+    "calls_other_stores": ["useOrderManagementStore"]
+  },
+
+  "write_scope": [
+    "src/pages/kitchen/",
+    "src/components/kitchen/",
+    "src/stores/useKitchenStore.ts",
+    "server/routes/kitchen/",
+    "server/services/kitchen/"
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "id": "V-T-018",
+  "subject": "Validate: Implement backend sync push/pull/status APIs",
+  "owner": "validator-backend",
+  "builder_task_id": "T-018",
+  "layer": 2,
+  "wave": 1,
+  "goal": "Validate builder output for Implement backend sync push/pull/status APIs",
+  "write_scope": [
+    ".claude/implementation/validation-backend.json"
+  ],
+  "acceptance": {
+    "infra": [
+      "Push endpoint receives and persists batched changes",
+      "Pull endpoint returns changes since last sync timestamp",
+      "Status endpoint returns sync state and pending counts",
+      "Conflict detection returns conflicted records",
+      "Financial records use append-only sync strategy"
+    ]
+  },
+  "business_rules": [
+    {
+      "rule": "Auto-sync to cloud/server when internet connection is available",
+      "type": "constraint",
+      "source": "nfr.reliability"
+    },
+    {
+      "rule": "No data loss during offline-to-online transition",
+      "type": "constraint",
+      "source": "nfr.reliability"
+    },
+    {
+      "rule": "Append-only semantics for financial records (Transaction, Shift, VoidRecord)",
+      "type": "constraint",
+      "source": "architecture"
+    }
+  ],
+  "cross_domain_contracts": [],
+  "_foundation_files": [
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  },
+  "validation_targets": {
+    "builder_write_scope": [
+      "server/routes/sync/",
+      "server/services/sync/"
+    ],
+    "domain_packages": [
+      ".claude/implementation/domains/sync.json"
+    ]
+  }
+}

@@ -1,0 +1,221 @@
+{
+  "id": "T-009",
+  "subject": "Build admin dashboard, menu management, and recipe management pages",
+  "owner": "builder-frontend-admin",
+  "builder_role": "frontend",
+  "layer": 2,
+  "wave": 2,
+  "goal": "Implement AdminDashboardPage (S-008) with KPI summary cards, revenue chart, peak hours heatmap, top selling items, payment method breakdown, shift performance table, and low stock alerts widget. Implement MenuManagementPage (S-009) with menu list table, category filter, add/edit form modal with image upload. Implement RecipeManagementPage (S-010) with recipe list, viewer panel, and editor form.",
+  "domain_packages": [
+    ".claude/implementation/domains/reporting.json",
+    ".claude/implementation/domains/menu.json",
+    ".claude/implementation/domains/recipe.json"
+  ],
+  "write_scope": [
+    "src/pages/admin/AdminDashboardPage.tsx",
+    "src/pages/admin/MenuManagementPage.tsx",
+    "src/pages/admin/RecipeManagementPage.tsx",
+    "src/components/reporting/",
+    "src/components/menu/",
+    "src/stores/useReportingStore.ts",
+    "src/stores/useMenuStore.ts",
+    "src/stores/useRecipeStore.ts"
+  ],
+  "read_sources": {
+    "primary": ".claude/implementation/domains/reporting.json",
+    "entities": [
+      "Transaction",
+      "MenuItem",
+      "MenuCategory",
+      "Recipe",
+      "RecipeIngredient",
+      "RecipeStep"
+    ],
+    "endpoints": {
+      "domains": [
+        "reporting",
+        "menu",
+        "recipe"
+      ],
+      "ids": [
+        "EP-062",
+        "EP-063",
+        "EP-011",
+        "EP-012",
+        "EP-013",
+        "EP-014",
+        "EP-015",
+        "EP-016",
+        "EP-017",
+        "EP-018",
+        "EP-019",
+        "EP-020",
+        "EP-021",
+        "EP-022",
+        "EP-023",
+        "EP-024"
+      ]
+    },
+    "features": [
+      "F-007",
+      "F-005",
+      "F-006",
+      "F-014"
+    ],
+    "screens": [
+      "S-008",
+      "S-009",
+      "S-010"
+    ],
+    "flows": [],
+    "components": []
+  },
+  "cross_domain_contracts": [],
+  "business_rules": [
+    {
+      "rule": "Report data updates in real-time as transactions are completed",
+      "type": "constraint",
+      "source": "F-007"
+    },
+    {
+      "rule": "Only completed (paid) orders are counted in revenue",
+      "type": "constraint",
+      "source": "F-007"
+    },
+    {
+      "rule": "Unavailable items are hidden from the order screen",
+      "type": "constraint",
+      "source": "F-005"
+    },
+    {
+      "rule": "Price changes take effect immediately for new orders",
+      "type": "constraint",
+      "source": "F-005"
+    },
+    {
+      "rule": "Recipe ingredients must reference inventory items for stock deduction",
+      "type": "constraint",
+      "source": "F-006"
+    }
+  ],
+  "state_dependencies": {
+    "owns_store": "useReportingStore",
+    "writes_to_tables": [],
+    "reads_from_tables": [
+      "transactions",
+      "orders",
+      "menuItems",
+      "menuCategories",
+      "recipes"
+    ],
+    "calls_other_stores": [
+      "useMenuStore",
+      "useRecipeStore",
+      "useInventoryStore"
+    ]
+  },
+  "db_scope": null,
+  "acceptance": {
+    "F-007": [
+      "Owner can view todays sales summary on a dashboard",
+      "Dashboard shows total revenue, order count, and top-selling items",
+      "Owner can filter reports by date range",
+      "Data refreshes automatically without manual action"
+    ],
+    "F-005": [
+      "Owner can add, edit, and delete menu items",
+      "Menu items can be categorized and filtered",
+      "Availability toggle immediately affects order screen",
+      "Menu items can be linked to recipe guides and inventory ingredients"
+    ],
+    "F-006": [
+      "Owner can create and edit recipe guides for each menu item",
+      "Recipe shows ingredients, step-by-step instructions, and estimated cooking time",
+      "Recipe ingredients are linked to inventory items"
+    ],
+    "F-014": [
+      "Menu items can be assigned to categories",
+      "Order screen allows filtering by category",
+      "Owner can create, edit, and delete categories"
+    ]
+  },
+  "depends_on": [
+    "T-001"
+  ],
+  "on_critical_path": false,
+  "_foundation_files": [
+    {
+      "path": "src/stores/useMenuStore.ts",
+      "category": "state",
+      "lines": 74,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useRecipeStore.ts",
+      "category": "state",
+      "lines": 72,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/stores/useReportingStore.ts",
+      "category": "state",
+      "lines": 97,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/pages/admin/AdminDashboardPage.tsx",
+      "category": "page-stub",
+      "lines": 9,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/pages/admin/MenuManagementPage.tsx",
+      "category": "page-stub",
+      "lines": 9,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/pages/admin/RecipeManagementPage.tsx",
+      "category": "page-stub",
+      "lines": 9,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/types/entities.ts",
+      "category": "types",
+      "lines": 413,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/enums.ts",
+      "category": "types",
+      "lines": 100,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/types/index.ts",
+      "category": "types",
+      "lines": 2,
+      "action": "READ_ONLY"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  }
+}

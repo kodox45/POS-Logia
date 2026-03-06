@@ -1,0 +1,132 @@
+{
+  "id": "T-018",
+  "subject": "Implement backend sync push/pull/status APIs",
+  "owner": "builder-sync",
+  "builder_role": "sync",
+  "layer": 2,
+  "wave": 1,
+  "goal": "Implement server-side sync endpoints: push (receive batched changes from client), pull (send changes since last sync timestamp), and status check. Integrate with Prisma for PostgreSQL persistence. Handle conflict detection and resolution (last-write-wins general, append-only for financial records).",
+  "domain_packages": [
+    ".claude/implementation/domains/sync.json"
+  ],
+  "write_scope": [
+    "server/routes/sync/",
+    "server/services/sync/"
+  ],
+  "read_sources": {
+    "primary": ".claude/implementation/domains/sync.json",
+    "entities": [],
+    "endpoints": {
+      "domains": [
+        "sync"
+      ],
+      "ids": [
+        "EP-072",
+        "EP-073",
+        "EP-074"
+      ]
+    },
+    "features": [],
+    "screens": [],
+    "flows": [],
+    "components": []
+  },
+  "cross_domain_contracts": [],
+  "business_rules": [
+    {
+      "rule": "Auto-sync to cloud/server when internet connection is available",
+      "type": "constraint",
+      "source": "nfr.reliability"
+    },
+    {
+      "rule": "No data loss during offline-to-online transition",
+      "type": "constraint",
+      "source": "nfr.reliability"
+    },
+    {
+      "rule": "Append-only semantics for financial records (Transaction, Shift, VoidRecord)",
+      "type": "constraint",
+      "source": "architecture"
+    }
+  ],
+  "state_dependencies": null,
+  "db_scope": {
+    "writes": [
+      "users",
+      "menuItems",
+      "menuCategories",
+      "recipes",
+      "recipeIngredients",
+      "recipeSteps",
+      "inventoryItems",
+      "stockMovements",
+      "tables",
+      "orders",
+      "orderItems",
+      "transactions",
+      "shifts",
+      "voidRecords",
+      "kitchenNotifications",
+      "posSettings",
+      "discounts",
+      "ewalletProviders",
+      "userPermissions"
+    ],
+    "reads": [
+      "users",
+      "menuItems",
+      "menuCategories",
+      "recipes",
+      "recipeIngredients",
+      "recipeSteps",
+      "inventoryItems",
+      "stockMovements",
+      "tables",
+      "orders",
+      "orderItems",
+      "transactions",
+      "shifts",
+      "voidRecords",
+      "kitchenNotifications",
+      "posSettings",
+      "discounts",
+      "ewalletProviders",
+      "userPermissions"
+    ]
+  },
+  "acceptance": {
+    "infra": [
+      "Push endpoint receives and persists batched changes",
+      "Pull endpoint returns changes since last sync timestamp",
+      "Status endpoint returns sync state and pending counts",
+      "Conflict detection returns conflicted records",
+      "Financial records use append-only sync strategy"
+    ]
+  },
+  "depends_on": [
+    "T-002",
+    "T-003"
+  ],
+  "on_critical_path": false,
+  "_foundation_files": [
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  }
+}

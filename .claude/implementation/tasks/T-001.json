@@ -1,0 +1,129 @@
+{
+  "id": "T-001",
+  "subject": "Implement frontend navigation, auth flow, and guard logic",
+  "owner": "builder-frontend-core",
+  "builder_role": "frontend",
+  "layer": 1,
+  "wave": 1,
+  "goal": "Implement sidebar/tab navigation contents, auth flow UI (login form, error handling, session check), guard logic (PinGateModal interaction, ShiftGuard redirect), and shared layout interiors for DashboardHubLayout, WaiterCashierLayout, KitchenLayout, AdminLayout.",
+  "domain_packages": [],
+  "write_scope": [
+    "src/components/navigation/",
+    "src/components/auth/",
+    "src/routes/guards/",
+    "src/components/layout/"
+  ],
+  "read_sources": {
+    "ba_files": [
+      ".ba/design/layout.json",
+      ".ba/requirements/roles.json"
+    ],
+    "entities": [],
+    "endpoints": {},
+    "features": [],
+    "screens": [],
+    "flows": [],
+    "components": []
+  },
+  "cross_domain_contracts": [],
+  "business_rules": [],
+  "state_dependencies": {
+    "owns_store": null,
+    "writes_to_tables": [],
+    "reads_from_tables": [],
+    "calls_other_stores": [
+      "useAuthStore",
+      "useShiftManagementStore"
+    ]
+  },
+  "db_scope": null,
+  "acceptance": {
+    "infra": [
+      "Navigation renders correctly for all roles (owner, waiter-cashier, chef)",
+      "Auth flow works: login form validates input, shows errors, redirects to dashboard on success",
+      "AuthGuard redirects unauthenticated users to login",
+      "RoleGuard blocks unauthorized role access",
+      "PermissionGuard checks user-specific permissions",
+      "PinGateModal shows numpad, verifies PIN via useAuthStore, blocks POS entry without PIN",
+      "ShiftGuard redirects to open shift page when no active shift for payment actions",
+      "All 4 layouts render correct navigation elements"
+    ]
+  },
+  "depends_on": [],
+  "on_critical_path": true,
+  "_foundation_files": [
+    {
+      "path": "src/components/navigation/AuthGuard.tsx",
+      "category": "routing",
+      "lines": 15,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/components/navigation/RoleGuard.tsx",
+      "category": "routing",
+      "lines": 24,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/components/navigation/PermissionGuard.tsx",
+      "category": "routing",
+      "lines": 34,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/components/navigation/PinGateModal.tsx",
+      "category": "routing",
+      "lines": 75,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/components/navigation/ShiftGuard.tsx",
+      "category": "routing",
+      "lines": 15,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/components/layout/DashboardHubLayout.tsx",
+      "category": "layout",
+      "lines": 61,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/components/layout/WaiterCashierLayout.tsx",
+      "category": "layout",
+      "lines": 79,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/components/layout/KitchenLayout.tsx",
+      "category": "layout",
+      "lines": 64,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/components/layout/AdminLayout.tsx",
+      "category": "layout",
+      "lines": 136,
+      "action": "ENHANCE"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  }
+}

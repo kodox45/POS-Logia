@@ -1,0 +1,104 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:20:00Z",
+  "roles": [
+    {
+      "id": "owner",
+      "name": "Owner / Admin",
+      "description": "Restaurant owner with full system access. Can configure access permissions for all other roles and users via a checklist-based access control panel.",
+      "stakeholder_ref": "owner",
+      "permissions": [
+        "Full access to all system modules",
+        "Manage menu items, pricing, and categories",
+        "Manage recipes and cooking guides",
+        "View and manage inventory/stock",
+        "View all reports and analytics",
+        "Process orders and payments",
+        "Manage table assignments",
+        "Configure user accounts and access permissions",
+        "Access control panel with toggleable checklist per user"
+      ],
+      "restrictions": []
+    },
+    {
+      "id": "waiter-cashier",
+      "name": "Waiter / Cashier",      "description": "Front-of-house staff handling customer service and payments. Permissions are fully configurable by Owner via access control checklist.",
+      "stakeholder_ref": "waiter-cashier",
+      "permissions": [
+        "Create and manage customer orders",
+        "Process payments and generate receipts"
+      ],
+      "restrictions": [
+        "Cannot access access control settings",
+        "Cannot delete transaction history"
+      ],
+      "toggleable_permissions": [
+        {
+          "id": "perm-view-stock",
+          "name": "View Inventory / Stock",
+          "default": false
+        },
+        {
+          "id": "perm-view-menu",
+          "name": "View / Browse Menu Management",
+          "default": true
+        },
+        {
+          "id": "perm-view-recipe",
+          "name": "View Recipes / Cooking Guides",
+          "default": false
+        },
+        {
+          "id": "perm-view-tables",
+          "name": "View and Manage Tables",
+          "default": true
+        },        {
+          "id": "perm-view-reports",
+          "name": "View Sales Reports",
+          "default": false
+        },
+        {
+          "id": "perm-view-transactions",
+          "name": "View Transaction History",
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "chef",
+      "name": "Chef / Cook",
+      "description": "Kitchen staff responsible for food preparation. Permissions are fully configurable by Owner via access control checklist.",
+      "stakeholder_ref": "chef",
+      "permissions": [
+        "View incoming orders on Kitchen Display",
+        "Update order status (cooking, ready)",
+        "View recipes and cooking guides"
+      ],
+      "restrictions": [
+        "Cannot access access control settings",
+        "Cannot process payments",
+        "Cannot delete transaction history"
+      ],
+      "toggleable_permissions": [        {
+          "id": "perm-chef-view-stock",
+          "name": "View Inventory / Stock",
+          "default": false
+        },
+        {
+          "id": "perm-chef-view-menu",
+          "name": "View Menu Management",
+          "default": true
+        },
+        {
+          "id": "perm-chef-manage-recipe",
+          "name": "Edit Recipes / Cooking Guides",
+          "default": false
+        }
+      ]
+    }
+  ],
+  "hierarchy": {
+    "description": "Owner has full control including configurable access control over all other roles. Waiter/Cashier and Chef are at the same level but with different default permissions, all toggleable by Owner.",
+    "chain": ["chef", "waiter-cashier", "owner"]
+  }
+}

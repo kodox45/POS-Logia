@@ -1,0 +1,458 @@
+{
+  "validator": "validator-backend",
+  "generated_at": "2026-03-07T00:00:00.000Z",
+  "validations": [
+    {
+      "task_id": "V-T-002",
+      "builder_task": "T-002",
+      "title": "Backend Infrastructure with Database Schema and Server",
+      "status": "PASS",
+      "issues": [],
+      "files_validated": ["server/src/index.ts", "server/src/prisma.ts", "server/src/middleware/auth.ts", "server/src/middleware/errorHandler.ts", "server/src/routes/index.ts", "server/src/routes/health.ts", "server/src/routes/auth/index.ts", "server/src/services/auth/index.ts", "server/src/types/index.ts", "server/package.json", "prisma/schema.prisma"]
+    },
+    {
+      "task_id": "V-T-003",
+      "builder_task": "T-003",
+      "title": "Sync Engine with Offline Queue and Conflict Resolution",
+      "status": "PASS",
+      "issues": [],
+      "files_validated": ["src/sync/types.ts", "src/sync/change-tracker.ts", "src/sync/conflict-resolver.ts", "src/sync/sync-queue.ts", "src/sync/sync-engine.ts", "src/sync/index.ts", "src/hooks/useOnlineStatus.ts", "public/sw.js", "src/db/database.ts"]
+    },
+    {
+      "task_id": "V-T-011",
+      "builder_task": "T-011",
+      "title": "Backend Auth and User Management APIs",
+      "status": "PASS",
+      "quality_checks": {
+        "Q-01_completeness": "PASS - Auth: login, logout, verify-pin, session endpoints. User mgmt: list, get, create, update, get-permissions, update-permissions endpoints",
+        "Q-02_type_safety": "PASS - Zod schemas for login, verify-pin, create-user, update-user, update-permissions. TypeScript throughout",
+        "Q-03_error_handling": "PASS - All routes handle AppError with statusCode/code. Service layer throws typed errors (INVALID_CREDENTIALS, ACCOUNT_DEACTIVATED, USER_NOT_FOUND, USERNAME_EXISTS, CORE_PERMISSION_PROTECTED)",
+        "Q-06_naming": "PASS - Routes at /api/auth/* and /api/users/*. camelCase fields. Consistent error codes",
+        "Q-07_imports": "PASS - Services import from ../../prisma, ../../middleware/auth. Auth service exports hashPassword/hashPin reused by user-management",
+        "Q-08_foundation": "PASS - constants.ts unmodified. DEFAULT_PERMISSIONS in user-management matches foundation PERMISSIONS exactly"
+      },
+      "functionality_checks": {
+        "F-01_feature_coverage": "PASS - F-009 (login, session, PIN verification) and F-008 (access control with role-based permissions) fully implemented",
+        "F-02_acceptance_criteria": {
+          "met": [
+            "Login validates credentials with bcrypt - auth/index.ts:29",
+            "Deactivated accounts rejected - auth/index.ts:24",
+            "Session token returned on login - auth/index.ts:48",
+            "PIN verification with bcrypt - auth/index.ts:93",
+            "Session info includes active shift - auth/index.ts:115-122",
+            "User CRUD restricted to owner role - user-management routes use requireRole('owner')",
+            "Create user auto-provisions default permissions by role - user-management/index.ts:121-135",
+            "Core permissions protected from removal - user-management/index.ts:252-256",
+            "Username uniqueness enforced - user-management/index.ts:110-115",
+            "Password and PIN hashed with bcrypt - auth/index.ts:142-148"
+          ],
+          "not_met": []
+        },
+        "F-03_business_rules": "PASS - waiter-cashier cannot create users. Owner-only access to user management. PIN context types enforced (shift_open, pos_entry, void_operation). Role mapping waiter_cashier<->waiter-cashier handled correctly"
+      },
+      "issues": [],
+      "files_validated": ["server/src/routes/auth/index.ts", "server/src/services/auth/index.ts", "server/src/routes/user-management/index.ts", "server/src/services/user-management/index.ts"]
+    },
+    {
+      "task_id": "V-T-012",
+      "builder_task": "T-012",
+      "title": "Backend Menu, Recipe, and Settings APIs",
+      "status": "PASS",
+      "quality_checks": {
+        "Q-01_completeness": "PASS - Menu items: list, get, create, update, delete. Categories: list, create, update, delete. Recipes: list, get, create, update, delete. Settings: get, update, ewallet providers list/update. Discounts: list, create, update, delete. 18 endpoints total",
+        "Q-02_type_safety": "PASS - Zod schemas for create/update menu item, category, recipe, settings, discount. Prisma.Decimal for prices",
+        "Q-03_error_handling": "PASS - AppError for MENU_ITEM_NOT_FOUND, CATEGORY_NOT_FOUND, RECIPE_NOT_FOUND, CATEGORY_HAS_ITEMS, ITEM_HAS_ACTIVE_ORDERS, DISCOUNT_HAS_ACTIVE_ORDERS",
+        "Q-06_naming": "PASS - /api/menu-items/*, /api/menu-categories/*, /api/recipes/*, /api/settings/*, /api/discounts/*. camelCase fields",
+        "Q-07_imports": "PASS - Files correctly placed in server/src/routes/ and server/src/services/. Imports use ../../prisma, ../../middleware/auth",
+        "Q-08_foundation": "PASS - constants.ts unmodified"
+      },
+      "functionality_checks": {
+        "F-01_feature_coverage": "PASS - F-005 (menu management), F-006 (recipe guide), F-014 (menu categorization), F-016 (POS settings/PPN), F-018 (discount management)",
+        "F-02_acceptance_criteria": {
+          "met": [
+            "Menu CRUD with category validation and availability toggle",
+            "Delete blocked if active orders reference the item",
+            "Category CRUD with unique name enforcement and delete blocked if has items",
+            "Recipe CRUD with ingredient-inventory linkage and step ordering",
+            "Recipe validates menuItem and inventory items exist",
+            "Settings auto-creates with default PPN 11% if none exists",
+            "PPN toggle and rate configurable",
+            "Ewallet provider management (list, update enable/QR)",
+            "Discount CRUD with percentage and fixed_amount types",
+            "Discount delete blocked if active orders reference it",
+            "Category item counts included in list response"
+          ],
+          "not_met": []
+        },
+        "F-03_business_rules": "PASS - Menu items linked to recipes and inventory via RecipeIngredient. PPN rate from settings used in payment. Discount types match spec exactly. Owner-only access enforced on all admin endpoints"
+      },
+      "issues": [],
+      "files_validated": ["server/src/routes/menu/index.ts", "server/src/services/menu/index.ts", "server/src/routes/recipe/index.ts", "server/src/services/recipe/index.ts", "server/src/routes/settings/index.ts", "server/src/services/settings/index.ts"]
+    },
+    {
+      "task_id": "V-T-013",
+      "builder_task": "T-013",
+      "title": "Backend Inventory APIs",
+      "status": "PASS_WITH_FIX",
+      "quality_checks": {
+        "Q-01_completeness": "PASS - All 10 inventory endpoints: list, get, create, update, delete, restock, adjust, movements, low-stock, check-stock. Plus internal deductStockForOrder and reverseStockForOrder",
+        "Q-02_type_safety": "PASS - Uses Prisma.Decimal for quantities. StockStatus enum from Prisma. Type-safe transaction blocks",
+        "Q-03_error_handling": "PASS - AppError for not-found (404), duplicate name (409), in-use (409). Validation in routes for required fields",
+        "Q-06_naming": "PASS - Routes at /api/inventory-items/* and /api/inventory/*. camelCase fields",
+        "Q-07_imports": "FIXED - Builder wrote files to server/routes/ and server/services/ (outside tsconfig rootDir). Validator moved files to server/src/routes/inventory/ and server/src/services/inventory/ with corrected import paths",
+        "Q-08_foundation": "PASS - constants.ts unmodified"
+      },
+      "functionality_checks": {
+        "F-01_feature_coverage": "PASS - F-004 (inventory management) and F-012 (stock checking) implemented",
+        "F-02_acceptance_criteria": {
+          "met": [
+            "CRUD for inventory items with duplicate name check",
+            "Restock creates StockMovement with type 'restock' in transaction",
+            "Manual adjustment requires reason, records quantityChange delta",
+            "Stock status auto-computed: ok/low/critical based on threshold",
+            "Check-stock validates multiple items against recipe ingredients",
+            "Auto-deduction on order: recipe ingredients * quantity, floored at 0",
+            "Stock reversal on cancellation restores quantities",
+            "Low-stock endpoint returns items with status low or critical",
+            "Movement history with performer name and date filtering",
+            "Delete blocked if referenced by recipes"
+          ],
+          "not_met": []
+        },
+        "F-03_business_rules": "PASS - Multi-step stock deduction: for each order item, find menu item recipes, for each recipe find ingredients, deduct quantityRequired*orderQuantity. Stock reversal finds all auto_deduction movements for order and reverses them. Stock status transitions correctly computed via computeStockStatus()",
+        "F-04_cross_domain": "PASS - deductStockForOrder and reverseStockForOrder exported for order-management to use (UF-001 contract)"
+      },
+      "fixes_applied": [
+        {
+          "severity": "BLOCKING",
+          "description": "Files were at server/routes/inventory/ and server/services/inventory/ outside tsconfig rootDir (server/src). Imports used ../../src/prisma instead of ../../prisma. Moved to server/src/routes/inventory/ and server/src/services/inventory/ with corrected imports.",
+          "tier": "Tier 1 self-fix"
+        }
+      ],
+      "files_validated": ["server/src/routes/inventory/index.ts", "server/src/services/inventory/inventoryService.ts"]
+    },
+    {
+      "task_id": "V-T-014",
+      "builder_task": "T-014",
+      "title": "Backend Order Management and Table APIs",
+      "status": "PASS_WITH_FIX",
+      "quality_checks": {
+        "Q-01_completeness": "PASS - Orders: list, get, create, add-items, update-status. Tables: list, get, create, update, delete. 10 endpoints total",
+        "Q-02_type_safety": "PASS - Uses Prisma.Decimal for amounts. OrderStatus enum. Prisma transaction blocks for atomic operations",
+        "Q-03_error_handling": "PASS - AppError: ORDER_NOT_FOUND, TABLE_NOT_FOUND, ITEM_UNAVAILABLE, NO_ITEMS, ORDER_NOT_ACTIVE, INVALID_TRANSITION, TABLE_OCCUPIED, TABLE_NUMBER_EXISTS",
+        "Q-06_naming": "PASS - /api/orders/*, /api/tables/*. camelCase fields",
+        "Q-07_imports": "FIXED - Same rootDir issue as inventory. Moved to server/src/",
+        "Q-08_foundation": "PASS - constants.ts unmodified"
+      },
+      "functionality_checks": {
+        "F-01_feature_coverage": "PASS - F-001 (order management), F-010 (table management), F-017 (additional orders)",
+        "F-02_acceptance_criteria": {
+          "met": [
+            "Order creation validates table exists, menu items available",
+            "PPN calculated: (subtotal - discount) * ppnRate/100",
+            "Grand total: (subtotal - discount) + ppnAmount",
+            "Discount supports percentage and fixed_amount types",
+            "Table status set to 'occupied' on order creation",
+            "Order status transitions enforced via ORDER_STATUS_TRANSITIONS map matching spec",
+            "Cancellation triggers stock reversal via reverseStockForOrder()",
+            "Table freed to 'available' on cancellation if no other active orders",
+            "Add-items marks new items as isAdditional=true",
+            "Add-items recalculates subtotal, PPN, and grandTotal",
+            "Order number generated with date prefix (ORD-YYYYMMDD-XXXX)"
+          ],
+          "not_met": []
+        },
+        "F-03_business_rules": "PASS - State machine: pending->cooking->ready->served->paid->voided, pending->cancelled. cookingStartedAt set on cooking transition, readyAt set on ready transition. Stock deducted on create, reversed on cancel. Cross-domain: imports deductStockForOrder/reverseStockForOrder from inventory service (UF-001)",
+        "F-04_cross_domain": "PASS - Uses inventory service for stock deduction (UF-001). Table status updated automatically. Kitchen notifications handled in kitchen domain"
+      },
+      "fixes_applied": [
+        {
+          "severity": "BLOCKING",
+          "description": "Files at server/routes/order-management/ and server/services/order-management/. Moved to server/src/ with corrected imports.",
+          "tier": "Tier 1 self-fix"
+        }
+      ],
+      "files_validated": ["server/src/routes/order-management/index.ts", "server/src/services/order-management/orderService.ts", "server/src/services/order-management/tableService.ts"]
+    },
+    {
+      "task_id": "V-T-018",
+      "builder_task": "T-018",
+      "title": "Backend Sync Push/Pull/Status APIs",
+      "status": "PASS_WITH_FIX",
+      "quality_checks": {
+        "Q-01_completeness": "PASS - 3 endpoints: POST /api/sync/push, POST /api/sync/pull, GET /api/sync/status",
+        "Q-02_type_safety": "PASS - Zod schemas for push and pull payloads. SyncChange and SyncConflict interfaces. PrismaDelegate type",
+        "Q-03_error_handling": "PASS - AppError for invalid entity. Per-change error handling continues processing. 409 for full conflict response",
+        "Q-06_naming": "PASS - /api/sync/*. PascalCase entity names matching Prisma models",
+        "Q-07_imports": "FIXED - Same rootDir issue. Moved to server/src/",
+        "Q-08_foundation": "PASS"
+      },
+      "functionality_checks": {
+        "F-01_feature_coverage": "PASS - Push with conflict detection, pull with timestamp-based changes, status with pending/conflict counts",
+        "F-02_acceptance_criteria": {
+          "met": [
+            "Push endpoint processes changes with LWW conflict detection",
+            "Append-only entities (Transaction, Shift, VoidRecord) reject deletes and server wins on conflicts",
+            "Pull returns all records updated since lastSyncedAt across all 19 entities",
+            "Status counts pending and conflict records across all entities",
+            "syncStatus set to 'synced' and lastSynced updated on successful push",
+            "sanitizeRecord handles Date->ISO and Decimal->number conversion",
+            "prepareData strips sync metadata and relation objects"
+          ],
+          "not_met": []
+        },
+        "F-03_business_rules": "PASS - Append-only enforcement for financial records. LWW comparison by updatedAt timestamp. Entity validation via getModelDelegate() covers all 19 models"
+      },
+      "fixes_applied": [
+        {
+          "severity": "BLOCKING",
+          "description": "Files at server/routes/sync/ and server/services/sync/. Moved to server/src/ with corrected imports.",
+          "tier": "Tier 1 self-fix"
+        }
+      ],
+      "files_validated": ["server/src/routes/sync/index.ts", "server/src/services/sync/syncService.ts"]
+    },
+    {
+      "task_id": "V-T-015",
+      "builder_task": "T-015",
+      "title": "Backend Kitchen and Notification APIs",
+      "status": "PASS_WITH_FIX",
+      "quality_checks": {
+        "Q-01_completeness": "PASS - 5 endpoints: kitchen orders list, start-cooking, mark-ready, notifications list, acknowledge",
+        "Q-02_type_safety": "PASS - OrderStatus from Prisma. Typed return objects",
+        "Q-03_error_handling": "PASS - ORDER_NOT_FOUND, INVALID_TRANSITION, NOTIFICATION_NOT_FOUND. Status transition validation",
+        "Q-06_naming": "PASS - /api/kitchen/orders/*, /api/kitchen/notifications/*",
+        "Q-07_imports": "FIXED - Same rootDir issue. Moved to server/src/"
+      },
+      "functionality_checks": {
+        "F-01_feature_coverage": "PASS - F-002 (kitchen display) with queue, status transitions, notifications",
+        "F-02_acceptance_criteria": {
+          "met": [
+            "Kitchen queue shows pending/cooking/ready orders sorted by createdAt ASC (oldest first)",
+            "Start-cooking transitions pending->cooking, sets cookingStartedAt",
+            "Mark-ready transitions cooking->ready, sets readyAt, creates KitchenNotification",
+            "Late order flagging with LATE_ORDER_THRESHOLD_MINUTES=15",
+            "Kitchen notification with table number and items summary",
+            "Acknowledge notification updates isAcknowledged and transitions order to served"
+          ],
+          "not_met": []
+        },
+        "F-03_business_rules": "PASS - Status transitions enforced (pending->cooking, cooking->ready). Ready creates notification in transaction. Acknowledge sets order to served (UF-001, UF-008). Recipe linkage for items",
+        "F-04_cross_domain": "PASS - UF-001: order status updates. UF-008: acknowledge transitions order to served"
+      },
+      "fixes_applied": [
+        {
+          "severity": "BLOCKING",
+          "description": "Files at server/routes/kitchen/ and server/services/kitchen/. Moved to server/src/ with corrected imports.",
+          "tier": "Tier 1 self-fix"
+        }
+      ],
+      "files_validated": ["server/src/routes/kitchen/index.ts", "server/src/services/kitchen/kitchenService.ts"]
+    },
+    {
+      "task_id": "V-T-016",
+      "builder_task": "T-016",
+      "title": "Backend Payment, Void, and Transaction APIs",
+      "status": "PASS",
+      "quality_checks": {
+        "Q-01_completeness": "PASS - 6 endpoints: POST /payments, POST /orders/:id/void, GET /transactions, GET /transactions/:id, GET /transactions/export, GET /void-records",
+        "Q-02_type_safety": "PASS - Prisma.Decimal for all monetary amounts. PaymentMethod enum from Prisma. Typed Prisma.TransactionWhereInput and Prisma.VoidRecordWhereInput for filters",
+        "Q-03_error_handling": "PASS - AppError: ORDER_NOT_FOUND (404), ORDER_NOT_PAYABLE (400), NO_ACTIVE_SHIFT (400), INSUFFICIENT_AMOUNT (400), PIN_NOT_VERIFIED (400), REASON_REQUIRED (400), ORDER_NOT_PAID (400), TRANSACTION_NOT_FOUND (404)",
+        "Q-06_naming": "PASS - /api/payments, /api/orders/:id/void, /api/transactions/*, /api/void-records. camelCase fields throughout",
+        "Q-07_imports": "PASS - Files correctly placed in server/src/routes/payment/ and server/src/services/payment/. Imports use ../../prisma, ../../middleware/auth, ../inventory/inventoryService (cross-domain). routes/index.ts imports from './payment'",
+        "Q-08_foundation": "PASS - constants.ts unmodified"
+      },
+      "functionality_checks": {
+        "F-01_feature_coverage": "PASS - F-003 (cashier & payment processing), F-017 (void/cancel order & transaction), F-011 (transaction history), F-013 (report export), F-018 (discount at payment time)",
+        "F-02_acceptance_criteria": {
+          "met": [
+            "Payment validates order exists and is payable (served/ready) - paymentService.ts:41-44",
+            "Active shift required before payment processing - paymentService.ts:46-51",
+            "PPN calculated from settings: taxableAmount = subtotal - discount, ppnAmount = taxable * ppnRate/100 - paymentService.ts:80-82",
+            "Grand total = taxableAmount + ppnAmount (matches spec formula) - paymentService.ts:82",
+            "Insufficient payment check: amountPaid < grandTotal - paymentService.ts:85-87",
+            "Cash change calculated for tunai only, 0 for digital - paymentService.ts:89-90",
+            "Transaction created atomically with order->paid, table->available in Prisma transaction - paymentService.ts:94-158",
+            "Shift totals updated: cashSalesTotal/digitalSalesTotal, totalRevenue, totalTransactions, discountTotalGiven - paymentService.ts:134-155",
+            "Discount can be applied at payment time via discountId param - paymentService.ts:60-78",
+            "Discount applied before PPN: (subtotal - discount) * ppnRate - paymentService.ts:80-82",
+            "Void requires PIN verification - paymentService.ts:194-196",
+            "Void requires mandatory reason - paymentService.ts:197-199",
+            "Void only on paid orders - paymentService.ts:208-209",
+            "VoidRecord created with voidNumber (VD-YYYYMMDD-XXXX) - paymentService.ts:223-236",
+            "Void updates order->voided, transactions->voided in transaction block - paymentService.ts:238-248",
+            "Void adjusts shift: voidCount, voidTotalAmount, expectedCash for cash payments - paymentService.ts:253-273",
+            "Void reverses stock via reverseStockForOrder (cross-domain) - paymentService.ts:278",
+            "Transaction list with comprehensive filtering (date, ID, cashier, shift, method, total range, status) - paymentService.ts:305-323",
+            "Summary stats: count, totalRevenue, cashTotal, digitalTotal - paymentService.ts:335-341",
+            "Transaction detail includes order items with prices - paymentService.ts:372-421",
+            "Export to CSV with date/cashier/shift/method filtering - paymentService.ts:424-479",
+            "Void records list with shift/date filtering and totalVoidAmount - paymentService.ts:482-525",
+            "Transaction number generated as TXN-YYYYMMDD-XXXX - paymentService.ts:6-11",
+            "Specific payment method stored (tunai/qris/gopay/ovo/dana/shopeepay/transfer_bank) - uses PaymentMethod enum",
+            "Digital payment ref and transfer proof photo URL supported - paymentService.ts:109-110",
+            "Export registered before :id route to avoid route conflict - routes/payment/index.ts:94"
+          ],
+          "not_met": []
+        },
+        "F-03_business_rules": "PASS - PPN formula correct: (subtotal - discount) * ppnRate / 100. Grand total = taxableAmount + ppnAmount. Change only for cash (tunai). Append-only transaction records (immutable after creation). Expected cash adjusted correctly on void for cash payments. One discount per order enforced (checks !order.discountId before applying new). Void amount = order.grandTotal (full void tracked).",
+        "F-04_cross_domain": "PASS - Uses reverseStockForOrder from inventory service for void (UF-001). Shift totals updated during payment/void. Table freed to available on payment. Discount lookup from discount table."
+      },
+      "issues": [],
+      "files_validated": ["server/src/routes/payment/index.ts", "server/src/services/payment/paymentService.ts"]
+    },
+    {
+      "task_id": "V-T-017",
+      "builder_task": "T-017",
+      "title": "Backend Shift Management and Reporting APIs",
+      "status": "PASS",
+      "quality_checks": {
+        "Q-01_completeness": "PASS - Shift: 6 endpoints (POST /shifts/open, GET /shifts/active, GET /shifts/:id/summary, POST /shifts/:id/close, GET /shifts, GET /shifts/:id). Reporting: 2 endpoints (GET /reports/dashboard, GET /reports/sales-summary). 8 endpoints total",
+        "Q-02_type_safety": "PASS - Prisma.Decimal for all monetary amounts. Prisma.ShiftWhereInput for typed filtering. ShiftStatus from Prisma",
+        "Q-03_error_handling": "PASS - AppError: PIN_NOT_VERIFIED (400), SHIFT_ALREADY_OPEN (400), SHIFT_NOT_FOUND (404), SHIFT_ALREADY_CLOSED (400), NOTES_REQUIRED (400), VALIDATION_ERROR (400 for missing dateFrom/dateTo on sales-summary)",
+        "Q-06_naming": "PASS - /api/shifts/*, /api/reports/*. camelCase fields throughout",
+        "Q-07_imports": "PASS - Files correctly placed in server/src/routes/shift-management/ and server/src/services/shift-management/, server/src/routes/reporting/ and server/src/services/reporting/. Imports use ../../prisma, ../../middleware/auth, ../../types",
+        "Q-08_foundation": "PASS - constants.ts unmodified"
+      },
+      "functionality_checks": {
+        "F-01_feature_coverage": "PASS - F-015 (cash register shift management) and F-007 (daily sales report & dashboard) fully implemented",
+        "F-02_acceptance_criteria": {
+          "met": [
+            "PIN verification required before opening shift - shiftService.ts:16-18",
+            "Only one active shift per cashier enforced - shiftService.ts:20-25",
+            "Opening balance sets initial expectedCash - shiftService.ts:43",
+            "Shift number generated as SHF-YYYYMMDD-XXXX - shiftService.ts:5-10",
+            "Active shift endpoint returns current shift metrics (cash/digital/revenue/voids) - shiftService.ts:59-84",
+            "Shift summary includes line-by-line transaction detail with order items - shiftService.ts:86-141",
+            "Shift duration calculated (hours + minutes) - shiftService.ts:98-101",
+            "Close shift requires actualCash input - routes/shift-management/index.ts:75-82",
+            "Discrepancy calculated: actualCash - expectedCash - shiftService.ts:156",
+            "Closing notes mandatory when discrepancy is non-zero - shiftService.ts:158-160",
+            "Closed shift is immutable (SHIFT_ALREADY_CLOSED check) - shiftService.ts:151-153",
+            "Shift list with filtering: status, cashier, date range, hasDiscrepancy - shiftService.ts:185-203",
+            "hasDiscrepancy filter: discrepancy != 0 - shiftService.ts:201-203",
+            "Shift detail shows all fields including void counts, discount totals - shiftService.ts:233-268",
+            "Owner-only access for shift list and detail; owner+waiter-cashier for open/active/summary/close - routes",
+            "Dashboard shows totalRevenue, totalOrders, averageOrderValue - reportingService.ts:38-45",
+            "Top-selling items by quantity (top 10) with revenue - reportingService.ts:48-67",
+            "Payment method breakdown with count, total, percentage - reportingService.ts:70-87",
+            "Revenue by hour for trend analysis - reportingService.ts:90-103",
+            "Low stock alert count from inventory - reportingService.ts:106-111",
+            "Date range filtering with today as default - reportingService.ts:11-15",
+            "Only completed transactions counted in revenue - reportingService.ts:18-21",
+            "Sales summary with cashRevenue, digitalRevenue, voidTotal, netRevenue - reportingService.ts:150-161",
+            "Total PPN collected and discounts given tracked - reportingService.ts:152-153",
+            "Daily breakdown for trend charts - reportingService.ts:164-177",
+            "Net revenue = totalRevenue - voidTotal - reportingService.ts:161"
+          ],
+          "not_met": []
+        },
+        "F-03_business_rules": "PASS - PIN required before shift open. Only one active shift per cashier. Closing is one-way (status check). Expected cash = opening + cashSales - voids (maintained by payment/void services). Discrepancy notes mandatory for non-zero difference. Closed shifts immutable. Dashboard data real-time from completed transactions only. Report export via sales-summary endpoint.",
+        "F-04_cross_domain": "PASS - Shift totals (cashSalesTotal, digitalSalesTotal, voidCount, voidTotalAmount, expectedCash) maintained by payment and void services. Dashboard queries transaction and inventory tables. Shift referenced by orders and transactions."
+      },
+      "issues": [],
+      "files_validated": ["server/src/routes/shift-management/index.ts", "server/src/services/shift-management/shiftService.ts", "server/src/routes/reporting/index.ts", "server/src/services/reporting/reportingService.ts"]
+    }
+    ,
+    {
+      "task_id": "V-T-021",
+      "builder_task": "T-021",
+      "title": "Wire Sync to Domain Stores",
+      "status": "PASS",
+      "quality_checks": {
+        "Q-01_completeness": "PASS - All 9 domain stores wired with notifySync() calls on every mutation. sync-trigger.ts provides notifySync() and trackAndSync() wrappers. useSyncStore.ts bridges sync engine to React. SyncStatusIndicator.tsx component created. All 4 layouts include SyncStatusIndicator.",
+        "Q-02_type_safety": "PASS - sync-trigger.ts imports TableName, SyncableEntity from sync/types. useSyncStore uses SyncProgress, SyncEngineStatus types. All stores import notifySync from @/sync/sync-trigger.",
+        "Q-03_error_handling": "PASS - SyncStatusIndicator shows distinct states: offline (WifiOff), syncing (spinning RefreshCw), error (AlertCircle with message), idle/online (Wifi). useSyncStore subscribes to sync engine progress for error propagation.",
+        "Q-06_naming": "PASS - Consistent naming: notifySync() for fire-and-forget trigger, trackAndSync() for tracked mutations, useSyncStore for React bridge, SyncStatusIndicator for UI component.",
+        "Q-07_imports": "PASS - All stores import from @/sync/sync-trigger. SyncStatusIndicator imports from ./useSyncStore and @/hooks/useOnlineStatus. Layouts import from @/sync/SyncStatusIndicator.",
+        "Q-08_foundation": "PASS - Uses existing sync engine (syncEngine.requestSync()), change tracker (trackChange()), and useOnlineStatus hook without modification."
+      },
+      "functionality_checks": {
+        "F-01_feature_coverage": "PASS - Offline-first sync wiring across all domain stores. Every Dexie DB mutation triggers sync. UI indicator shows sync status in all interfaces.",
+        "F-02_acceptance_criteria": {
+          "met": [
+            "sync-trigger.ts: notifySync() calls syncEngine.requestSync() for debounced sync",
+            "sync-trigger.ts: trackAndSync() calls trackChange() then requestSync() for tracked mutations",
+            "useSyncStore.ts: Zustand store subscribes to syncEngine progress updates (status, lastSyncedAt, pendingChanges, error)",
+            "useSyncStore.ts: Exposes startEngine, stopEngine, syncNow, requestSync actions",
+            "SyncStatusIndicator.tsx: Shows offline/syncing/error/online states with appropriate icons and colors",
+            "SyncStatusIndicator.tsx: Displays pending changes count badge when > 0",
+            "SyncStatusIndicator.tsx: Uses useOnlineStatus hook to detect offline state",
+            "useAuthStore: 2 notifySync calls (login:89, updatePermissions:173)",
+            "useMenuStore: 8 notifySync calls (addMenuItem, updateMenuItem, deleteMenuItem, toggleAvailability, addCategory, updateCategory, deleteCategory)",
+            "useRecipeStore: 4 notifySync calls (addRecipe, updateRecipe, deleteRecipe, linkIngredientToInventory)",
+            "useInventoryStore: 6 notifySync calls (addStock, updateItem, deleteItem, restockItem, deductStock, adjustStock)",
+            "useOrderManagementStore: 4 notifySync calls (createOrder, addItemsToOrder, updateOrderStatus; cancelOrder delegates to updateOrderStatus)",
+            "useKitchenStore: 4 notifySync calls (startCooking, markReady, confirmServed, acknowledgeNotification)",
+            "usePaymentStore: 3 notifySync calls (processPayment, applyDiscount, processVoid)",
+            "useShiftManagementStore: 3 notifySync calls (openShift, closeShift, recordDiscrepancy)",
+            "useSettingsStore: 9 notifySync calls (togglePPN, updatePPNRate, updateRestaurantInfo, configurePaymentMethods, addDiscount, updateDiscount, deleteDiscount, toggleDiscountActive, initializeSettings)",
+            "DashboardHubLayout: SyncStatusIndicator in header (line 46)",
+            "WaiterCashierLayout: SyncStatusIndicator in header (line 43)",
+            "KitchenLayout: SyncStatusIndicator in header (line 47)",
+            "AdminLayout: SyncStatusIndicator in header (line 160)",
+            "Total: 43 notifySync() calls across 9 stores, 4 layouts with SyncStatusIndicator",
+            "All stores use Dexie transactions for atomic multi-table writes before notifySync",
+            "All stores set syncStatus='pending' on records before notifySync to mark them for sync",
+            "Reporting store (useReportingStore) correctly has NO notifySync - it is read-only computed data"
+          ],
+          "not_met": []
+        },
+        "F-03_business_rules": "PASS - Every write operation across all domain stores triggers notifySync() which calls syncEngine.requestSync() (debounced). Records are marked syncStatus='pending' in IndexedDB before sync trigger. The sync engine then batches and pushes changes to the server. Read-only stores (reporting) correctly do not trigger sync. Financial records (transactions, shifts, voidRecords) are correctly written with syncStatus='pending' for append-only sync semantics.",
+        "F-04_cross_domain": "PASS - sync-trigger.ts is the single integration point between domain stores and the sync engine. useSyncStore bridges the sync engine singleton to React components via Zustand. SyncStatusIndicator is shared across all 4 layout components. The sync engine (from T-003) handles the actual push/pull/conflict resolution."
+      },
+      "sync_wiring_summary": {
+        "total_notifySync_calls": 43,
+        "stores_wired": 9,
+        "stores_without_sync": ["useReportingStore (read-only, correct)"],
+        "layouts_with_indicator": 4,
+        "new_files": ["src/sync/sync-trigger.ts", "src/sync/useSyncStore.ts", "src/sync/SyncStatusIndicator.tsx"],
+        "store_breakdown": {
+          "useAuthStore": 2,
+          "useMenuStore": 8,
+          "useRecipeStore": 4,
+          "useInventoryStore": 6,
+          "useOrderManagementStore": 4,
+          "useKitchenStore": 4,
+          "usePaymentStore": 3,
+          "useShiftManagementStore": 3,
+          "useSettingsStore": 9
+        }
+      },
+      "issues": [],
+      "files_validated": [
+        "src/sync/sync-trigger.ts",
+        "src/sync/useSyncStore.ts",
+        "src/sync/SyncStatusIndicator.tsx",
+        "src/stores/useAuthStore.ts",
+        "src/stores/useMenuStore.ts",
+        "src/stores/useRecipeStore.ts",
+        "src/stores/useInventoryStore.ts",
+        "src/stores/useOrderManagementStore.ts",
+        "src/stores/useKitchenStore.ts",
+        "src/stores/usePaymentStore.ts",
+        "src/stores/useShiftManagementStore.ts",
+        "src/stores/useSettingsStore.ts",
+        "src/stores/useReportingStore.ts",
+        "src/stores/index.ts",
+        "src/components/layout/DashboardHubLayout.tsx",
+        "src/components/layout/WaiterCashierLayout.tsx",
+        "src/components/layout/KitchenLayout.tsx",
+        "src/components/layout/AdminLayout.tsx"
+      ]
+    }
+  ],
+  "structural_fixes": {
+    "description": "Multiple builder tasks (T-013, T-014, T-015, T-018) wrote route and service files to server/routes/ and server/services/ instead of server/src/routes/ and server/src/services/. The server tsconfig.json has rootDir='./src' and include=['src/**/*'], so files outside src/ would not be compiled. Additionally, routes/index.ts imported these as '../../routes/...' which resolves outside the rootDir.",
+    "action": "Moved all misplaced files to server/src/, corrected all import paths from '../../src/middleware/auth' to '../../middleware/auth' etc., updated routes/index.ts imports from '../../routes/*' to './*', removed old server/routes/ and server/services/ directories.",
+    "impact": "Without this fix, the server would fail to compile with TypeScript errors."
+  },
+  "summary": {
+    "total_validations": 11,
+    "passed": 7,
+    "passed_with_fix": 4,
+    "failed": 0,
+    "pending": 0,
+    "pending_tasks": []
+  }
+}

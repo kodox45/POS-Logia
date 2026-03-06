@@ -1,0 +1,99 @@
+{
+  "domain": "reporting",
+  "endpoints": [
+    {
+      "id": "EP-062",
+      "method": "GET",
+      "path": "/api/reports/dashboard",
+      "description": "Get daily sales dashboard data. Shows total revenue, order count, top-selling items, and payment method breakdown. Used by Admin Dashboard (S-008).",
+      "source_features": ["F-007", "F-012"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": "perm-view-reports",
+      "params": {
+        "query": [
+          { "name": "dateFrom", "type": "date", "required": false, "description": "Start date (defaults to today)" },
+          { "name": "dateTo", "type": "date", "required": false, "description": "End date (defaults to today)" }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "period": { "from": "date", "to": "date" },
+            "totalRevenue": "decimal",
+            "totalOrders": "number",
+            "averageOrderValue": "decimal",
+            "topSellingItems": [{ "menuItemId": "uuid", "itemName": "string", "quantitySold": "number", "revenue": "decimal" }],
+            "paymentMethodBreakdown": [{ "method": "enum", "count": "number", "total": "decimal", "percentage": "decimal" }],
+            "revenueByHour": [{ "hour": "number", "revenue": "decimal", "orderCount": "number" }],
+            "lowStockAlertCount": "number"
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [
+        {
+          "rule": "Report data updates in real-time as transactions are completed",
+          "type": "constraint",
+          "source": "F-007.business_rules[0]"
+        },
+        {
+          "rule": "Only completed (paid) orders are counted in revenue",
+          "type": "constraint",
+          "source": "F-007.business_rules[1]"
+        }
+      ],
+      "related_entity": "Transaction",
+      "related_entity_id": "E-013",
+      "domain_group": "reporting"
+    },
+    {
+      "id": "EP-063",
+      "method": "GET",
+      "path": "/api/reports/sales-summary",
+      "description": "Get sales summary with date range filter. Aggregates revenue, order counts, and discount totals.",
+      "source_features": ["F-007"],
+      "auth_required": true,
+      "roles_allowed": ["owner"],
+      "permission_required": "perm-view-reports",
+      "params": {
+        "query": [
+          { "name": "dateFrom", "type": "date", "required": true, "description": "Start date" },
+          { "name": "dateTo", "type": "date", "required": true, "description": "End date" },
+          { "name": "groupBy", "type": "enum", "required": false, "description": "Group results by", "values": ["day", "week", "month"] }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "period": { "from": "date", "to": "date" },
+            "totalRevenue": "decimal",
+            "totalOrders": "number",
+            "totalDiscountGiven": "decimal",
+            "totalPpnCollected": "decimal",
+            "cashRevenue": "decimal",
+            "digitalRevenue": "decimal",
+            "voidTotal": "decimal",
+            "netRevenue": "decimal",
+            "dailyBreakdown": [{ "date": "date", "revenue": "decimal", "orderCount": "number" }]
+          }
+        },
+        "errors": []
+      },
+      "business_rules": [],
+      "related_entity": "Transaction",
+      "related_entity_id": "E-013",
+      "domain_group": "reporting"
+    }
+  ],
+  "summary": {
+    "endpoint_count": 2,
+    "by_method": { "GET": 2, "POST": 0, "PATCH": 0, "DELETE": 0 }
+  }
+}

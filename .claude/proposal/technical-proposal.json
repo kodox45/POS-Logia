@@ -1,0 +1,88 @@
+{
+  "version": "1.0",
+  "project": "pos-restoran-umkm-logia",
+  "generated_at": "2026-03-04T11:00:00Z",
+  "summary": {
+    "entities_count": 19,
+    "endpoints_count": 74,
+    "estimated_files": 85,
+    "decisions_requiring_approval": 22
+  },
+  "artifacts": {
+    "entities": ".claude/proposal/entities.json",
+    "api_design": ".claude/proposal/api-design.json",
+    "tech_stack": ".claude/proposal/tech-stack.json",
+    "architecture": ".claude/proposal/architecture.json",
+    "integration_map": ".claude/proposal/integration-map.json"
+  },
+  "all_decisions_requiring_approval": [
+    { "id": "D-001", "source": "entities.json", "category": "entities", "item": "Stock deduction timing: When should inventory be auto-deducted?", "options": ["A: At order confirmation", "B: At payment completion", "C: At order submission with reversal on cancel/void"], "default": "C", "recommended": "C", "rationale": "Deduct at submission with reversal provides real-time stock accuracy while handling cancellations. Matches F-004 and resolves UF-001 timing conflict." },
+    { "id": "D-002", "source": "entities.json", "category": "entities", "item": "PIN verification scope: Single PIN per user or context-specific PINs?", "options": ["A: Single pinHash on User entity (simpler)", "B: Separate PinVerification entity with context-specific PINs"], "default": "A", "recommended": "A", "rationale": "Prototype uses single PIN for all contexts (shift, void, POS entry). BA spec says 'Owner can set and reset PIN per user'." },
+    { "id": "D-003", "source": "entities.json", "category": "entities", "item": "Order-level vs item-level cooking status tracking", "options": ["A: Order level only", "B: Both order and item level", "C: Item level only, derive order status"], "default": "B", "recommended": "B", "rationale": "Dual tracking needed for additional items feature where new items pending while originals served." },
+    { "id": "D-004", "source": "entities.json", "category": "entities", "item": "Transaction entity: denormalized order data or FK reference only?", "options": ["A: Denormalize key fields for immutable receipt data", "B: FK reference only, compute at read time"], "default": "A", "recommended": "A", "rationale": "Immutable financial records for auditing. Receipt reprinting must show original values even if prices change." },
+    { "id": "D-030", "source": "api-design.json", "category": "api", "item": "API stock deduction timing: deduct at order submission or payment?", "options": ["A: Deduct at submission with reversal", "B: Deduct at payment only"], "default": "A", "recommended": "A", "rationale": "Consistent with D-001. Prevents overselling, reversal via StockMovement entries." },
+    { "id": "D-031", "source": "api-design.json", "category": "api", "item": "Sync conflict resolution strategy", "options": ["A: Last-write-wins for all", "B: Last-write-wins + domain-specific merge for financials", "C: Full CRDT"], "default": "B", "recommended": "B", "rationale": "Financial records immutable (append-only). Other entities use last-write-wins. CRDT overengineered for 5 users." },
+    { "id": "D-032", "source": "api-design.json", "category": "api", "item": "Receipt generation: client-side HTML or server-side PDF?", "options": ["A: Client-side HTML print (offline-compatible)", "B: Server-side PDF"], "default": "A", "recommended": "A", "rationale": "Offline-first requires printing without server. react-to-print for thermal-printer HTML." },
+    { "id": "D-033", "source": "api-design.json", "category": "api", "item": "Excel export: client-side or server-side generation?", "options": ["A: Client-side SheetJS (offline)", "B: Server-side endpoint"], "default": "A", "recommended": "A", "rationale": "SheetJS already in tech-stack. Works offline. Data endpoint provides structured data." },
+    { "id": "D-050", "source": "tech-stack.json", "category": "tech_stack", "item": "Frontend framework: React 18 + TypeScript", "options": ["React 18 (default)", "Next.js", "Vue 3"], "default": "React 18", "recommended": "React 18", "rationale": "17 screens within SPA comfort zone. No constraints override." },
+    { "id": "D-051", "source": "tech-stack.json", "category": "tech_stack", "item": "State management: Zustand with persist middleware", "options": ["Zustand + persist", "Redux Toolkit", "React Context"], "default": "Zustand", "recommended": "Zustand", "rationale": "15 entities + offline-first requires persist-to-IndexedDB. React Context cannot persist. 10 domain stores." },
+    { "id": "D-052", "source": "tech-stack.json", "category": "tech_stack", "item": "Primary storage: Dexie.js (IndexedDB)", "options": ["Dexie.js", "PouchDB", "Plain IndexedDB"], "default": "Dexie.js", "recommended": "Dexie.js", "rationale": "Offline-first requires on-device data. PostgreSQL is sync target only." },
+    { "id": "D-053", "source": "tech-stack.json", "category": "tech_stack", "item": "Authentication: local-auth-hash (bcrypt, NO JWT)", "options": ["local-auth-hash", "JWT", "OAuth"], "default": "local-auth-hash", "recommended": "local-auth-hash", "rationale": "CRITICAL: offline_first=true. JWT requires server. Auth uses bcrypt hash in IndexedDB." },
+    { "id": "D-054", "source": "tech-stack.json", "category": "tech_stack", "item": "Backend framework: Express.js 4 (sync target only)", "options": ["Express.js", "Fastify", "NestJS"], "default": "Express.js", "recommended": "Express.js", "rationale": "Low concurrent users (5). Express serves as sync target, not primary API." },
+    { "id": "D-055", "source": "tech-stack.json", "category": "tech_stack", "item": "Sync strategy: custom sync with change queue", "options": ["Custom sync", "Firebase", "Supabase"], "default": "Custom sync", "recommended": "Custom sync", "rationale": "No BaaS specified. Custom handles online/offline detection, change queue, push/pull, conflict resolution." },
+    { "id": "D-056", "source": "tech-stack.json", "category": "tech_stack", "item": "Server database: PostgreSQL", "options": ["PostgreSQL", "SQLite", "MySQL"], "default": "PostgreSQL", "recommended": "PostgreSQL", "rationale": "Default for sync server. Flexible budget, no signal to downgrade." },
+    { "id": "D-060", "source": "architecture.json", "category": "architecture", "item": "Architecture pattern: offline-first PWA", "options": ["Offline-first PWA", "Standard client-server", "Hybrid"], "default": "Offline-first PWA", "recommended": "Offline-first PWA", "rationale": "All core features must work without internet. Frontend is source of truth." },
+    { "id": "D-061", "source": "architecture.json", "category": "architecture", "item": "Multi-interface layout: 4 role-specific interfaces", "options": ["4 interfaces", "Single responsive layout", "2 interfaces (admin + operational)"], "default": "4 interfaces", "recommended": "4 interfaces", "rationale": "layout.json defines 4 interfaces optimized per role: bottom-tabs (waiter), fullscreen (kitchen), sidebar (admin), grid (dashboard)." },
+    { "id": "D-062", "source": "architecture.json", "category": "architecture", "item": "Store architecture: 10 Zustand stores (1 per domain)", "options": ["10 stores", "5 stores (merged)", "Single global store"], "default": "10 stores", "recommended": "10 stores", "rationale": "10 domain groups need separation. Stores backed by Dexie tables as persistent layer." },
+    { "id": "D-063", "source": "architecture.json", "category": "architecture", "item": "Cross-domain communication: event-style store actions", "options": ["Store-to-store actions in Dexie transactions", "Event bus", "Pub/sub"], "default": "Store-to-store actions", "recommended": "Store-to-store actions", "rationale": "5 cross-domain flows. Actions wrapped in Dexie transactions for atomicity." },
+    { "id": "D-064", "source": "architecture.json", "category": "architecture", "item": "Stock deduction timing: at order confirmation", "options": ["At order confirmation", "At payment completion"], "default": "At order confirmation", "recommended": "At order confirmation", "rationale": "Consistent with D-001/D-030. Prevents overselling. Stock restored on cancel." },
+    { "id": "D-065", "source": "architecture.json", "category": "architecture", "item": "Route structure: organized by interface context", "options": ["/pos/*, /kitchen/*, /admin/*, /dashboard, /login"], "default": "Interface-based routing", "recommended": "Interface-based routing", "rationale": "Routes match layout.json interfaces. Each uses its own layout component." },
+    { "id": "D-066", "source": "architecture.json", "category": "architecture", "item": "PIN gate strategy: modal overlay with navigation context tracking", "options": ["Modal overlay", "Route-level PIN page", "Middleware check"], "default": "Modal overlay", "recommended": "Modal overlay", "rationale": "Seamless POS-internal navigation while enforcing security on POS entry from outside." }
+  ],
+  "coverage_summary": {
+    "must_have": { "total": 12, "fully_covered": 12, "partially_covered": 0, "gaps": 0 },
+    "should_have": { "total": 5, "fully_covered": 5, "partially_covered": 0, "gaps": 0 },
+    "could_have": { "total": 1, "fully_covered": 1, "partially_covered": 0, "gaps": 0 }
+  },
+  "blocking_gaps": [],
+  "reading_guide": {
+    "entities.json": {
+      "full_read_roles": ["backend-builder", "backend-validator"],
+      "summary_only_roles": ["frontend-builder", "infra-builder"],
+      "key_sections": ["entities[].attributes", "entities[].relationships", "entities[].state_machine"]
+    },
+    "api-design.json": {
+      "navigation": "Use domain_index to filter endpoints by relevant domain",
+      "full_read_roles": ["backend-validator"],
+      "domain_filtered_roles": ["backend-builder"],
+      "summary_only_roles": ["frontend-builder"],
+      "key_sections": ["domain_index", "endpoints[].business_rules", "auth"]
+    },
+    "tech-stack.json": {
+      "full_read_roles": ["infra-builder"],
+      "section_map": {
+        "frontend": ["frontend-builder", "frontend-validator"],
+        "backend": ["backend-builder", "backend-validator"],
+        "testing": ["all-validators"]
+      }
+    },
+    "architecture.json": {
+      "full_read_roles": ["infra-builder"],
+      "section_map": {
+        "screen_mapping + component_architecture": ["frontend-builder", "frontend-validator"],
+        "auth_flow + data_flow": ["backend-builder"],
+        "folder_structure": ["infra-builder"]
+      }
+    },
+    "integration-map.json": {
+      "full_read_roles": ["backend-builder", "infra-builder"],
+      "summary_only_roles": ["frontend-builder"],
+      "key_sections": ["cross_domain_flows[].steps", "store_service_map", "timing_resolutions", "coverage"]
+    }
+  },
+  "next_action": {
+    "actor": "user",
+    "action": "Review proposal and provide approval via BA Agent",
+    "response_file": ".claude/approval/approval-response.json"
+  }
+}

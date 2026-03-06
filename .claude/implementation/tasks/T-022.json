@@ -1,0 +1,173 @@
+{
+  "id": "T-022",
+  "subject": "Seed data and end-to-end verification",
+  "owner": "validator-frontend",
+  "builder_role": null,
+  "layer": 4,
+  "wave": 5,
+  "goal": "Create seed data for all entities (users with all roles, menu items with categories, recipes with ingredients, inventory items, tables). Verify complete user flows end-to-end: UF-001 (order-to-payment), UF-006 (stock warning), UF-007 (shift lifecycle), UF-008 (kitchen-to-serve), UF-010 (void transaction).",
+  "domain_packages": [],
+  "write_scope": [
+    "src/db/seed.ts",
+    "prisma/seed.ts",
+    ".claude/implementation/e2e-verification.json"
+  ],
+  "read_sources": {
+    "primary": ".claude/proposal/integration-map.json",
+    "ba_files": [
+      ".ba/requirements/features.json"
+    ],
+    "entities": [],
+    "endpoints": {},
+    "features": [
+      "F-001",
+      "F-002",
+      "F-003",
+      "F-004",
+      "F-005",
+      "F-006",
+      "F-007",
+      "F-008",
+      "F-009",
+      "F-010",
+      "F-011",
+      "F-012",
+      "F-013",
+      "F-014",
+      "F-015",
+      "F-016",
+      "F-017",
+      "F-018"
+    ],
+    "screens": [],
+    "flows": [
+      "UF-001",
+      "UF-006",
+      "UF-007",
+      "UF-008",
+      "UF-010"
+    ],
+    "components": []
+  },
+  "cross_domain_contracts": [
+    {
+      "flow_id": "UF-001",
+      "your_steps": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "context": "Complete order-to-payment flow across all domains",
+      "timing_notes": [
+        "Stock deduction at order submission (D-001, D-030, D-064)"
+      ],
+      "next_domain": "End of flow"
+    },
+    {
+      "flow_id": "UF-007",
+      "your_steps": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "context": "Full cashier journey: login to close shift",
+      "timing_notes": [],
+      "next_domain": "End of flow"
+    },
+    {
+      "flow_id": "UF-010",
+      "your_steps": [
+        1,
+        2,
+        3
+      ],
+      "context": "Void paid transaction flow",
+      "timing_notes": [],
+      "next_domain": "End of flow"
+    }
+  ],
+  "business_rules": [],
+  "state_dependencies": null,
+  "db_scope": null,
+  "acceptance": {
+    "e2e": [
+      "Seed data covers all 19 entity types",
+      "All 3 roles have test accounts with correct permissions",
+      "UF-001 (order-to-payment) completes successfully across all domains",
+      "UF-006 (stock warning) shows warning when insufficient stock",
+      "UF-007 (shift lifecycle) opens, processes, and closes shift correctly",
+      "UF-008 (kitchen-to-serve) notification flow works end-to-end",
+      "UF-010 (void) creates VoidRecord and adjusts shift/stock correctly"
+    ]
+  },
+  "depends_on": [
+    "T-004",
+    "T-005",
+    "T-006",
+    "T-007",
+    "T-008",
+    "T-009",
+    "T-010",
+    "T-011",
+    "T-012",
+    "T-013",
+    "T-014",
+    "T-015",
+    "T-016",
+    "T-017",
+    "T-018",
+    "T-021"
+  ],
+  "on_critical_path": false,
+  "_foundation_files": [
+    {
+      "path": "src/db/seed.ts",
+      "category": "data-layer",
+      "lines": 63,
+      "action": "IMPLEMENT_STUBS"
+    },
+    {
+      "path": "prisma/seed.ts",
+      "category": "data-layer",
+      "lines": 70,
+      "action": "IMPLEMENT_STUBS"
+    },
+    {
+      "path": ".claude/implementation/e2e-verification.json",
+      "category": "new",
+      "lines": 0,
+      "action": "CREATE_NEW"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "category": "utility",
+      "lines": 85,
+      "action": "READ_ONLY"
+    }
+  ],
+  "_project_signals": {
+    "offline_first": true,
+    "auth_hint": "local-auth-hash",
+    "storage_primary": "indexeddb-dexie",
+    "multi_interface": true,
+    "has_real_time": false,
+    "has_cross_domain": true,
+    "naming_convention": {
+      "table_name": "camelCase",
+      "entity_name": "PascalCase",
+      "store_name": "use{PascalCase}Store"
+    }
+  }
+}

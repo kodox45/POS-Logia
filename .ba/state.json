@@ -1,0 +1,56 @@
+{
+  "version": "5.0",
+  "project": {
+    "name": "pos-restoran-umkm-logia",
+    "display_name": "POS Restoran UMKM Logia",
+    "workspace": "E:/Logia-Initiative/Logia-Pos",
+    "updated_at": "2026-03-04T14:00:00Z"
+  },
+  "current_phase": "development",
+  "current_chunk": 1,
+  "phases": {
+    "discovery": { "status": "completed" },
+    "elicitation": { "status": "completed" },
+    "design": {
+      "status": "completed",
+      "sub_phases": { "design_decisions": "completed", "asset_collection": "completed", "prototyping": "completed" },
+      "prototype_iterations": 9,
+      "prototype_approved_at": "2026-02-19T08:25:00Z"
+    },
+    "validation": {
+      "status": "completed",
+      "completed_at": "2026-02-19T08:35:00Z",
+      "output_files": [".ba/validation/traceability.json", ".ba/validation/prd.json", ".ba/index.json"]
+    },
+    "proposal_review": {
+      "status": "completed",
+      "started_at": "2026-02-25T10:00:00Z",
+      "completed_at": "2026-03-04T14:00:00Z",
+      "cc_triggered": true,
+      "cc_trigger_file": ".ba/triggers/proposal-request.json",
+      "output_files": [".claude/approval/approval-response.json"]
+    },
+    "development": {
+      "status": "in_progress",
+      "started_at": "2026-03-04T14:00:00Z",
+      "setup_completed_at": null,
+      "execute_started_at": null,
+      "completed_at": null,
+      "plan": null,
+      "summary": null,
+      "output_files": []
+    }
+  },
+  "id_registry": {
+    "features": {
+      "must": ["F-001","F-002","F-003","F-004","F-005","F-006","F-007","F-008","F-009","F-015","F-016","F-017"],
+      "should": ["F-010","F-011","F-012","F-013","F-018"],
+      "could": ["F-014"],
+      "wont": ["F-W01","F-W02"]
+    },
+    "screens": ["S-001","S-002","S-003","S-004","S-005","S-006","S-007","S-008","S-009","S-010","S-011","S-012","S-013","S-014","S-015","S-016","S-017"],
+    "flows": ["UF-001","UF-002","UF-003","UF-004","UF-005","UF-006","UF-007","UF-008","UF-009","UF-010"],
+    "components": ["C-001","C-002","C-003","C-004","C-005","C-006","C-007","C-008","C-009","C-010","C-011","C-012","C-013","C-014","C-015","C-016","C-017","C-018","C-019","C-020","C-021","C-022","C-023","C-024","C-025","C-026","C-027","C-028","C-029","C-030","C-031","C-032","C-033","C-034","C-035","C-036"]
+  },
+  "next_id": { "feature": 19, "screen": 18, "flow": 11, "component": 37 }
+}

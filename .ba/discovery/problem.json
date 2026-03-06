@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-18T12:10:00Z",
+  "statement": "The restaurant currently operates entirely on manual processes using handwritten notebooks for all recording, with no inventory tracking system. This leads to untracked inventory loss and zero visibility into business performance.",
+  "root_cause": "Absence of any digital system forces all processes to depend on human memory and manual recording, which is inherently unreliable — especially for busy multi-role staff who serve, cook, and handle payments simultaneously.",
+  "trigger": "Owner's vision to fully digitalize restaurant operations to gain organized recording, management, and monitoring capabilities.",
+  "duration": "Since business inception — manual process has been the only method used.",
+  "impact": {
+    "time": {
+      "amount": "Unknown — not yet measured",
+      "frequency": "daily",
+      "description": "Time spent on manual order taking, handwritten recording, and end-of-day reconciliation"
+    },
+    "financial": {
+      "estimated": "Unknown — unquantified inventory loss",
+      "type": "direct_cost",
+      "description": "Inventory items go missing regularly due to lack of tracking. Staff forget to record usage, resulting in untraceable financial leakage."
+    },
+    "operational": {
+      "severity": "high",
+      "description": "No visibility into stock levels, sales performance, or operational efficiency. Owner cannot monitor business health in real-time."
+    }
+  },  "current_process": {
+    "steps": [
+      {
+        "order": 1,
+        "description": "Customer arrives at the restaurant",
+        "pain_points": ["No queue or table management system"],
+        "workarounds": ["Staff handles seating manually based on visual assessment"]
+      },
+      {
+        "order": 2,
+        "description": "Waiter takes customer order using handwritten notes",
+        "pain_points": ["Orders may be misread or lost", "No standardized format", "No digital record of what was ordered"],
+        "workarounds": ["Waiter memorizes or verbally relays orders to kitchen"]
+      },
+      {
+        "order": 3,
+        "description": "Chef receives order and prepares food",
+        "pain_points": ["Verbal or handwritten orders may cause miscommunication", "No tracking of ingredients used per order"],
+        "workarounds": ["Chef asks waiter to clarify if order is unclear"]
+      },
+      {
+        "order": 4,
+        "description": "Waiter serves food to customer",
+        "pain_points": ["No system to track which orders are ready or served"],
+        "workarounds": ["Chef calls out or waiter checks kitchen periodically"]
+      },
+      {
+        "order": 5,
+        "description": "Customer pays — waiter acts as cashier and calculates manually",
+        "pain_points": ["Manual calculation prone to errors", "No receipt generated", "No sales record linked to specific orders"],
+        "workarounds": ["Waiter uses calculator or mental math, writes total in notebook"]
+      }
+    ]
+  }
+}

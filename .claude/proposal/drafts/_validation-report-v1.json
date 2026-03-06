@@ -1,0 +1,96 @@
+{
+  "checkpoint": "v1",
+  "timestamp": "2026-03-04T10:00:00Z",
+  "files_validated": ["_shared-context.json", "entities.json", "tech-stack.json", "architecture.json"],
+  "checks_passed": 27,
+  "checks_failed": 3,
+  "checks_total": 30,
+  "fixes_applied": [
+    {
+      "file": "architecture.json",
+      "check": "V1-E1",
+      "issue": "Store entity 'Permission' should be 'UserPermission' to match entities.json E-002",
+      "field": "data_flow.stores.useAuthStore.entities[2]",
+      "before": "Permission",
+      "after": "UserPermission",
+      "rule": "naming_consistency"
+    },
+    {
+      "file": "architecture.json",
+      "check": "V1-E1",
+      "issue": "Store entity 'Category' should be 'MenuCategory' to match entities.json E-004",
+      "field": "data_flow.stores.useMenuStore.entities[1]",
+      "before": "Category",
+      "after": "MenuCategory",
+      "rule": "naming_consistency"
+    },
+    {
+      "file": "architecture.json",
+      "check": "V1-E1",
+      "issue": "Store entity 'KitchenQueue' is a derived view, replaced with 'Order' (actual entity). 'KitchenReadyNotification' should be 'KitchenNotification' to match entities.json E-017",
+      "field": "data_flow.stores.useKitchenStore.entities",
+      "before": "[\"KitchenQueue\", \"KitchenReadyNotification\"]",
+      "after": "[\"Order\", \"KitchenNotification\"]",
+      "rule": "naming_consistency"
+    },
+    {
+      "file": "architecture.json",
+      "check": "V1-E1",
+      "issue": "Store entity 'PaymentMethod' is not a separate entity, replaced with 'EwalletProvider' (E-019) which is the actual configurable payment entity",
+      "field": "data_flow.stores.usePaymentStore.entities[1]",
+      "before": "PaymentMethod",
+      "after": "EwalletProvider",
+      "rule": "naming_consistency"
+    },
+    {
+      "file": "architecture.json",
+      "check": "V1-E1",
+      "issue": "Store entity 'ShiftTransaction' is a derived view, replaced with 'VoidRecord' (E-015) which is the actual shift-related entity",
+      "field": "data_flow.stores.useShiftManagementStore.entities[1]",
+      "before": "ShiftTransaction",
+      "after": "VoidRecord",
+      "rule": "naming_consistency"
+    },
+    {
+      "file": "architecture.json",
+      "check": "V1-E1",
+      "issue": "Store entity 'SystemSettings' should be 'PosSettings' to match entities.json E-018. 'PaymentMethodConfig' should be 'EwalletProvider' to match E-019",
+      "field": "data_flow.stores.useSettingsStore.entities",
+      "before": "[\"SystemSettings\", \"Discount\", \"PaymentMethodConfig\"]",
+      "after": "[\"PosSettings\", \"Discount\", \"EwalletProvider\"]",
+      "rule": "naming_consistency"
+    }
+  ],
+  "issues_unfixed": [
+    {
+      "file": "_shared-context.json",
+      "check": "V1-A3",
+      "issue": "entity_candidates count (15) differs from actual entities (19) by 4. T-ENTITY created 4 additional entities beyond the Lead's estimate: RecipeStep (E-007), KitchenNotification (E-017), PosSettings (E-018), EwalletProvider (E-019). This is expected and acceptable.",
+      "severity": "low",
+      "reason": "Informational only - entity_candidates is a pre-estimation by the Lead, not a constraint on T-ENTITY output"
+    },
+    {
+      "file": "entities.json",
+      "check": "V1-B8",
+      "issue": "No entity has business_rules sourced from must-have feature F-007 (Daily Sales Report & Dashboard). F-007 business rules are: 'Report data updates in real-time', 'Only completed (paid) orders counted in revenue', 'Dashboard accessible from any device'. These are UI/query-level rules, not entity-level constraints.",
+      "severity": "medium",
+      "reason": "F-007 rules describe reporting behavior (queries, aggregation, real-time updates) rather than entity constraints. The reporting data is derived from Transaction and Order entities. No entity needs a business_rule for this - it is a presentation-layer concern. Cannot determine which entity to attach these rules to."
+    },
+    {
+      "file": "entities.json",
+      "check": "V1-B11",
+      "issue": "Order entity state machine: terminal state 'paid' has 1 outgoing transition to 'voided' (trigger: void_after_payment). This means 'paid' is not truly terminal - it can transition to 'voided' per F-017 requirements.",
+      "severity": "medium",
+      "reason": "This is intentional business logic per F-017 (Void / Cancel Order & Transaction): 'Void after payment (full): full refund tracked'. The state machine correctly models that paid orders can be voided. However, 'paid' should NOT be listed in terminal[] since it has an outgoing transition. This is a state_machine metadata issue - the transitions are correct but the terminal[] array is misleading. MUST NOT FIX because changing terminal states affects state machine semantics and requires careful review."
+    },
+    {
+      "file": "architecture.json",
+      "check": "V1-E1",
+      "issue": "Store entities 'Session' (useAuthStore), 'DailySummary' and 'RevenueData' (useReportingStore) do not correspond to entities in entities.json. These are conceptual/computed data objects managed in Zustand stores, not persisted Dexie entities.",
+      "severity": "low",
+      "reason": "Stores can manage derived/computed data that does not map 1:1 to database entities. 'Session' is an in-memory auth session object. 'DailySummary' and 'RevenueData' are computed aggregates derived from Transaction/Order data. This is a legitimate Zustand store pattern - not every store entity needs a corresponding Dexie table entity."
+    }
+  ],
+  "blocking": false,
+  "summary": "27/30 checks passed. 6 entity-name fixes applied to architecture.json (store entity references aligned with entities.json). 4 unfixed issues: 1 low-severity informational (entity count estimation), 1 medium-severity expected gap (F-007 reporting rules are presentation-layer), 1 medium-severity state machine metadata issue (Order.paid in terminal[] despite having void transition), 1 low-severity informational (conceptual store entities). No blocking issues."
+}

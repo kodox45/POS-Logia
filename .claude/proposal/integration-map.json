@@ -1,0 +1,846 @@
+{
+  "version": "1.0",
+  "cross_domain_flows": [
+    {
+      "flow_id": "UF-001",
+      "name": "Complete Order-to-Payment Flow",
+      "domains_touched": ["order-management", "kitchen", "payment", "inventory"],
+      "steps": [
+        {
+          "order": 1,
+          "action": "Waiter selects table from Table Map",
+          "endpoint": "EP-040",
+          "entity": "Table",
+          "entity_id": "E-010",
+          "domain": "order-management"
+        },
+        {
+          "order": 2,
+          "action": "Waiter browses available menu items",
+          "endpoint": "EP-011",
+          "entity": "MenuItem",
+          "entity_id": "E-003",
+          "domain": "menu"
+        },
+        {
+          "order": 3,
+          "action": "Waiter submits order with selected items",
+          "endpoint": "EP-037",
+          "entity": "Order",
+          "entity_id": "E-011",
+          "domain": "order-management",
+          "side_effects": [
+            "Order created with status=pending",
+            "Table status -> occupied (E-010)",
+            "Stock check via EP-034 (InventoryItem E-008)",
+            "Stock deduction creates StockMovement records (E-009)",
+            "Order appears on kitchen display"
+          ]
+        },
+        {
+          "order": 4,
+          "action": "Chef views incoming order on Kitchen Display",
+          "endpoint": "EP-045",
+          "entity": "Order",
+          "entity_id": "E-011",
+          "domain": "kitchen"
+        },
+        {
+          "order": 5,
+          "action": "Chef starts cooking the order",
+          "endpoint": "EP-046",
+          "entity": "Order",
+          "entity_id": "E-011",
+          "domain": "kitchen",
+          "side_effects": [
+            "Order.orderStatus -> cooking",
+            "Order.cookingStartedAt set"
+          ]
+        },
+        {
+          "order": 6,
+          "action": "Chef views recipe guide if needed",
+          "endpoint": "EP-021",
+          "entity": "Recipe",
+          "entity_id": "E-005",
+          "domain": "recipe"
+        },
+        {
+          "order": 7,
+          "action": "Chef marks order as ready",
+          "endpoint": "EP-047",
+          "entity": "Order",
+          "entity_id": "E-011",
+          "domain": "kitchen",
+          "side_effects": [
+            "Order.orderStatus -> ready",
+            "Order.readyAt set",
+            "KitchenNotification created (E-017)"
+          ]
+        },
+        {
+          "order": 8,
+          "action": "Waiter sees kitchen ready notification",
+          "endpoint": "EP-048",
+          "entity": "KitchenNotification",
+          "entity_id": "E-017",
+          "domain": "kitchen"
+        },
+        {
+          "order": 9,
+          "action": "Waiter confirms served (acknowledges notification)",
+          "endpoint": "EP-049",
+          "entity": "KitchenNotification",
+          "entity_id": "E-017",
+          "domain": "kitchen",
+          "side_effects": [
+            "Order.orderStatus -> served",
+            "KitchenNotification.isAcknowledged -> true"
+          ]
+        },
+        {
+          "order": 10,
+          "action": "Waiter opens payment screen, inputs amount",
+          "endpoint": "EP-036",
+          "entity": "Order",
+          "entity_id": "E-011",
+          "domain": "order-management"
+        },
+        {
+          "order": 11,
+          "action": "Waiter processes payment",
+          "endpoint": "EP-050",
+          "entity": "Transaction",
+          "entity_id": "E-013",
+          "domain": "payment",
+          "side_effects": [
+            "Transaction created (E-013)",
+            "Order.orderStatus -> paid",
+            "Table.status -> available (E-010)",
+            "Shift totals updated (E-014)"
+          ]
+        }
+      ],
+      "rollback_on_cancel": [
+        "Order.orderStatus -> cancelled (EP-039)",
+        "Stock deductions reversed via reversal StockMovement records (E-009)",
+        "Table.status -> available if no other active orders (E-010)",
+        "No payment impact (cancel is before payment)"
+      ],
+      "timing_resolution": {
+        "stock_deduction": "at order submission (status=pending)",
+        "decision_ids": ["D-001", "D-030", "D-064"],
+        "rationale": "F-004 states 'when order is confirmed'. Deducting at submission prevents overselling. Reversal StockMovement entries created on cancel/void."
+      }
+    },
+    {
+      "flow_id": "UF-006",
+      "name": "Insufficient Stock Warning",
+      "domains_touched": ["order-management", "inventory"],
+      "steps": [
+        {
+          "order": 1,
+          "action": "Waiter selects menu items and taps Submit Order",
+          "endpoint": "EP-034",
+          "entity": "InventoryItem",
+          "entity_id": "E-008",
+          "domain": "inventory",
+          "side_effects": [
+            "System checks stock against recipe ingredients (RecipeIngredient E-006)"
+          ]
+        },
+        {
+          "order": 2,
+          "action": "System detects insufficient stock and returns warning",
+          "endpoint": "EP-034",
+          "entity": "InventoryItem",
+          "entity_id": "E-008",
+          "domain": "inventory",
+          "side_effects": [
+            "Warning dialog shown with insufficient items",
+            "Waiter can proceed or modify order"
+          ]
+        }
+      ],
+      "rollback_on_cancel": [],
+      "timing_resolution": null
+    },
+    {
+      "flow_id": "UF-007",
+      "name": "Full Cashier Journey: Prep to Close Shift",
+      "domains_touched": ["auth", "shift-management", "order-management", "payment"],
+      "steps": [
+        {
+          "order": 1,
+          "action": "Cashier logs in",
+          "endpoint": "EP-001",
+          "entity": "User",
+          "entity_id": "E-001",
+          "domain": "auth"
+        },
+        {
+          "order": 2,
+          "action": "Cashier does pre-shift preparation (check menu, stock)",
+          "endpoint": "EP-011",
+          "entity": "MenuItem",
+          "entity_id": "E-003",
+          "domain": "menu"
+        },
+        {
+          "order": 3,
+          "action": "Cashier verifies PIN for shift opening",
+          "endpoint": "EP-003",
+          "entity": "User",
+          "entity_id": "E-001",
+          "domain": "auth"
+        },
+        {
+          "order": 4,
+          "action": "Cashier opens shift with opening balance",
+          "endpoint": "EP-056",
+          "entity": "Shift",
+          "entity_id": "E-014",
+          "domain": "shift-management",
+          "side_effects": [
+            "Shift created with status=open",
+            "PIC cashier recorded",
+            "Opening balance stored"
+          ]
+        },
+        {
+          "order": 5,
+          "action": "During shift: process orders and payments",
+          "endpoint": "EP-050",
+          "entity": "Transaction",
+          "entity_id": "E-013",
+          "domain": "payment",
+          "side_effects": [
+            "All transactions tracked under active shift (E-014)",
+            "Shift.cashSalesTotal and digitalSalesTotal updated",
+            "Shift.expectedCash recalculated"
+          ]
+        },
+        {
+          "order": 6,
+          "action": "Cashier reviews shift summary for closing",
+          "endpoint": "EP-058",
+          "entity": "Shift",
+          "entity_id": "E-014",
+          "domain": "shift-management"
+        },
+        {
+          "order": 7,
+          "action": "Cashier enters actual cash and closes shift",
+          "endpoint": "EP-059",
+          "entity": "Shift",
+          "entity_id": "E-014",
+          "domain": "shift-management",
+          "side_effects": [
+            "Shift.shiftStatus -> closed",
+            "Discrepancy calculated (actual - expected)",
+            "If discrepancy exists, closingNotes mandatory",
+            "Shift data becomes immutable"
+          ]
+        }
+      ],
+      "rollback_on_cancel": [],
+      "timing_resolution": null
+    },
+    {
+      "flow_id": "UF-008",
+      "name": "Kitchen Ready to Waiter Serve",
+      "domains_touched": ["kitchen", "order-management"],
+      "steps": [
+        {
+          "order": 1,
+          "action": "Chef marks order as ready ('Siap Diantar')",
+          "endpoint": "EP-047",
+          "entity": "Order",
+          "entity_id": "E-011",
+          "domain": "kitchen",
+          "side_effects": [
+            "Order.orderStatus -> ready",
+            "KitchenNotification created (E-017) with orderId, tableNumber, items"
+          ]
+        },
+        {
+          "order": 2,
+          "action": "Waiter sees notification on Order List screen",
+          "endpoint": "EP-048",
+          "entity": "KitchenNotification",
+          "entity_id": "E-017",
+          "domain": "kitchen"
+        },
+        {
+          "order": 3,
+          "action": "Waiter confirms served ('Sudah Diantar')",
+          "endpoint": "EP-049",
+          "entity": "KitchenNotification",
+          "entity_id": "E-017",
+          "domain": "kitchen",
+          "side_effects": [
+            "KitchenNotification.isAcknowledged -> true",
+            "Order.orderStatus -> served"
+          ]
+        }
+      ],
+      "rollback_on_cancel": [],
+      "timing_resolution": null
+    },
+    {
+      "flow_id": "UF-010",
+      "name": "Void Paid Transaction",
+      "domains_touched": ["order-management", "payment", "shift-management"],
+      "steps": [
+        {
+          "order": 1,
+          "action": "Cashier finds paid order and opens transaction detail",
+          "endpoint": "EP-036",
+          "entity": "Order",
+          "entity_id": "E-011",
+          "domain": "order-management"
+        },
+        {
+          "order": 2,
+          "action": "Cashier requests PIN verification for void",
+          "endpoint": "EP-003",
+          "entity": "User",
+          "entity_id": "E-001",
+          "domain": "auth"
+        },
+        {
+          "order": 3,
+          "action": "Cashier selects void type, reason, and confirms void",
+          "endpoint": "EP-051",
+          "entity": "VoidRecord",
+          "entity_id": "E-015",
+          "domain": "payment",
+          "side_effects": [
+            "VoidRecord created (E-015)",
+            "Order.orderStatus -> voided",
+            "Transaction.transactionStatus -> voided (E-013)",
+            "Shift.expectedCash reduced by voidAmount (E-014)",
+            "Shift.voidCount incremented",
+            "Shift.voidTotalAmount updated",
+            "Stock reversal StockMovement records created (E-009)"
+          ]
+        }
+      ],
+      "rollback_on_cancel": [],
+      "timing_resolution": null
+    }
+  ],
+  "store_service_map": [
+    {
+      "domain": "auth",
+      "store": "useAuthStore",
+      "entities": ["User", "UserPermission"],
+      "entity_ids": ["E-001", "E-002"],
+      "dexie_tables": ["users", "userPermissions"],
+      "endpoints": ["EP-001", "EP-002", "EP-003", "EP-004"],
+      "sync_strategy": "offline-first"
+    },
+    {
+      "domain": "user-management",
+      "store": "useAuthStore",
+      "entities": ["User", "UserPermission"],
+      "entity_ids": ["E-001", "E-002"],
+      "dexie_tables": ["users", "userPermissions"],
+      "endpoints": ["EP-005", "EP-006", "EP-007", "EP-008", "EP-009", "EP-010"],
+      "sync_strategy": "offline-first"
+    },
+    {
+      "domain": "menu",
+      "store": "useMenuStore",
+      "entities": ["MenuItem", "MenuCategory"],
+      "entity_ids": ["E-003", "E-004"],
+      "dexie_tables": ["menuItems", "menuCategories"],
+      "endpoints": ["EP-011", "EP-012", "EP-013", "EP-014", "EP-015", "EP-016", "EP-017", "EP-018", "EP-019"],
+      "sync_strategy": "offline-first"
+    },
+    {
+      "domain": "recipe",
+      "store": "useRecipeStore",
+      "entities": ["Recipe", "RecipeIngredient", "RecipeStep"],
+      "entity_ids": ["E-005", "E-006", "E-007"],
+      "dexie_tables": ["recipes", "recipeIngredients", "recipeSteps"],
+      "endpoints": ["EP-020", "EP-021", "EP-022", "EP-023", "EP-024"],
+      "sync_strategy": "offline-first"
+    },
+    {
+      "domain": "inventory",
+      "store": "useInventoryStore",
+      "entities": ["InventoryItem", "StockMovement"],
+      "entity_ids": ["E-008", "E-009"],
+      "dexie_tables": ["inventoryItems", "stockMovements"],
+      "endpoints": ["EP-025", "EP-026", "EP-027", "EP-028", "EP-029", "EP-030", "EP-031", "EP-032", "EP-033", "EP-034"],
+      "sync_strategy": "offline-first"
+    },
+    {
+      "domain": "order-management",
+      "store": "useOrderManagementStore",
+      "entities": ["Order", "OrderItem", "Table"],
+      "entity_ids": ["E-011", "E-012", "E-010"],
+      "dexie_tables": ["orders", "orderItems", "tables"],
+      "endpoints": ["EP-035", "EP-036", "EP-037", "EP-038", "EP-039", "EP-040", "EP-041", "EP-042", "EP-043", "EP-044"],
+      "sync_strategy": "offline-first"
+    },
+    {
+      "domain": "kitchen",
+      "store": "useKitchenStore",
+      "entities": ["Order", "KitchenNotification"],
+      "entity_ids": ["E-011", "E-017"],
+      "dexie_tables": ["orders", "kitchenNotifications"],
+      "endpoints": ["EP-045", "EP-046", "EP-047", "EP-048", "EP-049"],
+      "sync_strategy": "offline-first"
+    },
+    {
+      "domain": "payment",
+      "store": "usePaymentStore",
+      "entities": ["Transaction", "VoidRecord"],
+      "entity_ids": ["E-013", "E-015"],
+      "dexie_tables": ["transactions", "voidRecords"],
+      "endpoints": ["EP-050", "EP-051", "EP-052", "EP-053", "EP-054", "EP-055"],
+      "sync_strategy": "offline-first"
+    },
+    {
+      "domain": "shift-management",
+      "store": "useShiftManagementStore",
+      "entities": ["Shift"],
+      "entity_ids": ["E-014"],
+      "dexie_tables": ["shifts"],
+      "endpoints": ["EP-056", "EP-057", "EP-058", "EP-059", "EP-060", "EP-061"],
+      "sync_strategy": "offline-first"
+    },
+    {
+      "domain": "reporting",
+      "store": "useReportingStore",
+      "entities": ["Transaction"],
+      "entity_ids": ["E-013"],
+      "dexie_tables": ["transactions"],
+      "endpoints": ["EP-062", "EP-063"],
+      "sync_strategy": "offline-first",
+      "note": "Reporting reads from transactions table (no dedicated entity). DailySummary/RevenueData are computed views, not stored entities."
+    },
+    {
+      "domain": "settings",
+      "store": "useSettingsStore",
+      "entities": ["PosSettings", "EwalletProvider", "Discount"],
+      "entity_ids": ["E-018", "E-019", "E-016"],
+      "dexie_tables": ["posSettings", "ewalletProviders", "discounts"],
+      "endpoints": ["EP-064", "EP-065", "EP-066", "EP-067", "EP-068", "EP-069", "EP-070", "EP-071"],
+      "sync_strategy": "offline-first"
+    },
+    {
+      "domain": "sync",
+      "store": null,
+      "entities": [],
+      "entity_ids": [],
+      "dexie_tables": [],
+      "endpoints": ["EP-072", "EP-073", "EP-074"],
+      "sync_strategy": "sync-infrastructure",
+      "note": "Sync domain is the infrastructure layer itself. Push/pull endpoints coordinate data between Dexie (client) and PostgreSQL (server)."
+    }
+  ],
+  "timing_resolutions": [
+    {
+      "issue": "Stock deduction timing conflict",
+      "resolution": "Deduct at order submission (status=pending)",
+      "sources_agree": ["D-001 (entities)", "D-030 (api)", "D-064 (architecture)"],
+      "conflict_description": "F-004 says 'when order is confirmed' vs UF-001 step 11 implies 'at payment completion'. All three decision layers independently chose order submission timing.",
+      "rationale": "Deducting at submission prevents overselling during cooking. Cancelled/voided orders create reversal StockMovement entries to restore stock. This is the safer approach for UMKM restaurants with limited inventory.",
+      "affected_endpoints": ["EP-037", "EP-039", "EP-051"],
+      "affected_entities": ["InventoryItem (E-008)", "StockMovement (E-009)"]
+    }
+  ],
+  "coverage": {
+    "must_have": {
+      "total": 12,
+      "fully_covered": 12,
+      "partially_covered": 0,
+      "gaps": 0,
+      "ui_only": 0
+    },
+    "should_have": {
+      "total": 5,
+      "fully_covered": 5,
+      "partially_covered": 0,
+      "gaps": 0,
+      "ui_only": 0
+    },
+    "could_have": {
+      "total": 1,
+      "fully_covered": 1,
+      "partially_covered": 0,
+      "gaps": 0,
+      "ui_only": 0
+    },
+    "per_feature": [
+      {
+        "feature_id": "F-001",
+        "title": "Digital Order Management",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["Order (E-011)", "OrderItem (E-012)", "Table (E-010)"],
+        "endpoints_mapped": ["EP-035", "EP-036", "EP-037", "EP-038", "EP-039"],
+        "fields_mapped": 5,
+        "fields_total": 5,
+        "rules_mapped": 8,
+        "rules_total": 8,
+        "notes": "All fields (table_number, menu_items, special_notes, order_status, is_additional) mapped. All 8 business rules mapped to entity constraints and endpoint rules."
+      },
+      {
+        "feature_id": "F-002",
+        "title": "Kitchen Display System",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["Order (E-011)", "OrderItem (E-012)", "KitchenNotification (E-017)"],
+        "endpoints_mapped": ["EP-045", "EP-046", "EP-047", "EP-048", "EP-049"],
+        "fields_mapped": 8,
+        "fields_total": 8,
+        "rules_mapped": 9,
+        "rules_total": 9,
+        "notes": "Kitchen queue, status transitions (pending->cooking->ready->served), elapsed time, late order highlighting, notification flow all covered."
+      },
+      {
+        "feature_id": "F-003",
+        "title": "Cashier & Payment Processing",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["Transaction (E-013)", "Order (E-011)", "PosSettings (E-018)", "EwalletProvider (E-019)"],
+        "endpoints_mapped": ["EP-050", "EP-052", "EP-053", "EP-064", "EP-066"],
+        "fields_mapped": 10,
+        "fields_total": 10,
+        "rules_mapped": 14,
+        "rules_total": 14,
+        "notes": "All payment methods (tunai, qris, gopay, ovo, dana, shopeepay, transfer_bank) mapped. PPN calculation, discount before PPN, receipt printing, success popup all covered."
+      },
+      {
+        "feature_id": "F-004",
+        "title": "Inventory / Stock Management",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["InventoryItem (E-008)", "StockMovement (E-009)", "RecipeIngredient (E-006)"],
+        "endpoints_mapped": ["EP-025", "EP-026", "EP-027", "EP-028", "EP-029", "EP-030", "EP-031", "EP-032", "EP-034"],
+        "fields_mapped": 4,
+        "fields_total": 4,
+        "rules_mapped": 4,
+        "rules_total": 4,
+        "notes": "Auto-deduction on order, restock, manual adjustment, stock movement history, threshold alerts all covered."
+      },
+      {
+        "feature_id": "F-005",
+        "title": "Menu Management",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["MenuItem (E-003)", "MenuCategory (E-004)"],
+        "endpoints_mapped": ["EP-011", "EP-012", "EP-013", "EP-014", "EP-015"],
+        "fields_mapped": 6,
+        "fields_total": 6,
+        "rules_mapped": 3,
+        "rules_total": 3,
+        "notes": "Full CRUD for menu items. Availability toggle, price changes, image upload, category assignment all covered."
+      },
+      {
+        "feature_id": "F-006",
+        "title": "Recipe Guide / Cooking Instructions",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["Recipe (E-005)", "RecipeIngredient (E-006)", "RecipeStep (E-007)"],
+        "endpoints_mapped": ["EP-020", "EP-021", "EP-022", "EP-023", "EP-024"],
+        "fields_mapped": 6,
+        "fields_total": 6,
+        "rules_mapped": 3,
+        "rules_total": 3,
+        "notes": "Ingredients linked to inventory, step-by-step instructions, viewable from Kitchen Display. Chef edit permission covered."
+      },
+      {
+        "feature_id": "F-007",
+        "title": "Daily Sales Report & Dashboard",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["Transaction (E-013)"],
+        "endpoints_mapped": ["EP-062", "EP-063"],
+        "fields_mapped": 4,
+        "fields_total": 4,
+        "rules_mapped": 3,
+        "rules_total": 3,
+        "notes": "Dashboard with revenue, order count, top items, payment breakdown, revenue by hour. Date range filtering. Real-time updates."
+      },
+      {
+        "feature_id": "F-008",
+        "title": "Checklist-based Access Control",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["UserPermission (E-002)"],
+        "endpoints_mapped": ["EP-009", "EP-010"],
+        "fields_mapped": 2,
+        "fields_total": 2,
+        "rules_mapped": 4,
+        "rules_total": 4,
+        "notes": "Permission checklist per user. Owner-only access. Immediate effect. Core permission protection. Default role permissions with overrides."
+      },
+      {
+        "feature_id": "F-009",
+        "title": "Multi-role Authentication / Login",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["User (E-001)"],
+        "endpoints_mapped": ["EP-001", "EP-002", "EP-004", "EP-005", "EP-006", "EP-007", "EP-008"],
+        "fields_mapped": 4,
+        "fields_total": 4,
+        "rules_mapped": 6,
+        "rules_total": 6,
+        "notes": "Local-first auth with bcrypt. PIN management. Role-based routing to Dashboard Hub. User CRUD by owner. Failed login logging."
+      },
+      {
+        "feature_id": "F-015",
+        "title": "Cash Register Shift Management",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["Shift (E-014)"],
+        "endpoints_mapped": ["EP-056", "EP-057", "EP-058", "EP-059", "EP-060", "EP-061"],
+        "fields_mapped": 13,
+        "fields_total": 13,
+        "rules_mapped": 18,
+        "rules_total": 18,
+        "notes": "PIN verification, opening balance, one-way closing, cash reconciliation, mandatory notes for discrepancy, immutable closed shifts, shift history for owner."
+      },
+      {
+        "feature_id": "F-016",
+        "title": "POS System Settings (Tax/PPN)",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["PosSettings (E-018)"],
+        "endpoints_mapped": ["EP-064", "EP-065"],
+        "fields_mapped": 5,
+        "fields_total": 5,
+        "rules_mapped": 6,
+        "rules_total": 6,
+        "notes": "PPN enable/disable, rate configuration, restaurant info, receipt customization. Non-retroactive changes."
+      },
+      {
+        "feature_id": "F-017",
+        "title": "Void / Cancel Order & Transaction",
+        "priority": "must",
+        "status": "fully_covered",
+        "entities_mapped": ["VoidRecord (E-015)", "Order (E-011)", "Shift (E-014)"],
+        "endpoints_mapped": ["EP-039", "EP-051", "EP-055"],
+        "fields_mapped": 8,
+        "fields_total": 8,
+        "rules_mapped": 9,
+        "rules_total": 9,
+        "notes": "PIN verification for void. Full/partial void. Mandatory reason. Cash impact on shift. Immutable audit trail. Cancel before payment supported."
+      },
+      {
+        "feature_id": "F-010",
+        "title": "Table Management",
+        "priority": "should",
+        "status": "fully_covered",
+        "entities_mapped": ["Table (E-010)"],
+        "endpoints_mapped": ["EP-040", "EP-041", "EP-042", "EP-043", "EP-044"],
+        "fields_mapped": 4,
+        "fields_total": 4,
+        "rules_mapped": 2,
+        "rules_total": 2,
+        "rules_inferred": [
+          {
+            "rule": "Table count is configurable by owner via EP-042 (create) and EP-044 (delete)",
+            "source": "F-010.acceptance_criteria[3]",
+            "confidence": "high"
+          }
+        ],
+        "notes": "Visual grid with status, tap to create/view order, auto-status updates. Owner configures table count."
+      },
+      {
+        "feature_id": "F-011",
+        "title": "Transaction History",
+        "priority": "should",
+        "status": "fully_covered",
+        "entities_mapped": ["Transaction (E-013)"],
+        "endpoints_mapped": ["EP-052", "EP-053"],
+        "fields_mapped": 9,
+        "fields_total": 9,
+        "rules_mapped": 1,
+        "rules_total": 1,
+        "rules_inferred": [
+          {
+            "rule": "Transaction list supports combined filters (date, ID, PIC, shift, method, total range) with reset",
+            "source": "F-011.acceptance_criteria[2-3]",
+            "confidence": "high"
+          },
+          {
+            "rule": "Summary stats (count, total revenue, cash total, digital total) update with active filters",
+            "source": "F-011.acceptance_criteria[3]",
+            "confidence": "high"
+          }
+        ],
+        "notes": "Advanced filtering, detail modal with PPN breakdown, Print Struk button, non-deletable by non-owners."
+      },
+      {
+        "feature_id": "F-012",
+        "title": "Low Stock Notification",
+        "priority": "should",
+        "status": "fully_covered",
+        "entities_mapped": ["InventoryItem (E-008)"],
+        "endpoints_mapped": ["EP-033", "EP-062"],
+        "fields_mapped": 1,
+        "fields_total": 1,
+        "rules_mapped": 1,
+        "rules_total": 1,
+        "rules_inferred": [
+          {
+            "rule": "Dashboard shows lowStockAlertCount badge via EP-062 response",
+            "source": "F-012.acceptance_criteria[3]",
+            "confidence": "high"
+          }
+        ],
+        "notes": "EP-033 returns low stock items. EP-062 dashboard includes lowStockAlertCount. Inventory table highlights low/critical badges."
+      },
+      {
+        "feature_id": "F-018",
+        "title": "Discount / Promo Management",
+        "priority": "should",
+        "status": "fully_covered",
+        "entities_mapped": ["Discount (E-016)", "Order (E-011)", "Transaction (E-013)"],
+        "endpoints_mapped": ["EP-068", "EP-069", "EP-070", "EP-071", "EP-037", "EP-050"],
+        "fields_mapped": 5,
+        "fields_total": 5,
+        "rules_mapped": 8,
+        "rules_total": 8,
+        "rules_inferred": [],
+        "notes": "Full discount CRUD. Banner display on order screen. One discount per order. Discount before PPN. Tracked in reports."
+      },
+      {
+        "feature_id": "F-013",
+        "title": "Report Export to Excel",
+        "priority": "should",
+        "status": "fully_covered",
+        "entities_mapped": ["Transaction (E-013)"],
+        "endpoints_mapped": ["EP-054"],
+        "fields_mapped": 0,
+        "fields_total": 0,
+        "rules_mapped": 2,
+        "rules_total": 2,
+        "rules_inferred": [
+          {
+            "rule": "Client-side Excel generation using SheetJS (xlsx package) from EP-054 data endpoint",
+            "source": "D-033 (api decision)",
+            "confidence": "high"
+          }
+        ],
+        "notes": "EP-054 provides structured data endpoint. Actual .xlsx generation is client-side via SheetJS (in tech-stack). Respects active filters."
+      },
+      {
+        "feature_id": "F-014",
+        "title": "Menu Categorization",
+        "priority": "could",
+        "status": "fully_covered",
+        "entities_mapped": ["MenuCategory (E-004)"],
+        "endpoints_mapped": ["EP-016", "EP-017", "EP-018", "EP-019"],
+        "fields_mapped": 2,
+        "fields_total": 2,
+        "rules_mapped": 1,
+        "rules_total": 1,
+        "rules_inferred": [],
+        "notes": "Full CRUD for categories. Menu items filtered by category. Sort order supported."
+      }
+    ]
+  },
+  "validation_checks": {
+    "check_01_entity_api_mapping": {
+      "status": "PASS",
+      "details": "All 17 non-junction entities have at least one endpoint with matching related_entity. All 74 endpoints reference valid entity names and E-xxx IDs. Junction entities (UserPermission E-002, RecipeIngredient E-006) are correctly accessed via parent entity endpoints.",
+      "entities_verified": 19,
+      "junction_entities_excluded": ["UserPermission (E-002)", "RecipeIngredient (E-006)"],
+      "note": "UserPermission accessed via EP-009/EP-010 (related_entity_id: E-002). RecipeIngredient accessed via EP-022/EP-023 as nested array in recipe body."
+    },
+    "check_02_tech_architecture_consistency": {
+      "status": "PASS",
+      "details": "Architecture folder_structure matches tech-stack choices: React 18 in src/, Express.js in server/, Prisma in prisma/. Auth flow is local-auth-hash (bcrypt, no JWT) consistent across tech-stack.auth and architecture.auth_flow. Data flow is offline-first via Dexie (IndexedDB) matching key_signals.storage_primary='indexeddb-dexie'. Zustand stores match 10 domain groups."
+    },
+    "check_03_feature_coverage": {
+      "status": "PASS",
+      "details": "All 12 must_have features fully covered with entities and/or endpoints. No gaps in must_have coverage.",
+      "must_have_fully_covered": 12,
+      "must_have_gaps": 0
+    },
+    "check_04_naming_consistency": {
+      "status": "PASS",
+      "details": "Entity names: PascalCase verified (User, UserPermission, MenuItem, MenuCategory, Recipe, RecipeIngredient, RecipeStep, InventoryItem, StockMovement, Table, Order, OrderItem, Transaction, Shift, VoidRecord, Discount, KitchenNotification, PosSettings, EwalletProvider). Attribute names: camelCase verified (userId, permissionKey, itemName, categoryId, etc.). Endpoint paths: kebab-case verified (/api/menu-items, /api/inventory-items, /api/kitchen/orders, etc.)."
+    },
+    "check_05_decision_id_uniqueness": {
+      "status": "PASS",
+      "details": "Entity decisions: D-001 to D-029 range (entities.json does not enumerate D-xxx IDs beyond D-001 inline). API decisions: D-030 to D-033 (4 decisions in api-design.json). System decisions: D-050 to D-065 (16 decisions across tech-stack.json and architecture.json). No duplicates detected across files."
+    },
+    "check_06_endpoint_id_sequential": {
+      "status": "PASS",
+      "details": "EP-001 through EP-074, 74 total endpoints. Sequential with no gaps: auth(EP-001..EP-004), user-management(EP-005..EP-010), menu(EP-011..EP-019), recipe(EP-020..EP-024), inventory(EP-025..EP-034), order-management(EP-035..EP-044), kitchen(EP-045..EP-049), payment(EP-050..EP-055), shift-management(EP-056..EP-061), reporting(EP-062..EP-063), settings(EP-064..EP-071), sync(EP-072..EP-074). No duplicates."
+    },
+    "check_07_business_rules_completeness": {
+      "status": "PASS",
+      "details": "All must_have features have business_rules mapped to entities and/or endpoints. Toggleable permissions (perm-view-stock, perm-view-menu, etc.) have permission_required fields on relevant endpoints. Key rules verified: PPN calculation formula consistent, stock deduction timing resolved, void PIN requirement enforced."
+    },
+    "check_08_state_machine_validity": {
+      "status": "PASS",
+      "details": "Order (E-011): 7 states, all reachable from initial 'pending'. Terminal states: paid, cancelled, voided. OrderItem (E-012): 4 states, all reachable. Terminal: served. Table (E-010): 3 states, all reachable, no terminal (cyclical). Transaction (E-013): 2 states, terminal: voided. Shift (E-014): 2 states, terminal: closed. InventoryItem (E-008) stockStatus: 3 states, no terminal (cyclical). All transitions reference valid source/target states."
+    },
+    "check_09_trigger_timing_consistency": {
+      "status": "PASS",
+      "details": "Stock deduction timing conflict resolved consistently: all three layers (entity D-001, API D-030, architecture D-064) agree on 'deduct at order submission'. EP-037 business_rules explicitly states 'Stock deduction triggered on order submission' with resolved_timing block. EP-039 handles reversal on cancellation."
+    },
+    "check_10_cross_domain_flow_completeness": {
+      "status": "PASS",
+      "details": "All 5 cross-domain flows (UF-001, UF-006, UF-007, UF-008, UF-010) have every step mapped to a specific EP-xxx endpoint. No flow step is missing an endpoint mapping. UF-001 has 11 steps across 4 domains. UF-007 has 7 steps across 4 domains."
+    },
+    "check_11_store_service_boundary": {
+      "status": "PASS",
+      "details": "All entities in cross-domain flows have sync strategy: 'offline-first' via Dexie primary store. Cross-domain events use store-to-store action calls (architecture.json cross_domain_events). Dexie transactions ensure atomicity. Sync to PostgreSQL is opportunistic/background."
+    },
+    "check_12_per_feature_coverage": {
+      "status": "PASS",
+      "details": "18 features classified: 12 must_have (all fully_covered), 5 should_have (all fully_covered), 1 could_have (fully_covered). No partially_covered or gap features."
+    },
+    "check_13_inferred_rules": {
+      "status": "PASS",
+      "details": "Should/could features without explicit business_rules have sensible defaults inferred: F-010 (table count configurable), F-011 (combined filters, summary stats), F-012 (dashboard badge count), F-013 (client-side SheetJS generation). All inferred rules marked with source and confidence level in per_feature coverage."
+    },
+    "check_14_summary_accuracy": {
+      "status": "PASS",
+      "details": "api-design.json summary.total_endpoints=74 matches actual count (4+6+9+5+10+10+5+6+6+2+8+3=74). summary.by_domain matches each split file: auth:4, user-management:6, menu:9, recipe:5, inventory:10, order-management:10, kitchen:5, payment:6, shift-management:6, reporting:2, settings:8, sync:3. by_method totals: GET:33, POST:21, PATCH:14, DELETE:6 -- sum=74. All verified."
+    }
+  },
+  "validation_notes": [
+    {
+      "severity": "info",
+      "check": "check_01",
+      "note": "Junction entity RecipeIngredient (E-006) has no dedicated CRUD endpoints. It is managed as a nested array within Recipe endpoints (EP-022 POST body includes 'ingredients' array, EP-023 PATCH body can replace all ingredients). This is acceptable design for a junction entity."
+    },
+    {
+      "severity": "info",
+      "check": "check_02",
+      "note": "Architecture data_flow.stores lists DailySummary and RevenueData under useReportingStore entities, but these are computed views (aggregations from Transaction data), not stored entities in entities.json. This is correct -- they are virtual entities, not persisted."
+    },
+    {
+      "severity": "info",
+      "check": "check_06",
+      "note": "api-design.json domain_index shows entity counts per domain. These represent entities 'touched' by the domain, not unique entity counts (e.g., Order E-011 appears in both order-management and kitchen domains). This is expected for cross-domain entities."
+    },
+    {
+      "severity": "info",
+      "check": "check_08",
+      "note": "InventoryItem.stockStatus state machine has no terminal states -- this is correct since stock levels cycle between ok/low/critical based on quantity changes. Table.status also has no terminal states (cyclical: available->occupied->needs_payment->available)."
+    },
+    {
+      "severity": "info",
+      "check": "check_09",
+      "note": "The timing conflict in _shared-context.json (F-004 'when order is confirmed' vs UF-001 step 11 'at payment completion') is resolved unanimously across all three decision layers. EP-037 includes explicit resolved_timing block documenting the decision and rejected alternatives."
+    },
+    {
+      "severity": "info",
+      "check": "check_11",
+      "note": "Sync conflict resolution uses domain-specific strategy per D-031: last-write-wins for most entities, append-only semantics for financial records (Transaction, Shift, VoidRecord). This prevents accidental overwrite of immutable financial data."
+    }
+  ],
+  "blocking_gaps": []
+}

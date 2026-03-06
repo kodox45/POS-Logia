@@ -1,0 +1,55 @@
+{
+  "version": "5.0",
+  "generated_at": "2026-02-19T08:30:00Z",
+  "project": {
+    "name": "pos-restoran-umkm-logia",
+    "display_name": "POS Restoran UMKM Logia",
+    "workspace": "E:/Logia-Initiative/Logia-Pos",
+    "language": "id"
+  },
+  "files": {
+    "discovery": {
+      "problem": ".ba/discovery/problem.json",
+      "stakeholders": ".ba/discovery/stakeholders.json",
+      "constraints": ".ba/discovery/constraints.json",
+      "success_metrics": ".ba/discovery/success-metrics.json"
+    },
+    "requirements": {
+      "features": ".ba/requirements/features.json",
+      "roles": ".ba/requirements/roles.json",
+      "nfr": ".ba/requirements/nfr.json"
+    },
+    "design": {
+      "layout": ".ba/design/layout.json",
+      "style": ".ba/design/style.json",
+      "screens": ".ba/design/screens.json",
+      "components": ".ba/design/components.json",
+      "flows": ".ba/design/flows.json",
+      "assets_manifest": ".ba/design/manifest.json"
+    },
+    "validation": {
+      "prd": ".ba/validation/prd.json",
+      "traceability": ".ba/validation/traceability.json"
+    }
+  },
+  "summary": {
+    "stakeholder_count": 3,
+    "feature_count": {
+      "must": 12,
+      "should": 5,
+      "could": 1,
+      "wont": 2
+    },
+    "role_count": 3,
+    "screen_count": 17,
+    "flow_count": 10,
+    "component_count": 36,
+    "nfr_count": 18
+  },
+  "phase_status": {
+    "discovery": "completed",
+    "elicitation": "completed",
+    "design": "completed",
+    "validation": "completed"
+  }
+}

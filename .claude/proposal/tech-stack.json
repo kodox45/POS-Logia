@@ -1,0 +1,321 @@
+{
+  "version": "1.0",
+  "frontend": {
+    "framework": {
+      "choice": "React 18",
+      "version": "18.x",
+      "source": "default",
+      "rationale": "Default frontend framework. 17 screens is within React SPA comfort zone. No constraint signals override this choice.",
+      "requires_approval": true,
+      "packages": ["react", "react-dom"]
+    },
+    "language": {
+      "choice": "TypeScript",
+      "version": "5.x",
+      "source": "default",
+      "rationale": "Type safety is essential for a complex offline-first app with 15 entities and cross-domain data flows.",
+      "requires_approval": false,
+      "packages": ["typescript"]
+    },
+    "styling": {
+      "choice": "Tailwind CSS 3",
+      "version": "3.x",
+      "source": "default",
+      "rationale": "Utility-first CSS framework. Aligns with tablet-first responsive design requirements and rapid UI development.",
+      "requires_approval": false,
+      "packages": ["tailwindcss", "postcss", "autoprefixer"]
+    },
+    "state_management": {
+      "choice": "Zustand with persist middleware",
+      "version": "4.x",
+      "source": "override:key_signals",
+      "rationale": "Entity count (15) exceeds 12 AND offline_first is true. Zustand with persist middleware is required for offline-first architecture -- React Context cannot persist to IndexedDB. Each domain group gets its own store for separation of concerns.",
+      "requires_approval": true,
+      "packages": ["zustand"]
+    },
+    "routing": {
+      "choice": "React Router v6",
+      "version": "6.x",
+      "source": "default",
+      "rationale": "Standard routing for React SPA. Supports the multi-interface navigation architecture (dashboard hub, bottom-tabs, sidebar, fullscreen).",
+      "requires_approval": false,
+      "packages": ["react-router-dom"]
+    },
+    "http_client": {
+      "choice": "Axios",
+      "version": "1.x",
+      "source": "default",
+      "rationale": "HTTP client for server sync operations. Used only for background sync when online -- not for primary data operations which go through Dexie.",
+      "requires_approval": false,
+      "packages": ["axios"]
+    },
+    "offline_storage": {
+      "choice": "Dexie.js (IndexedDB wrapper)",
+      "version": "4.x",
+      "source": "override:key_signals",
+      "rationale": "key_signals.storage_primary is 'indexeddb-dexie'. Dexie provides a clean API over IndexedDB for the offline-first primary data store. All 15 entities stored locally with full CRUD capability.",
+      "requires_approval": true,
+      "packages": ["dexie", "dexie-react-hooks"]
+    },
+    "pwa": {
+      "choice": "Workbox + PWA Manifest",
+      "version": "7.x",
+      "source": "override:nfr",
+      "rationale": "nfr.usability.primary_device is 'tablet' and nfr.reliability requires full offline operation. PWA enables installable app experience on tablets/smartphones with service worker caching.",
+      "requires_approval": false,
+      "packages": ["workbox-webpack-plugins", "vite-plugin-pwa"]
+    },
+    "printing": {
+      "choice": "Web Print API + thermal printer formatting",
+      "source": "override:nfr",
+      "rationale": "nfr.integrations includes 'Thermal Receipt Printer' (required hardware integration). Using browser Print API with CSS print stylesheets formatted for 58mm/80mm thermal receipt rolls.",
+      "requires_approval": false,
+      "packages": ["react-to-print"]
+    },
+    "charting": {
+      "choice": "Recharts",
+      "version": "2.x",
+      "source": "override:nfr",
+      "rationale": "Admin dashboard (S-008) requires revenue charts, peak hours heatmap, and payment method donut charts. Recharts is lightweight and React-native.",
+      "requires_approval": false,
+      "packages": ["recharts"]
+    },
+    "excel_export": {
+      "choice": "SheetJS (xlsx)",
+      "source": "override:nfr",
+      "rationale": "Feature F-013 requires Excel export from Transaction History (S-012). SheetJS generates .xlsx files client-side without server dependency.",
+      "requires_approval": false,
+      "packages": ["xlsx"]
+    },
+    "icons": {
+      "choice": "Lucide React",
+      "version": "0.x",
+      "source": "default",
+      "rationale": "Icon names referenced in layout.json (bar-chart-2, utensils, book-open, etc.) map directly to Lucide icon set.",
+      "requires_approval": false,
+      "packages": ["lucide-react"]
+    },
+    "packages": [
+      "react",
+      "react-dom",
+      "typescript",
+      "tailwindcss",
+      "postcss",
+      "autoprefixer",
+      "zustand",
+      "react-router-dom",
+      "axios",
+      "dexie",
+      "dexie-react-hooks",
+      "vite-plugin-pwa",
+      "react-to-print",
+      "recharts",
+      "xlsx",
+      "lucide-react",
+      "clsx",
+      "date-fns"
+    ]
+  },
+  "backend": {
+    "framework": {
+      "choice": "Express.js 4",
+      "version": "4.x",
+      "source": "default",
+      "rationale": "Default backend framework. Concurrent users (5) is low, no WebSocket requirement. Express is the sync target server -- NOT the primary data server. All core operations run offline via Dexie.",
+      "requires_approval": true,
+      "packages": ["express"]
+    },
+    "language": {
+      "choice": "TypeScript",
+      "version": "5.x",
+      "source": "default",
+      "rationale": "Shared type definitions between frontend and backend ensure data consistency during sync operations.",
+      "requires_approval": false,
+      "packages": ["typescript", "ts-node", "@types/express"]
+    },
+    "database": {
+      "choice": "PostgreSQL (sync target)",
+      "version": "16.x",
+      "source": "override:key_signals",
+      "rationale": "key_signals.offline_first is true. PostgreSQL serves as the cloud sync target for backup and multi-device sync -- NOT as the primary data store. Primary data lives in IndexedDB/Dexie on device.",
+      "requires_approval": true,
+      "packages": ["pg"]
+    },
+    "orm": {
+      "choice": "Prisma",
+      "version": "5.x",
+      "source": "default",
+      "rationale": "Type-safe ORM for PostgreSQL sync layer. Schema definitions serve as the canonical server-side data model.",
+      "requires_approval": false,
+      "packages": ["prisma", "@prisma/client"]
+    },
+    "auth": {
+      "choice": "local-auth-hash",
+      "source": "override:key_signals",
+      "rationale": "CRITICAL: key_signals.offline_first is true AND auth_hint.server_dependency is false. Auth MUST be local-first. Username/password authentication uses bcrypt hash comparison stored in IndexedDB. PIN verification for shift operations uses separate PIN hash. NO JWT -- JWT requires server availability which violates offline-first architecture. Session token stored in IndexedDB.",
+      "requires_approval": true,
+      "packages": ["bcryptjs"]
+    },
+    "validation": {
+      "choice": "Zod",
+      "version": "3.x",
+      "source": "default",
+      "rationale": "Runtime schema validation shared between frontend (Dexie writes) and backend (sync endpoint). Ensures data integrity on both sides.",
+      "requires_approval": false,
+      "packages": ["zod"]
+    },
+    "sync": {
+      "choice": "Custom sync layer with conflict resolution",
+      "source": "override:key_signals",
+      "rationale": "Offline-first architecture requires a sync mechanism for multi-device data consistency. Custom sync layer handles: detect online/offline, queue local changes, push to server when online, pull server updates, resolve conflicts with last-write-wins + domain-specific merge rules.",
+      "requires_approval": true,
+      "packages": []
+    },
+    "packages": [
+      "express",
+      "typescript",
+      "ts-node",
+      "@types/express",
+      "pg",
+      "prisma",
+      "@prisma/client",
+      "bcryptjs",
+      "@types/bcryptjs",
+      "zod",
+      "cors",
+      "helmet",
+      "morgan",
+      "dotenv"
+    ]
+  },
+  "testing": {
+    "unit": {
+      "choice": "Vitest",
+      "version": "1.x",
+      "source": "default",
+      "rationale": "Vitest integrates natively with Vite build tool for fast unit testing of stores, utilities, and sync logic.",
+      "requires_approval": false,
+      "packages": ["vitest"]
+    },
+    "component": {
+      "choice": "React Testing Library",
+      "version": "14.x",
+      "source": "default",
+      "rationale": "Standard component testing library for React. Tests user interactions with touch-optimized components.",
+      "requires_approval": false,
+      "packages": ["@testing-library/react", "@testing-library/jest-dom", "@testing-library/user-event"]
+    },
+    "api": {
+      "choice": "Supertest",
+      "version": "6.x",
+      "source": "default",
+      "rationale": "Integration testing for Express sync endpoints.",
+      "requires_approval": false,
+      "packages": ["supertest", "@types/supertest"]
+    },
+    "e2e": {
+      "choice": "Playwright",
+      "version": "1.x",
+      "source": "default",
+      "rationale": "End-to-end testing for critical flows: order creation, payment processing, shift management. Supports offline mode simulation.",
+      "requires_approval": false,
+      "packages": ["@playwright/test"]
+    }
+  },
+  "dev_tools": {
+    "bundler": {
+      "choice": "Vite",
+      "version": "5.x",
+      "source": "default",
+      "rationale": "Fast development server and build tool. Native TypeScript and PWA plugin support.",
+      "requires_approval": false,
+      "packages": ["vite", "@vitejs/plugin-react"]
+    },
+    "linter": {
+      "choice": "ESLint",
+      "version": "8.x",
+      "source": "default",
+      "rationale": "Standard JavaScript/TypeScript linting with React-specific rules.",
+      "requires_approval": false,
+      "packages": ["eslint", "@typescript-eslint/eslint-plugin", "@typescript-eslint/parser", "eslint-plugin-react-hooks"]
+    },
+    "formatter": {
+      "choice": "Prettier",
+      "version": "3.x",
+      "source": "default",
+      "rationale": "Consistent code formatting across the project.",
+      "requires_approval": false,
+      "packages": ["prettier", "eslint-config-prettier"]
+    }
+  },
+  "decisions_requiring_approval": [
+    {
+      "id": "D-050",
+      "category": "frontend-framework",
+      "decision": "React 18 as frontend framework",
+      "rationale": "Default choice. 17 screens within SPA comfort zone. No constraints override.",
+      "alternatives": ["Vue 3", "Angular", "Next.js"],
+      "impact": "Determines entire frontend ecosystem and developer requirements."
+    },
+    {
+      "id": "D-051",
+      "category": "state-management",
+      "decision": "Zustand with persist middleware instead of React Context",
+      "rationale": "Entity count (15) exceeds threshold AND offline_first requires persist-to-IndexedDB capability. React Context cannot persist state to IndexedDB. 10 domain-specific stores needed for this complexity.",
+      "alternatives": ["Redux Toolkit with redux-persist", "React Context (incompatible with offline-first)"],
+      "impact": "All client-side data management flows through Zustand stores backed by Dexie tables."
+    },
+    {
+      "id": "D-052",
+      "category": "primary-storage",
+      "decision": "Dexie.js (IndexedDB) as primary data store, PostgreSQL as sync target only",
+      "rationale": "Offline-first architecture requires all data to live on-device. IndexedDB via Dexie is the primary data store. PostgreSQL on server receives synced data for backup and multi-device access.",
+      "alternatives": ["SQLite via sql.js (client) + PostgreSQL (server)", "PouchDB + CouchDB"],
+      "impact": "All CRUD operations happen against Dexie locally. Server sync is background/opportunistic."
+    },
+    {
+      "id": "D-053",
+      "category": "authentication",
+      "decision": "Local-first authentication with bcrypt hash (NO JWT)",
+      "rationale": "CRITICAL: offline_first is true AND auth_hint.server_dependency is false. JWT requires server availability for token issuance/refresh, which violates the offline-first requirement. Auth uses bcrypt hash comparison against credentials stored in IndexedDB. PIN verification for shift operations uses separate hash. Session managed via IndexedDB-stored session token.",
+      "alternatives": ["JWT (incompatible with offline-first)", "Passport.js + OAuth (requires server)"],
+      "impact": "Auth works entirely offline. No server round-trip needed to log in or verify PIN."
+    },
+    {
+      "id": "D-054",
+      "category": "backend-framework",
+      "decision": "Express.js 4 as sync server framework",
+      "rationale": "Low concurrent users (5). Express serves only as the sync target -- not as the primary API server. All core operations run offline via Dexie.",
+      "alternatives": ["Fastify", "NestJS (overkill for sync-only server)"],
+      "impact": "Backend is lightweight sync server, not a traditional REST API backend."
+    },
+    {
+      "id": "D-055",
+      "category": "sync-strategy",
+      "decision": "Custom sync layer with last-write-wins conflict resolution",
+      "rationale": "Offline-first with multi-device sync requires a sync mechanism. Custom sync handles: online/offline detection, change queue, push when online, pull updates, conflict resolution. No existing BaaS (Firebase/Supabase) specified in constraints.",
+      "alternatives": ["PouchDB/CouchDB sync", "Firebase Realtime Database", "Supabase Realtime"],
+      "impact": "Requires building sync infrastructure: change tracking, queue, conflict resolution, and retry logic."
+    },
+    {
+      "id": "D-056",
+      "category": "database-server",
+      "decision": "PostgreSQL 16 as server-side database for sync target",
+      "rationale": "Default database choice for the sync server. Budget is flexible and timeline is medium urgency -- no signal to downgrade to SQLite.",
+      "alternatives": ["SQLite (lighter but less suitable for multi-device sync)", "MySQL"],
+      "impact": "Server infrastructure requires PostgreSQL instance for cloud backup and multi-device sync."
+    }
+  ],
+  "summary": {
+    "total_packages_frontend": 18,
+    "total_packages_backend": 14,
+    "total_packages_testing": 7,
+    "total_packages_devtools": 7,
+    "override_count": 7,
+    "default_count": 10,
+    "key_architectural_pattern": "offline-first-with-sync",
+    "primary_data_store": "IndexedDB via Dexie.js (on-device)",
+    "sync_target": "PostgreSQL via Express.js (cloud backup)",
+    "auth_model": "local-auth-hash (bcrypt, no JWT, no server dependency)"
+  }
+}

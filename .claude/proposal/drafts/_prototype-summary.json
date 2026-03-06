@@ -1,0 +1,504 @@
+{
+  "version": "1.0",
+  "source": "prototype/index.html",
+  "extracted_entities": [
+    {
+      "entity_hint": "orders",
+      "fields": ["id", "table", "items", "status", "total", "notes", "time", "waiter", "promo"],
+      "sample_count": 8,
+      "sample_values": {
+        "id": "ORD-001",
+        "table": 3,
+        "items": [{"id": "M-001", "name": "Nasi Goreng Spesial", "qty": 2, "price": 25000}],
+        "status": "pending",
+        "total": 60000,
+        "notes": "Tidak pakai sambal",
+        "time": "2026-02-18T11:30:00",
+        "waiter": "Sari",
+        "promo": null
+      }
+    },
+    {
+      "entity_hint": "menuItems",
+      "fields": ["id", "name", "category", "price", "available", "desc"],
+      "sample_count": 14,
+      "sample_values": {
+        "id": "M-001",
+        "name": "Nasi Goreng Spesial",
+        "category": "Makanan",
+        "price": 25000,
+        "available": true,
+        "desc": "Nasi goreng dengan telur, ayam, dan kerupuk"
+      }
+    },
+    {
+      "entity_hint": "tables",
+      "fields": ["id", "name", "status", "orderId", "capacity"],
+      "sample_count": 12,
+      "sample_values": {
+        "id": 1,
+        "name": "Meja 1",
+        "status": "occupied",
+        "orderId": "ORD-002",
+        "capacity": 4
+      }
+    },
+    {
+      "entity_hint": "inventory",
+      "fields": ["id", "name", "qty", "unit", "minThreshold", "status"],
+      "sample_count": 10,
+      "sample_values": {
+        "id": "I-001",
+        "name": "Beras",
+        "qty": 25,
+        "unit": "kg",
+        "minThreshold": 10,
+        "status": "ok"
+      }
+    },
+    {
+      "entity_hint": "stockMovements",
+      "fields": ["date", "item", "type", "qty", "reason"],
+      "sample_count": 5,
+      "sample_values": {
+        "date": "2026-02-18T09:00:00",
+        "item": "Beras",
+        "type": "restock",
+        "qty": 10,
+        "reason": "Pembelian rutin"
+      }
+    },
+    {
+      "entity_hint": "recipes",
+      "fields": ["id", "menuId", "name", "cookTime", "difficulty", "ingredients", "steps", "notes"],
+      "sample_count": 5,
+      "sample_values": {
+        "id": "R-001",
+        "menuId": "M-001",
+        "name": "Nasi Goreng Spesial",
+        "cookTime": 15,
+        "difficulty": "medium",
+        "ingredients": [{"name": "Nasi Putih", "qty": 250, "unit": "gram"}],
+        "steps": ["Panaskan minyak, tumis bawang merah hingga harum"],
+        "notes": "Gunakan nasi dingin untuk hasil terbaik"
+      }
+    },
+    {
+      "entity_hint": "transactions",
+      "fields": ["id", "orderId", "table", "shiftId", "subtotal", "ppnRate", "ppnAmount", "total", "method", "refNumber", "hasBuktiTransfer", "amountPaid", "change", "cashier", "date", "items", "discount"],
+      "sample_count": 10,
+      "sample_values": {
+        "id": "TRX-001",
+        "orderId": "ORD-101",
+        "table": 3,
+        "shiftId": "SHF-003",
+        "subtotal": 85000,
+        "ppnRate": 11,
+        "ppnAmount": 9350,
+        "total": 94350,
+        "method": "Tunai",
+        "refNumber": null,
+        "hasBuktiTransfer": false,
+        "amountPaid": 100000,
+        "change": 5650,
+        "cashier": "Sari",
+        "date": "2026-02-18T10:15:00",
+        "items": [{"name": "Nasi Goreng Spesial", "qty": 2, "price": 25000}]
+      }
+    },
+    {
+      "entity_hint": "users",
+      "fields": ["id", "name", "username", "role", "status", "lastLogin"],
+      "sample_count": 6,
+      "sample_values": {
+        "id": "U-001",
+        "name": "Ahmad Rizki",
+        "username": "admin",
+        "role": "owner",
+        "status": "active",
+        "lastLogin": "2026-02-18T08:00:00"
+      }
+    },
+    {
+      "entity_hint": "roles",
+      "fields": ["id", "name"],
+      "sample_count": 3,
+      "sample_values": {
+        "id": "chef",
+        "name": "Chef / Cook"
+      }
+    },
+    {
+      "entity_hint": "discounts",
+      "fields": ["id", "name", "type", "value", "active"],
+      "sample_count": 4,
+      "sample_values": {
+        "id": "D-001",
+        "name": "Promo Weekday 10%",
+        "type": "percentage",
+        "value": 10,
+        "active": true
+      }
+    },
+    {
+      "entity_hint": "kitchenReadyNotifications",
+      "fields": ["id", "table", "orderId", "items", "time"],
+      "sample_count": 2,
+      "sample_values": {
+        "id": "KN-001",
+        "table": 5,
+        "orderId": "ORD-003",
+        "items": ["Soto Ayam x3", "Es Jeruk x3"],
+        "time": "dynamic (new Date().toISOString())"
+      }
+    },
+    {
+      "entity_hint": "ewalletProviders",
+      "fields": ["name", "enabled", "qrUploaded"],
+      "sample_count": 5,
+      "sample_values": {
+        "name": "GoPay",
+        "enabled": true,
+        "qrUploaded": true
+      }
+    },
+    {
+      "entity_hint": "toasts",
+      "fields": ["id", "type", "message", "visible"],
+      "sample_count": 0,
+      "sample_values": {
+        "id": 1,
+        "type": "success",
+        "message": "Login berhasil!",
+        "visible": true
+      }
+    }
+  ],
+  "crud_patterns": [
+    {
+      "entity_hint": "orders",
+      "operation": "create",
+      "element": "@submit.prevent via submitOrder()",
+      "screen": "S-003"
+    },
+    {
+      "entity_hint": "orders",
+      "operation": "read",
+      "element": "x-for with filteredOrders",
+      "screen": "S-002"
+    },
+    {
+      "entity_hint": "orders",
+      "operation": "update",
+      "element": "updateOrderStatus(orderId, newStatus)",
+      "screen": "S-006"
+    },
+    {
+      "entity_hint": "orders",
+      "operation": "update",
+      "element": "startAddToExisting(order) + submitAddItems()",
+      "screen": "S-003"
+    },
+    {
+      "entity_hint": "orders",
+      "operation": "update",
+      "element": "confirmCancelOrder() sets status='cancelled'",
+      "screen": "S-002"
+    },
+    {
+      "entity_hint": "orders",
+      "operation": "update",
+      "element": "confirmPayment() sets status='paid'",
+      "screen": "S-004"
+    },
+    {
+      "entity_hint": "orders",
+      "operation": "update",
+      "element": "confirmVoid() sets status='voided'",
+      "screen": "S-004"
+    },
+    {
+      "entity_hint": "menuItems",
+      "operation": "read",
+      "element": "x-for with newOrderFilteredMenu / menuItems.filter()",
+      "screen": "S-003, S-009"
+    },
+    {
+      "entity_hint": "menuItems",
+      "operation": "create",
+      "element": "@submit.prevent modal form (S-009)",
+      "screen": "S-009"
+    },
+    {
+      "entity_hint": "menuItems",
+      "operation": "update",
+      "element": "@submit.prevent modal form edit mode (S-009)",
+      "screen": "S-009"
+    },
+    {
+      "entity_hint": "menuItems",
+      "operation": "delete",
+      "element": "menuItems = menuItems.filter(m => m.id !== item.id)",
+      "screen": "S-009"
+    },
+    {
+      "entity_hint": "tables",
+      "operation": "read",
+      "element": "x-for with tables",
+      "screen": "S-005"
+    },
+    {
+      "entity_hint": "tables",
+      "operation": "update",
+      "element": "status change on confirmPayment() and confirmCancelOrder()",
+      "screen": "S-004, S-002"
+    },
+    {
+      "entity_hint": "inventory",
+      "operation": "read",
+      "element": "x-for with inventory.filter()",
+      "screen": "S-011"
+    },
+    {
+      "entity_hint": "inventory",
+      "operation": "update",
+      "element": "@submit.prevent restock modal (qty += 10, status recalc)",
+      "screen": "S-011"
+    },
+    {
+      "entity_hint": "inventory",
+      "operation": "create",
+      "element": "@submit.prevent add new stock item modal",
+      "screen": "S-011"
+    },
+    {
+      "entity_hint": "recipes",
+      "operation": "read",
+      "element": "x-for with recipes.filter()",
+      "screen": "S-010, S-007"
+    },
+    {
+      "entity_hint": "recipes",
+      "operation": "create",
+      "element": "openRecipeEditor('create') + saveRecipe()",
+      "screen": "S-010"
+    },
+    {
+      "entity_hint": "recipes",
+      "operation": "update",
+      "element": "openRecipeEditor('edit', recipe) + saveRecipe()",
+      "screen": "S-010"
+    },
+    {
+      "entity_hint": "recipes",
+      "operation": "delete",
+      "element": "recipes = recipes.filter(r => r.id !== recipe.id)",
+      "screen": "S-010"
+    },
+    {
+      "entity_hint": "transactions",
+      "operation": "create",
+      "element": "transactions.unshift(txData) in confirmPayment()",
+      "screen": "S-004"
+    },
+    {
+      "entity_hint": "transactions",
+      "operation": "read",
+      "element": "x-for with txFiltered",
+      "screen": "S-012"
+    },
+    {
+      "entity_hint": "users",
+      "operation": "read",
+      "element": "x-for with users.filter()",
+      "screen": "S-013"
+    },
+    {
+      "entity_hint": "users",
+      "operation": "create",
+      "element": "@submit.prevent user modal form",
+      "screen": "S-013"
+    },
+    {
+      "entity_hint": "users",
+      "operation": "update",
+      "element": "@submit.prevent user modal form edit mode",
+      "screen": "S-013"
+    },
+    {
+      "entity_hint": "discounts",
+      "operation": "read",
+      "element": "x-for with discounts / activeDiscounts",
+      "screen": "S-017, S-004"
+    },
+    {
+      "entity_hint": "discounts",
+      "operation": "create",
+      "element": "discounts.push() in saveDiscount()",
+      "screen": "S-017"
+    },
+    {
+      "entity_hint": "discounts",
+      "operation": "update",
+      "element": "saveDiscount() edit mode + toggle active",
+      "screen": "S-017"
+    },
+    {
+      "entity_hint": "kitchenReadyNotifications",
+      "operation": "create",
+      "element": "kitchenReadyNotifications.push() in updateOrderStatus('ready')",
+      "screen": "S-006"
+    },
+    {
+      "entity_hint": "kitchenReadyNotifications",
+      "operation": "delete",
+      "element": "kitchenReadyNotifications.filter() in confirmServed()",
+      "screen": "S-002"
+    },
+    {
+      "entity_hint": "stockMovements",
+      "operation": "read",
+      "element": "x-for with stockMovements",
+      "screen": "S-011"
+    },
+    {
+      "entity_hint": "ewalletProviders",
+      "operation": "read",
+      "element": "x-for with ewalletProviders",
+      "screen": "S-017, S-004"
+    },
+    {
+      "entity_hint": "ewalletProviders",
+      "operation": "update",
+      "element": "toggle enabled via S-017 settings",
+      "screen": "S-017"
+    }
+  ],
+  "navigation": {
+    "screens": [
+      {"id": "S-001", "name": "Login Screen", "interface": "none (pre-auth)"},
+      {"id": "S-016", "name": "Main Dashboard Hub", "interface": "dashboard-hub"},
+      {"id": "S-002", "name": "Order List", "interface": "waiter-cashier-ui"},
+      {"id": "S-003", "name": "Create / Edit / Add to Order", "interface": "waiter-cashier-ui"},
+      {"id": "S-004", "name": "Payment", "interface": "waiter-cashier-ui"},
+      {"id": "S-005", "name": "Table Map", "interface": "waiter-cashier-ui"},
+      {"id": "S-014", "name": "Open Shift / Buka Kasir (PIN verification)", "interface": "waiter-cashier-ui"},
+      {"id": "S-015", "name": "Close Shift / Tutup Kasir", "interface": "waiter-cashier-ui"},
+      {"id": "S-006", "name": "Kitchen Order Queue", "interface": "kitchen-display"},
+      {"id": "S-007", "name": "Recipe Viewer", "interface": "kitchen-display"},
+      {"id": "S-008", "name": "Admin Dashboard", "interface": "admin-panel"},
+      {"id": "S-009", "name": "Menu Management", "interface": "admin-panel"},
+      {"id": "S-010", "name": "Recipe Management", "interface": "admin-panel"},
+      {"id": "S-011", "name": "Inventory / Stock Management", "interface": "admin-panel"},
+      {"id": "S-012", "name": "Transaction History", "interface": "admin-panel"},
+      {"id": "S-013", "name": "User & Access Control", "interface": "admin-panel"},
+      {"id": "S-017", "name": "POS System Settings", "interface": "admin-panel"}
+    ],
+    "transitions": [
+      {"from": "S-001", "to": "S-016", "trigger": "handleLogin() sets isLoggedIn=true, currentScreen='S-016'"},
+      {"from": "S-016", "to": "S-014", "trigger": "enterModule('S-014', 'waiter-cashier-ui')"},
+      {"from": "S-016", "to": "S-002", "trigger": "requestPosEntry('S-002') → PIN gate → enterModule('S-002', 'waiter-cashier-ui')"},
+      {"from": "S-016", "to": "S-005", "trigger": "enterModule('S-005', 'waiter-cashier-ui')"},
+      {"from": "S-016", "to": "S-006", "trigger": "enterModule('S-006', 'kitchen-display')"},
+      {"from": "S-016", "to": "S-007", "trigger": "enterModule('S-007', 'kitchen-display')"},
+      {"from": "S-016", "to": "S-008", "trigger": "enterModule('S-008', 'admin-panel')"},
+      {"from": "S-016", "to": "S-009", "trigger": "enterModule('S-009', 'admin-panel')"},
+      {"from": "S-016", "to": "S-010", "trigger": "enterModule('S-010', 'admin-panel')"},
+      {"from": "S-016", "to": "S-011", "trigger": "enterModule('S-011', 'admin-panel')"},
+      {"from": "S-016", "to": "S-012", "trigger": "enterModule('S-012', 'admin-panel')"},
+      {"from": "S-016", "to": "S-013", "trigger": "enterModule('S-013', 'admin-panel')"},
+      {"from": "S-016", "to": "S-017", "trigger": "enterModule('S-017', 'admin-panel')"},
+      {"from": "S-014", "to": "S-002", "trigger": "openShift() → enterModule('S-002', 'waiter-cashier-ui')"},
+      {"from": "S-002", "to": "S-003", "trigger": "navigateTo('S-003') via FAB button"},
+      {"from": "S-003", "to": "S-002", "trigger": "submitOrder() → navigateTo('S-002')"},
+      {"from": "S-002", "to": "S-004", "trigger": "startPayment(order) → navigateTo('S-004')"},
+      {"from": "S-004", "to": "S-002", "trigger": "closePaymentSuccess() → navigateTo('S-002')"},
+      {"from": "S-005", "to": "S-003", "trigger": "table click (available) → navigateTo('S-003')"},
+      {"from": "S-005", "to": "S-004", "trigger": "table click (needs_payment) → startPayment(order)"},
+      {"from": "S-002", "to": "S-015", "trigger": "initiateCloseShift() → enterModule('S-015', 'waiter-cashier-ui')"},
+      {"from": "S-015", "to": "S-016", "trigger": "confirmCloseShift() → goToHub()"},
+      {"from": "S-007", "to": "S-007", "trigger": "viewRecipe(menuId) → navigateTo('S-007')"},
+      {"from": "any", "to": "S-016", "trigger": "goToHub() resets to dashboard-hub"},
+      {"from": "any", "to": "previous", "trigger": "goBack() pops screenHistory"}
+    ]
+  },
+  "prototype_status": {
+    "changes_applied": [
+      "Fixed Kitchen → Cashier Notification Flow (S-006 + S-002): updateOrderStatus() now pushes to kitchenReadyNotifications[], confirmServed() rewritten, S-002 button rewired",
+      "Active Promo Banner (C-036) verified in S-003: horizontal scrollable promo cards with checkmark selection and carry-through to S-004"
+    ],
+    "features_covered": [
+      "S-001 Login",
+      "S-016 Dashboard Hub (multi-role)",
+      "S-002 Order List with notifications",
+      "S-003 Create/Add-to Order with promo",
+      "S-004 Payment (cash, QRIS, e-wallet, transfer) with PPN + discount",
+      "S-005 Table Map",
+      "S-006 Kitchen Order Queue",
+      "S-007 Recipe Viewer",
+      "S-008 Admin Dashboard with charts",
+      "S-009 Menu Management (CRUD)",
+      "S-010 Recipe Management (CRUD with inline viewer/editor)",
+      "S-011 Inventory/Stock Management with restock",
+      "S-012 Transaction History with advanced filters + export",
+      "S-013 User & Access Control",
+      "S-014 Open Shift with PIN verification",
+      "S-015 Close Shift with cash reconciliation",
+      "S-017 POS Settings (PPN, restaurant info, payment methods, discounts)"
+    ],
+    "features_not_covered": []
+  },
+  "mismatches": [
+    {
+      "type": "entity_count",
+      "expected": 15,
+      "found": 13,
+      "detail": "Shared context lists 15 entity_candidates but prototype contains 13 distinct data arrays. The 2 missing entities may be: (1) a dedicated 'shift' entity (shift data is modeled as scalar state fields like shiftActive, shiftOpeningBalance, etc. rather than a shift[] array), and (2) a 'category' entity (menuCategories is a simple string array, not an object array with IDs). These are reasonable simplifications for a prototype. T-ENTITY should model Shift and Category as proper entities despite their scalar representation here."
+    },
+    {
+      "type": "screen_count",
+      "expected": 17,
+      "found": 17,
+      "detail": "Exact match. All 17 screens (S-001 through S-017, with S-016 as hub) are present in the prototype HTML."
+    }
+  ],
+  "additional_state_patterns": {
+    "auth_state": {
+      "fields": ["isLoggedIn", "loginUsername", "loginPassword", "loginError", "loginLoading", "currentRole"],
+      "method": "username-password",
+      "role_detection": "username string matching (chef/koki → chef, owner/admin → owner, default → waiter-cashier)"
+    },
+    "shift_state": {
+      "fields": ["shiftActive", "shiftClosing", "shiftStartTime", "shiftCashierName", "shiftOpeningBalance", "shiftCashSales", "shiftDigitalSales", "shiftTransactionCount", "shiftOpenInput", "shiftCloseInput", "shiftClosingNotes", "shiftPrintDone"],
+      "computed": ["shiftExpectedCash", "shiftDiscrepancy", "shiftDiscrepancyLevel", "shiftDuration", "shiftTotalRevenue", "closeButtonDisabled"],
+      "note": "Shift is modeled as scalar state rather than an array. T-ENTITY should model this as a proper Shift entity with open/close lifecycle."
+    },
+    "pin_verification": {
+      "contexts": ["S-014 shift opening (pinInput/pinVerified)", "PIN Gate C-024 for POS entry (pinGateInput/pinGateOpen)", "Void PIN verification (voidPinInput)"],
+      "note": "Three separate PIN contexts exist. T-ENTITY may want a unified PIN verification mechanism."
+    },
+    "payment_tabs": {
+      "methods": ["tunai (cash)", "qris", "ewallet (GoPay, OVO, Dana, ShopeePay)", "transfer (bank transfer with bukti)"],
+      "tax": {"ppnEnabled": true, "ppnRate": 11},
+      "discount_at_payment": true,
+      "promo_from_order": true
+    },
+    "pos_settings": {
+      "fields": ["ppnEnabled", "ppnRate", "restaurantName", "restaurantAddress", "receiptFooter", "showPpnOnReceipt", "qrisImageUploaded", "bankName", "bankAccountNumber", "bankAccountHolder"],
+      "note": "T-ENTITY should model these as a Settings or RestaurantConfig entity."
+    },
+    "multi_interface": {
+      "interfaces": ["dashboard-hub", "waiter-cashier-ui", "kitchen-display", "admin-panel"],
+      "interface_map": {"chef": "kitchen-display", "waiter-cashier": "waiter-cashier-ui", "owner": "admin-panel"},
+      "note": "Interface switching is role-driven from the dashboard hub. Each interface has its own layout/navigation pattern."
+    },
+    "void_transaction": {
+      "fields": ["voidModalOpen", "voidStep", "voidPinInput", "voidType", "voidReason", "voidNotes", "voidOrder"],
+      "flow": "PIN verification → reason selection → confirmation → order.status = 'voided'"
+    },
+    "cancel_order": {
+      "fields": ["cancelOrderModalOpen", "cancelOrderData", "cancelOrderReason"],
+      "flow": "reason selection → confirmation → order.status = 'cancelled', table released"
+    }
+  }
+}
