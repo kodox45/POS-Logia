@@ -36,7 +36,7 @@ Read EXACTLY these 6 file types. Paths come from YOUR BATCH section appended by 
 | 2 | entities | `.claude/proposal/entities.json` | ALL entities — filter: "owned" if name IN cluster.entity_names, "read" if referenced in owned relationships[].target but NOT in cluster |
 | 3 | api-design splits | From YOUR BATCH api_split_paths | ALL endpoints verbatim per domain. IF monolithic (no splits): read api-design.json and filter endpoints by domain |
 | 4 | features | `.ba/requirements/features.json` | Filter: feature included if id IN cluster.feature_ids |
-| 5 | architecture | `.claude/proposal/architecture.json` | `screen_mapping[]` — filter to screens where screen_id IN cluster.screen_ids |
+| 5 | architecture | `.claude/proposal/architecture.json` | `screen_mapping[]` — filter to screens where screen_id IN cluster.screen_ids; `folder_structure{}` — extract server_src, routes_dir, services_dir patterns for write_scope derivation |
 | 6 | screens | `.ba/design/screens.json` | Filter: screen included if id IN cluster.screen_ids — extract name, sections[], components[] |
 
 **DOES NOT READ:** tech-stack.json, style.json, roles.json, nfr.json, layout.json, integration-map.json, flows.json, components.json.
@@ -142,13 +142,27 @@ FROM _project-analysis.json.domain_clusters[] for this domain:
 ### Step 7: Write Scope
 
 ```
-Compute directory paths that Session 2 builders will write to:
+Compute directory paths that Session 2 builders will write to.
+CRITICAL: Derive backend paths from architecture.json folder_structure — do NOT hardcode.
+
+  READ folder_structure from architecture.json:
+    server_src = folder_structure.server_src OR "server/src"
+    routes_pattern = folder_structure.routes_dir OR "{server_src}/routes"
+    services_pattern = folder_structure.services_dir OR "{server_src}/services"
+
+  IF folder_structure not available OR incomplete:
+    FALLBACK: read foundation-manifest.json
+      Find any file with category "routing" or path containing "/routes/"
+      Extract path prefix pattern (e.g., "server/src/routes/" from "server/src/routes/index.ts")
+    IF manifest also unavailable:
+      DEFAULT: server_src = "server/src", routes = "server/src/routes", services = "server/src/services"
+
   Frontend:
     "src/pages/{domain}/" (or "src/pages/" for flat structure)
     "src/components/{domain}/"
   Backend (if applicable):
-    "server/routes/{domain}/"
-    "server/services/{domain}/"
+    "{routes_pattern}/{domain}/"
+    "{services_pattern}/{domain}/"
   Store:
     "src/stores/{storeName}.ts"
 ```

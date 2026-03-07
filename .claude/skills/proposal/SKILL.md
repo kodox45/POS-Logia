@@ -661,7 +661,7 @@ all_decisions_requiring_approval (collected from all agent outputs), coverage_su
 (from integration-map.json), and reading_guide (static role-to-section map).
 
 The role types in reading_guide (e.g., "backend-builder", "frontend-validator") are
-descriptive categories, NOT actual agent names. The implementation-setup generator
+descriptive categories, NOT actual agent names. The foundation-builder
 matches its dynamically-created teammates to the closest role type when constructing
 task-specific Read directives.
 

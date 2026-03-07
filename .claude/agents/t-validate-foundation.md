@@ -85,8 +85,42 @@ is mechanical — one of these 14 categories:
     Read guard_chain[] order to determine correct nesting (outermost guard = first in chain).
     (VF1 only)
 13. **Golden zone task split** — backend task exceeds G2 (>2 domains) or G3 (>8 endpoints)
-    → Split into 2+ compliant tasks: reassign domain_packages[], endpoints, write_scope.
-    Renumber task IDs sequentially. Update depends_on references across ALL tasks.
+
+    FOR G2 violations (>2 domains in domain_packages[]):
+      a. Sort task's domains by endpoint_count ASC
+      b. Split into N groups of max 2 domains each (greedy: fill first group, overflow to next)
+      c. FOR EACH group → create new task:
+         - Copy original task structure
+         - Set domain_packages = group's domain paths only
+         - Set read_sources.endpoints.ids = only EPs from group's domains
+         - Set write_scope = merge write_scope from group's domain packages
+         - Set db_scope.writes/reads = only tables from group's domains
+         - Set acceptance = only features from group's domains
+         - Copy depends_on from original task
+      d. Assign new sequential IDs (see renumbering below)
+
+    FOR G3 violations (>8 endpoints, single domain):
+      a. Classify endpoints:
+         crud_eps = endpoints WHERE business_rules[].length == 0
+         logic_eps = endpoints WHERE business_rules[].length > 0
+      b. IF both groups have >= 2 endpoints:
+         Create 2 tasks: crud task + logic task
+         Both share same domain_packages[], wave, depends_on
+         Split endpoints between them
+         Append "-crud" and "-logic" to subject for clarity
+      c. IF split impossible (one group < 2):
+         DO NOT SPLIT — log as accepted violation with reason
+
+    RENUMBERING ALGORITHM (after all splits):
+      a. Collect all tasks, sort by: layer ASC, wave ASC, original_id ASC
+      b. Assign new IDs: T-001, T-002, ... sequentially
+      c. Build old_id → new_id mapping
+      d. FOR EACH task: update depends_on[] using the mapping
+      e. Recalculate on_critical_path for all tasks (count downstream dependents >= 3)
+      f. Update metadata.task_count
+
+    WHEN: VF3-B2 or VF3-B3 check fails
+    MUST NOT: change wave assignments, owner builder type, or business_rules content
     (VF3 only)
 14. **Missing acceptance format** — Layer 2 domain task uses generic acceptance keys
     → Convert to feature-keyed format: `{ "F-xxx": [...], "F-yyy": [...] }` by matching
@@ -792,13 +826,22 @@ VF3-B2: Max 2 domains per backend task (G2)
   FOR EACH task where builder_role == "backend" and layer >= 2:
     Count unique domains referenced (from domain_packages[] paths)
     ASSERT count <= 2
-  IF exceeded -> CAN FIX (category 13: split task into 2+ compliant tasks)
+  IF exceeded:
+    APPLY category 13 G2 split algorithm
+    LOG in fixes_applied[]: original task ID, new task IDs, domain reassignment
+    Re-validate the split tasks against G2 after fix
 
 VF3-B3: Max 8 endpoints per backend task (G3)
   FOR EACH task where builder_role == "backend" and layer >= 2:
     IF description.read_sources.endpoints exists:
       ASSERT endpoints.ids[].length <= 8
-  IF exceeded -> CAN FIX (category 13: split into CRUD task + business logic task)
+  IF exceeded:
+    APPLY category 13 G3 split algorithm (CRUD vs logic classification)
+    IF split successful:
+      LOG in fixes_applied[]: original task ID, new task IDs, endpoint assignment
+      Re-validate the split tasks against G3 after fix
+    IF split not possible (unbalanced):
+      LOG in issues_unfixed[]: severity=low, reason="Domain is inherently indivisible"
 
 VF3-B4: Max 8 output files per task (G5)
   FOR EACH task:

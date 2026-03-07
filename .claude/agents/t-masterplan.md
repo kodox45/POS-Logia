@@ -139,7 +139,13 @@ FOR EACH domain_cluster (sorted by wave):
   Frontend task(s):
     screens = domain_package.screens[]
     IF screens.length <= 3:  → 1 frontend task
-    IF screens.length > 3:   → split by G1 (max 3 screens per task)
+    IF screens.length > 3:   → split by G1 (max 3 screens per task):
+      sorted_screens = screens sorted by screen_id ASC
+      chunks = split sorted_screens into groups of max 3
+      EMIT 1 frontend task per chunk
+      First chunk gets shared/infra screens, subsequent get remaining
+      All chunks share same domain_packages[], wave
+      Split write_scope by page paths from screen.page_component
 
     EACH task:
       owner: builder-frontend-{interface} (match interface from screen's interface field)
@@ -176,25 +182,64 @@ FOR EACH domain_cluster (sorted by wave):
       FOR EACH domain_cluster with endpoints[].length > 0:
         backend_domains.push({ domain, endpoints, wave, features, ... })
 
+    STEP 1.5 — Pre-split by builder assignment:
+      IF team_composition has 2+ backend builders (e.g., builder-backend-crud + builder-backend-logic):
+        FOR EACH backend builder in team_composition:
+          Extract domains from builder.domain description
+          builder_domains[builder.name] = matching domain_clusters
+        APPLY Steps 2-3 SEPARATELY for each builder group
+        Each emitted task gets owner = that builder's name
+      ELSE (single builder-backend):
+        all backend domains → apply Steps 2-3 once
+
     STEP 2 — Group by wave, then enforce G2 + G3:
       FOR EACH wave_group (domains sharing same wave):
         remaining = wave_group domains sorted by endpoint_count DESC
 
         WHILE remaining is not empty:
-          task_domains = []
-          task_endpoints = 0
+          // ALWAYS take first domain (unconditionally)
+          first = remaining.shift()
+          task_domains = [first]
+          task_endpoints = first.endpoints.length
 
+          // THEN try adding more (with G2+G3 guards)
           WHILE remaining is not empty
             AND task_domains.length < 2            (G2: max 2 domains)
-            AND task_endpoints + next.endpoints.length <= 8  (G3: max 8 endpoints):
-              task_domains.push(remaining.shift())
-              task_endpoints += last_added.endpoints.length
+            AND task_endpoints + remaining[0].endpoints.length <= 8  (G3: max 8 endpoints):
+              next = remaining.shift()
+              task_domains.push(next)
+              task_endpoints += next.endpoints.length
 
+    STEP 3 — Handle oversized single-domain tasks (G3 split):
           IF task_domains.length == 1 AND task_endpoints > 8:
-            → Split this single domain: CRUD endpoints vs business logic endpoints
-            → Create 2 tasks for same domain (1 CRUD, 1 logic)
+            domain = task_domains[0]
 
-          EMIT backend task from task_domains
+            // Classify endpoints
+            crud_endpoints = domain.endpoints WHERE:
+              method IN [GET, POST, PUT, PATCH, DELETE]
+              AND business_rules[].length == 0
+              AND NOT appears in any cross_domain_contracts[].your_steps
+            logic_endpoints = domain.endpoints NOT IN crud_endpoints
+
+            // Fallback: if classification is unbalanced (one side < 2 endpoints)
+            IF crud_endpoints.length < 2 OR logic_endpoints.length < 2:
+              // Split by method instead: reads (GET) vs writes (POST/PUT/PATCH/DELETE)
+              crud_endpoints = domain.endpoints WHERE method == "GET"
+              logic_endpoints = domain.endpoints WHERE method != "GET"
+
+            // If still unbalanced after fallback, accept as single task
+            IF crud_endpoints.length < 2 OR logic_endpoints.length < 2:
+              EMIT 1 task (accept G3 violation — domain is inherently indivisible)
+              LOG: "G3 accepted: {domain.domain} has {task_endpoints} EP but cannot be split"
+            ELSE:
+              EMIT task_crud: owner=builder-backend-crud (or same owner), endpoints=crud_endpoints
+              EMIT task_logic: owner=builder-backend-logic (or same owner), endpoints=logic_endpoints
+              Both tasks share same domain_packages[], wave, depends_on
+              Split write_scope: crud gets routes+services, logic gets same (both write to same domain dir)
+              Split db_scope: crud writes/reads from entity tables, logic adds cross-domain reads
+
+          ELSE:
+            EMIT backend task from task_domains
 
     EACH emitted task:
       owner: builder-backend (or builder-backend-crud / builder-backend-logic if split)
@@ -410,6 +455,19 @@ Before writing the final plan, validate completeness:
 5. Owner validation:
    FOR EACH task.owner:
      ASSERT: owner appears in team_composition[].name
+
+5b. on_critical_path computation:
+   Build reverse dependency map:
+     FOR EACH task:
+       FOR EACH dep_id in task.depends_on:
+         reverse_map[dep_id].push(task.id)
+
+   FOR EACH task:
+     downstream_count = reverse_map[task.id].length (direct dependents only)
+     task.on_critical_path = (downstream_count >= 3)
+
+   VERIFY: Count total on_critical_path == true tasks. For a complex project
+   with 20+ tasks, expect 3-6 critical path tasks (not 0, not all).
 ```
 
 ---

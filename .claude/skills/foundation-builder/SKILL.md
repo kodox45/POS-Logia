@@ -676,6 +676,7 @@ FOR EACH batch in batches[]:
       features: {source_paths.features}
       architecture: {source_paths.architecture}
       screens: {source_paths.screens}
+      architecture_note: "Read folder_structure{} from architecture.json for backend write_scope paths. If folder_structure is absent, read foundation-manifest.json and extract server path pattern from listed files."
       api_split_paths:
         {FOR EACH domain in batch.domains:
           {domain}: {source_paths.api_splits[domain] OR source_paths.api_design_index}
